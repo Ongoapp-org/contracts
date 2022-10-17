@@ -1,0 +1,63 @@
+project_structure:
+  build: build
+  contracts: contracts
+  interfaces: interfaces
+  reports: reports
+  scripts: scripts
+  tests: tests
+
+networks:
+  default: development
+  #default: bscmain
+  development:
+    host: https://127.0.0.1:8545
+
+    gas_limit: max
+    gas_buffer: 1
+    gas_price: 0
+    reverting_tx_gas_limit: max
+    #reverting_tx_gas_limit: 6721975
+    #persist: false
+    default_contract_owner: true
+    chainid: 1337
+    test_rpc:
+      cmd: ganache-cli
+      port: 8545
+      gas_limit: 6721975
+      accounts: 10
+      #evm_version: istanbul
+      mnemonic: brownie
+
+  bsctest:
+    host: https://data-seed-prebsc-1-s1.binance.org:8545
+    chainid: 97
+    # explorer: https://api-testnet.bscscan.com/api
+    id: bsctest
+    name: Testnet
+    # accounts: da9515202edb5d13aa7e95e9e03ae652f099817488ff413a48c776698c626539
+
+  bscmain:
+    host: "https://bsc-dataseed.binance.org"
+    #host: "https://bsc-dataseed1.defibit.io"
+    #     gas_limit: max
+    #     gas_buffer: 1
+    #     gas_price: 0
+    #     reverting_tx_gas_limit: max
+    #     default_contract_owner: true
+
+  avax-test:
+    host: "https://api.avax-test.network/ext/bc/C/rpc"
+    explorer: https://api-testnet.snowtrace.io/api
+  #   43113
+  avax:
+    host: "https://api.avax.network/ext/bc/C/rpc"
+    explorer: https://api.snowtrace.io/api
+
+compiler:
+  evm_version: null
+  solc:
+    version: 0.8.5
+    optimizer:
+      enabled: true
+      runs: 200
+    remappings: null
