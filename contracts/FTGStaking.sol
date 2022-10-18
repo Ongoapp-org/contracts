@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8;
+pragma solidity 0.8.17;
 
 import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 import "./Ownable.sol";
