@@ -60,13 +60,15 @@ contract FTGStaking is Ownable {
 
     event NewStake(address indexed user, uint256 amount, uint256 timestamp);
     event NewReward(uint256 indexed amount, uint256 timestamp);
-
+    //event For debugging
+    event Log(string message, uint256 data);
+    
     constructor(address _stakingToken) {
         ftgToken = IERC20(_stakingToken);
     }
 
     // To register a new reward deposit or fee
-    function _addNewReward(uint256 _reward, uint256 _timestamp) internal {
+    function _addNewReward(uint256 _reward) internal {
         if (totalFTGStaked!=0){
             uint256 rewardPerFTG = PRBMath.mulDiv(1, _reward, totalFTGStaked);
             rewardsList.push(Reward(_reward,rewardPerFTG,block.timestamp));
@@ -75,38 +77,46 @@ contract FTGStaking is Ownable {
         }
     }
 
-    // to retrieve the rewards from a certain time
-    function _getRewardsIndexfromTime(uint256 lastUpdateTime) public view returns(uint256) { 
+    // to retrieve the first reward index to add from last updated time
+    function _getfirstRewardsIndexToAdd(uint256 lastUpdateTime) public returns(uint256) { 
         uint256 i = rewardsList.length > 0 ? rewardsList.length -1 : 0;
-        while(rewardsList[i].timestamp >= lastUpdateTime) {
+        emit Log("i0=",i);
+        emit Log("rewardsList[i].timestam",rewardsList[i].timestamp);
+        while(rewardsList[i].timestamp >= lastUpdateTime && i!=0) {
             unchecked {
                 --i;
             }
-        return i > 0 ? i : 0;
+            emit Log("i=",i);
         } 
+        return i > 0 ? i+1 : 1;
     }
 
-    // to retrieve the stakeholder's stake at a certain time
-    function _getStakeHolderStakeIndexFromTime(address _stakeholderAddress, uint256 _time) public view returns(uint256) { 
+    // to retrieve the stakeholder's stake at a certain reward time
+    function _getStakeHolderStakeIndexAtRewardTime(address _stakeholderAddress, uint256 _time) public returns(uint256) { 
         uint256 i = stakeholders[_stakeholderAddress].flexStakes.length > 0 ? stakeholders[_stakeholderAddress].flexStakes.length-1 : 0;
-        while(stakeholders[_stakeholderAddress].flexStakes[i].timestamp >= _time) {
+        while(stakeholders[_stakeholderAddress].flexStakes[i].timestamp >= _time && i!=0) {
             unchecked {
                 --i;
             }
-        return i > 0 ? i : 0;
         } 
+        return i > 0 ? i : 0;
     }
 
     // to update the reward balance of a stakeholder
     function _updateStakeholderReward(address _stakeholderAddress, StakeType _stakeType) internal {
         if (_stakeType == StakeType.FLEX) {
-            uint256 startIndex = _getRewardsIndexfromTime(stakeholders[_stakeholderAddress].lastRewardUpdate)+1;
+            uint256 startIndex = _getfirstRewardsIndexToAdd(stakeholders[_stakeholderAddress].lastRewardUpdate);
+            emit Log("startIndex=",startIndex);
             uint256 rewardsSum = 0;
-            for (uint256 i=startIndex;i<rewardsList.length-1;i++){
-                uint256 stakeholderStakeIndex = _getStakeHolderStakeIndexFromTime(_stakeholderAddress,rewardsList[i].timestamp);
-                uint256 stakeholderStake = stakeholders[_stakeholderAddress].flexStakes[stakeholderStakeIndex].totalStaked;
-                rewardsSum +=  rewardsList[i].rewardPerFTG * stakeholderStake ;
+            for (uint256 i=startIndex; i<rewardsList.length; i++){
+                uint256 stakeholderStakeIndexAtRewardTime = _getStakeHolderStakeIndexAtRewardTime(_stakeholderAddress, rewardsList[i].timestamp);
+                emit Log("stakeholderStakeIndexAtRewardTime=",stakeholderStakeIndexAtRewardTime);
+                uint256 stakeholderStakeAtRewardtime = stakeholders[_stakeholderAddress].flexStakes[stakeholderStakeIndexAtRewardTime].totalStaked;
+                emit Log("stakeholderStakeAtRewardtime=",stakeholderStakeAtRewardtime);
+                rewardsSum +=  rewardsList[i].rewardPerFTG * stakeholderStakeAtRewardtime;
+                emit Log("rewardsSum=",rewardsSum);
             }
+            emit Log("final rewardsSum=",rewardsSum);
             stakeholders[_stakeholderAddress].totalReward += rewardsSum;
             stakeholders[_stakeholderAddress].lastRewardUpdate = block.timestamp;
         }
@@ -133,7 +143,7 @@ contract FTGStaking is Ownable {
                 //stakeholders[_address].push(Stakeholder(0,0,block.timestamp,[]));
                 // calculate initial fee
                 fee = PRBMath.mulDiv(5, _amount, 100);
-                _addNewReward(fee, block.timestamp);
+                _addNewReward(fee);
             }
             uint256 amountStaked = _amount-fee;
             // Add stake's amount to stakeholder's totalStaked
@@ -152,7 +162,7 @@ contract FTGStaking is Ownable {
     }
 
     function depositReward(uint256 _amount) external {
-         _addNewReward(_amount, block.timestamp);
+         _addNewReward(_amount);
     }
 
     function updateReward() public {
