@@ -55,3 +55,12 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     # onchain rewards for every stakeholder every time a reward is deposited.
     # Also is precision set to 9 digits enough? ... and is integer rounding acceptable?
 
+    # test if stakeholder partly unstakes
+    tx = ftgstaking.unstake(1000,0, {"from": accounts[0]})
+    print(tx.events)
+    # test if stakeholder unstakes completely
+    tx = ftgstaking.unstake(20000,0, {"from": accounts[0]})
+    print(tx.events)
+    rewardsList=ftgstaking.getRewardsList()
+    print("rewardsList=",rewardsList)
+    print("stakeholders[accounts[0]].flexStakes=",ftgstaking.getStakes(accounts[0]))

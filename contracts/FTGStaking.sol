@@ -179,13 +179,15 @@ contract FTGStaking is Ownable {
             //if amount exceeds totalStaked, we withdraw everything?
             if (_amount >= stakeholders[msg.sender].totalStaked) {
                 //stakeholder is only partly withdrawing his staking balance
-                totalFTGStaked -= stakeholders[msg.sender].totalStaked;
+                uint256 amountToUnstake =stakeholders[msg.sender].totalStaked;
+                totalFTGStaked -= amountToUnstake;
                 stakeholders[msg.sender].totalStaked = 0;
                 stakeholders[msg.sender].flexStakes.push(StakeChange(0, block.timestamp));
                 // unstaking 2%(?) fee
-                uint256 fee = PRBMath.mulDiv(2, _amount, 100);
+                uint256 fee = PRBMath.mulDiv(2,amountToUnstake, 100);
                 _addNewReward(fee);
-                ftgToken.transfer(msg.sender, _amount-fee);
+                ftgToken.transfer(msg.sender, amountToUnstake-fee);
+                emit NewUnstake(msg.sender, stakeholders[msg.sender].totalStaked, block.timestamp);
             } else {
                 //stakeholder is only partly withdrawing his staking balance
                 stakeholders[msg.sender].totalStaked -= _amount;
@@ -195,6 +197,7 @@ contract FTGStaking is Ownable {
                 uint256 fee = PRBMath.mulDiv(2, _amount, 100);
                 _addNewReward(fee);
                 ftgToken.transfer(msg.sender, _amount-fee);
+                emit NewUnstake(msg.sender, _amount, block.timestamp);
             }
         }
     }
