@@ -202,6 +202,7 @@ contract FTGStaking is Ownable {
         }
     }
 
+    // function for the stakeholder to withdraw his accumulated rewards
     function withdrawReward() public {
         // firstly update reward balance
         _updateStakeholderReward(msg.sender,StakeType.FLEX);
@@ -211,6 +212,7 @@ contract FTGStaking is Ownable {
         ftgToken.transfer(msg.sender,rewardToWithdraw);
     }
 
+    // function for the stakeholder to stake his accumulated rewards
     function stakeReward(uint256 _amount) public {
         // firstly update reward balance
         _updateStakeholderReward(msg.sender,StakeType.FLEX);

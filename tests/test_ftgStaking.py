@@ -64,3 +64,19 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     rewardsList=ftgstaking.getRewardsList()
     print("rewardsList=",rewardsList)
     print("stakeholders[accounts[0]].flexStakes=",ftgstaking.getStakes(accounts[0]))
+
+    # test of staking some reward
+    ftgstaking.updateReward()
+    print("before staking 200ftg from reward: stakeholder accumulated rewards = ",ftgstaking.getAccountRewardInfo(accounts[0]))
+    ftgstaking.stakeReward(200)
+    print("after staking 200ftg from reward: stakeholder accumulated rewards = ",ftgstaking.getAccountRewardInfo(accounts[0]))
+    print("stakeholders[accounts[0]].flexStakes=",ftgstaking.getStakes(accounts[0]))
+
+    #test of withdrawing the reward balance
+    print("contract's address = ",ftgstaking.address)
+    print("before withdrawing: stakeholder ftg balance = ",ftgtoken.balanceOf(accounts[0]))
+    #ftgstaking.withdrawReward()
+    print("after withdrawing reward balance: stakeholder accumulated rewards = ",ftgstaking.getAccountRewardInfo(accounts[0]))
+    print("after withdrawing: stakeholder ftg balance = ",ftgtoken.balanceOf(accounts[0]))
+
+
