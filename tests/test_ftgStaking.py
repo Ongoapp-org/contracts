@@ -43,5 +43,6 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print("rewardsList=",rewardsList)
     print("stakeholders[accounts[0]].flexStakes=",ftgstaking.getStakes(accounts[0]))
     print("Before Reward update: stakeholders[accounts[0]].totalReward=",ftgstaking.getAccountRewardInfo(accounts[0]))
+    print("_getRewardsIndexfromTime(0)=",ftgstaking._getRewardsIndexfromTime(0))
     ftgstaking.updateReward()
     print("After Reward update: stakeholders[accounts[0]].totalReward=",ftgstaking.getAccountRewardInfo(accounts[0]))

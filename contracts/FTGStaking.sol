@@ -76,7 +76,7 @@ contract FTGStaking is Ownable {
     }
 
     // to retrieve the rewards from a certain time
-    function _getRewardsIndexfromTime(uint256 lastUpdateTime) internal view returns(uint256) { 
+    function _getRewardsIndexfromTime(uint256 lastUpdateTime) public view returns(uint256) { 
         uint256 i = rewardsList.length > 0 ? rewardsList.length -1 : 0;
         while(rewardsList[i].timestamp >= lastUpdateTime) {
             unchecked {
@@ -87,7 +87,7 @@ contract FTGStaking is Ownable {
     }
 
     // to retrieve the stakeholder's stake at a certain time
-    function _getStakeHolderStakeIndexFromTime(address _stakeholderAddress, uint256 _time) internal view returns(uint256) { 
+    function _getStakeHolderStakeIndexFromTime(address _stakeholderAddress, uint256 _time) public view returns(uint256) { 
         uint256 i = stakeholders[_stakeholderAddress].flexStakes.length > 0 ? stakeholders[_stakeholderAddress].flexStakes.length-1 : 0;
         while(stakeholders[_stakeholderAddress].flexStakes[i].timestamp >= _time) {
             unchecked {
