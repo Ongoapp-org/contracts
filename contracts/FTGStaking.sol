@@ -46,7 +46,7 @@ contract FTGStaking is Ownable {
 
     struct Reward{
         uint256 rewards;
-        uint256 rewardPerFTG;
+        uint256 rewardPer1BFTG;
         uint256 timestamp;
     }
 
@@ -70,8 +70,10 @@ contract FTGStaking is Ownable {
     // To register a new reward deposit or fee
     function _addNewReward(uint256 _reward) internal {
         if (totalFTGStaked!=0){
-            uint256 rewardPerFTG = PRBMath.mulDiv(1, _reward, totalFTGStaked);
-            rewardsList.push(Reward(_reward,rewardPerFTG,block.timestamp));
+            emit Log("_reward",_reward);
+            uint256 rewardPer1BFTG = PRBMath.mulDiv(1000000000, _reward, totalFTGStaked);
+            emit Log("rewardPer1BFTG",rewardPer1BFTG);
+            rewardsList.push(Reward(_reward,rewardPer1BFTG,block.timestamp));
         }else{
             rewardsList.push(Reward(_reward,0,block.timestamp));
         }
@@ -94,7 +96,7 @@ contract FTGStaking is Ownable {
     // to retrieve the stakeholder's stake at a certain reward time
     function _getStakeHolderStakeIndexAtRewardTime(address _stakeholderAddress, uint256 _time) public returns(uint256) { 
         uint256 i = stakeholders[_stakeholderAddress].flexStakes.length > 0 ? stakeholders[_stakeholderAddress].flexStakes.length-1 : 0;
-        while(stakeholders[_stakeholderAddress].flexStakes[i].timestamp >= _time && i!=0) {
+        while(stakeholders[_stakeholderAddress].flexStakes[i].timestamp > _time && i!=0) {
             unchecked {
                 --i;
             }
@@ -113,7 +115,8 @@ contract FTGStaking is Ownable {
                 emit Log("stakeholderStakeIndexAtRewardTime=",stakeholderStakeIndexAtRewardTime);
                 uint256 stakeholderStakeAtRewardtime = stakeholders[_stakeholderAddress].flexStakes[stakeholderStakeIndexAtRewardTime].totalStaked;
                 emit Log("stakeholderStakeAtRewardtime=",stakeholderStakeAtRewardtime);
-                rewardsSum +=  rewardsList[i].rewardPerFTG * stakeholderStakeAtRewardtime;
+                emit Log("rewardsList[i].rewardPer1BFTG=",rewardsList[i].rewardPer1BFTG);
+                rewardsSum +=  PRBMath.mulDiv(rewardsList[i].rewardPer1BFTG,stakeholderStakeAtRewardtime,1000000000);
                 emit Log("rewardsSum=",rewardsSum);
             }
             emit Log("final rewardsSum=",rewardsSum);
@@ -121,8 +124,7 @@ contract FTGStaking is Ownable {
             stakeholders[_stakeholderAddress].lastRewardUpdate = block.timestamp;
         }
     }
-
-
+    
     // function called by stakeholder to stake ftg 
     function stake(uint256 _amount, StakeType _stakeType) public {
 
@@ -149,6 +151,7 @@ contract FTGStaking is Ownable {
             // Add stake's amount to stakeholder's totalStaked
             stakeholders[msg.sender].totalStaked += amountStaked;
             totalFTGStaked += amountStaked;
+            emit Log("totalFTGStaked",totalFTGStaked);
             // Calculate Stakeholder's totalReward
             //stakeholders[msg.sender].totalReward = _updateStakeholderReward(msg.sender,StakeType.FLEX);
             // Update lastRewardUpdate

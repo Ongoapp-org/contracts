@@ -13,8 +13,8 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print("chain in test_FTGToken = ", network.chain)
     ftgstaking = deploy_FTGStaking(ftgtoken.address)
     ftgtoken.approve(ftgstaking, 1000, {"from": accounts[0]})
-    ftgstaking.stake(1000,0, {"from": accounts[0]})
-    
+    tx=ftgstaking.stake(1000,0, {"from": accounts[0]})
+    print(tx.events)
     timeTravel=3650
     chain.sleep(timeTravel)
     ftgtoken.approve(ftgstaking, 10000, {"from": accounts[0]})
@@ -24,7 +24,8 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print("Contracts totalFTGStaked=",ftgstaking.getTotalFTGStaked())
     timeTravel=150
     chain.sleep(timeTravel)
-    ftgstaking.depositReward(100)
+    tx=ftgstaking.depositReward(100)
+    print(tx.events)
     timeTravel=180
     chain.sleep(timeTravel)
     ftgtoken.approve(ftgstaking, 4000, {"from": accounts[0]})
@@ -34,7 +35,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     ftgstaking.depositReward(200)
     timeTravel=100
     chain.sleep(timeTravel)
-    ftgstaking.depositReward(200)
+    ftgstaking.depositReward(300)
     timeTravel=200
     chain.sleep(timeTravel)
     ftgtoken.approve(ftgstaking, 100, {"from": accounts[0]})
@@ -48,3 +49,10 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     tx = ftgstaking.updateReward()
     print(tx.events)
     print("After Reward update: stakeholders[accounts[0]].totalReward=",ftgstaking.getAccountRewardInfo(accounts[0]))
+    # in this example, startindex=1, for loop goes from 1 to 3 (3 passes): 
+    # i=1, rewardsList[i].rewardPer1BFTG =9132420,  stakeholderStakeIndexAtRewardTime = 1,rewardsList[i].rewardPer1BFTG =10950,->rewardSum=99 (correct)
+    # i=2, rewardsList[i].rewardPer1BFTG =13377926,  stakeholderStakeIndexAtRewardTime = 2,rewardsList[i].rewardPer1BFTG =14950,->rewardSum=99+199=298 (correct)
+    # i=3, rewardsList[i].rewardPer1BFTG =20066889,  stakeholderStakeIndexAtRewardTime = 2,rewardsList[i].rewardPer1BFTG =14950,->rewardSum=99+199+299=597 (correct)
+    # first testing okay, but there may be configurations/cases causing error, need to be checked further and compared gaswise with simpler methods calculating/updating 
+    # onchain rewards for every stakeholder every time a reward is deposited.
+    # Also is precision set to 9 digits enough? ... and is integer rounding acceptable?
