@@ -76,7 +76,7 @@ contract FTGStaking is Ownable {
     }
 
     // to retrieve the rewards from a certain time
-   /*  function _getRewardsIndexfromTime(uint256 lastUpdateTime) internal view returns(uint256) { 
+    function _getRewardsIndexfromTime(uint256 lastUpdateTime) internal view returns(uint256) { 
         uint256 i = rewardsList.length > 0 ? rewardsList.length -1 : 0;
         while(rewardsList[i].timestamp >= lastUpdateTime) {
             unchecked {
@@ -84,10 +84,10 @@ contract FTGStaking is Ownable {
             }
         return i > 0 ? i : 0;
         } 
-    } */
+    }
 
     // to retrieve the stakeholder's stake at a certain time
-   /*  function _getStakeHolderStakeIndexFromTime(address _stakeholderAddress, uint256 _time) internal view returns(uint256) { 
+    function _getStakeHolderStakeIndexFromTime(address _stakeholderAddress, uint256 _time) internal view returns(uint256) { 
         uint256 i = stakeholders[_stakeholderAddress].flexStakes.length > 0 ? stakeholders[_stakeholderAddress].flexStakes.length-1 : 0;
         while(stakeholders[_stakeholderAddress].flexStakes[i].timestamp >= _time) {
             unchecked {
@@ -95,10 +95,10 @@ contract FTGStaking is Ownable {
             }
         return i > 0 ? i : 0;
         } 
-    } */
+    }
 
     // to update the reward balance of a stakeholder
-   /*  function _updateStakeholderReward(address _stakeholderAddress, StakeType _stakeType) internal {
+    function _updateStakeholderReward(address _stakeholderAddress, StakeType _stakeType) internal {
         if (_stakeType == StakeType.FLEX) {
             uint256 startIndex = _getRewardsIndexfromTime(stakeholders[_stakeholderAddress].lastRewardUpdate)+1;
             uint256 rewardsSum = 0;
@@ -110,7 +110,7 @@ contract FTGStaking is Ownable {
             stakeholders[_stakeholderAddress].totalReward += rewardsSum;
             stakeholders[_stakeholderAddress].lastRewardUpdate = block.timestamp;
         }
-    } */
+    }
 
 
     // function called by stakeholder to stake ftg 
@@ -151,10 +151,14 @@ contract FTGStaking is Ownable {
         }
     }
 
-   /*  function UpdateReward() public {
+    function depositReward(uint256 _amount) external {
+         _addNewReward(_amount, block.timestamp);
+    }
+
+    function updateReward() public {
         _updateStakeholderReward(msg.sender,StakeType.FLEX);
     }
- */
+
    /*  function unstake(uint256 _index, uint256 _amount) public {
         //require(_amount > stakeholders[msg.sender].stakes[_index].amount, "Requested amount exceeds staked amount");
         if (stakeholders[msg.sender].stakes[_index].amount <= _amount) {
@@ -182,7 +186,12 @@ contract FTGStaking is Ownable {
         return stakeholders[_stakeholderAddress].flexStakes;
     }
 
+     // returns the stakeholder's last updated reward
+    function getAccountRewardInfo(address _stakeholderAddress) public view returns (uint256,uint256) {
+        return (stakeholders[_stakeholderAddress].totalReward,stakeholders[_stakeholderAddress].lastRewardUpdate);
+    }
  
+    // returns total FTG Staked on contract
     function getTotalFTGStaked() public view returns (uint256) {
         return totalFTGStaked;
     }
