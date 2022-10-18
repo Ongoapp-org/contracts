@@ -44,8 +44,6 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print("rewardsList=",rewardsList)
     print("stakeholders[accounts[0]].flexStakes=",ftgstaking.getStakes(accounts[0]))
     print("Before Reward update: stakeholders[accounts[0]].totalReward=",ftgstaking.getAccountRewardInfo(accounts[0]))
-    index=ftgstaking._getfirstRewardsIndexToAdd(0)
-    print("_getfirstRewardsIndexToAdd(0)=",index)
     tx = ftgstaking.updateReward()
     print(tx.events)
     print("After Reward update: stakeholders[accounts[0]].totalReward=",ftgstaking.getAccountRewardInfo(accounts[0]))
@@ -56,3 +54,4 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     # first testing okay, but there may be configurations/cases causing error, need to be checked further and compared gaswise with simpler methods calculating/updating 
     # onchain rewards for every stakeholder every time a reward is deposited.
     # Also is precision set to 9 digits enough? ... and is integer rounding acceptable?
+
