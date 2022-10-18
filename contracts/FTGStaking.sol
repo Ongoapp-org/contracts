@@ -141,8 +141,6 @@ contract FTGStaking is Ownable {
             // first staking ?
             uint256 fee;
             if (stakeholders[msg.sender].flexStakes.length == 0) {
-                // add stakeholder
-                //stakeholders[_address].push(Stakeholder(0,0,block.timestamp,[]));
                 // calculate initial fee
                 fee = PRBMath.mulDiv(5, _amount, 100);
                 _addNewReward(fee);
@@ -152,10 +150,6 @@ contract FTGStaking is Ownable {
             stakeholders[msg.sender].totalStaked += amountStaked;
             totalFTGStaked += amountStaked;
             emit Log("totalFTGStaked",totalFTGStaked);
-            // Calculate Stakeholder's totalReward
-            //stakeholders[msg.sender].totalReward = _updateStakeholderReward(msg.sender,StakeType.FLEX);
-            // Update lastRewardUpdate
-            //stakeholders[msg.sender].lastRewardUpdate = block.timestamp;
             // Add the new Stake to the stakeholder's stakes List 
             stakeholders[msg.sender].flexStakes.push(StakeChange(stakeholders[msg.sender].totalStaked, block.timestamp));
 
@@ -172,22 +166,48 @@ contract FTGStaking is Ownable {
         _updateStakeholderReward(msg.sender,StakeType.FLEX);
     }
 
-   /*  function unstake(uint256 _index, uint256 _amount) public {
-        //require(_amount > stakeholders[msg.sender].stakes[_index].amount, "Requested amount exceeds staked amount");
-        if (stakeholders[msg.sender].stakes[_index].amount <= _amount) {
-            //actually removing entry from stakes array would be gas costly
-            delete stakeholders[msg.sender].stakes[_index];
-            uint256 actualAmount = stakeholders[msg.sender].stakes[_index].amount;
-            stakeholders[msg.sender].totalStaked -= actualAmount;
-            ContractTotalStaked -= actualAmount;
-            ftgToken.transfer(msg.sender, actualAmount);
+    function unstake(uint256 _index, uint256 _amount, StakeType _stakeType) public {
+        //verify that stakeholder has staking
+        require(stakeholders[msg.sender].totalStaked!=0, "No FTG staked");
+        //if amount exceeds totalStaked, we withdraw everything?
+        if (_amount >= stakeholders[msg.sender].totalStaked) {
+            //stakeholder is only partly withdrawing his staking balance
+            totalFTGStaked -= stakeholders[msg.sender].totalStaked;
+            stakeholders[msg.sender].totalStaked = 0;
+            stakeholders[msg.sender].flexStakes.push(StakeChange(0, block.timestamp));
+            // unstaking 2%(?) fee
+            fee = PRBMath.mulDiv(2, _amount, 100);
+            _addNewReward(fee);
+            ftgToken.transfer(msg.sender, _amount-fee);
         } else {
-            stakeholders[msg.sender].stakes[_index].amount -=_amount;
+            //stakeholder is only partly withdrawing his staking balance
             stakeholders[msg.sender].totalStaked -= _amount;
-            ContractTotalStaked -= _amount;
-            ftgToken.transfer(msg.sender, _amount);
+            stakeholders[msg.sender].flexStakes.push(StakeChange(newTotalStaked, block.timestamp));
+            totalFTGStaked -= _amount;
+            // unstaking 2%(?) fee
+            fee = PRBMath.mulDiv(2, _amount, 100);
+            _addNewReward(fee);
+            ftgToken.transfer(msg.sender, _amount-fee);
         }
-    } */
+    }
+
+    function withdrawReward() public {
+        // firstly update reward balance
+        _updateStakeholderReward(msg.sender,StakeType.FLEX);
+        // transfer rewards to stakeholder's account
+        uint256 rewardToWithdraw = stakeholders[msg.sender].totalReward;
+        stakeholders[msg.sender].totalReward = 0;
+        ftgToken.transfer(msg.sender,rewardToWithdraw);
+    }
+
+    function stakeReward(uint256 _amount) public {
+        // firstly update reward balance
+        _updateStakeholderReward(msg.sender,StakeType.FLEX);
+        // transfer reward balance to the staking balance
+        stakeholders[msg.sender].totalReward -= _amount;
+        stakeholders[msg.sender].totalStaked += _amount;
+        stakeholders[msg.sender].flexStakes.push(StakeChange(stakeholders[msg.sender].totalStaked, block.timestamp));
+    }
 
     // returns the rewardsList array
     function getRewardsList() public view returns (Reward[] memory) {
