@@ -1,3 +1,5 @@
+#brownie pm install paulrberg/prb-math@2.5.0
+
 project_structure:
   build: build
   contracts: contracts
