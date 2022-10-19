@@ -28,7 +28,7 @@ contract FTGStaking is Ownable {
         uint256 timestamp;
     }
 
-    uint256 totalFTGStaked;
+    uint256 public totalFTGStaked;
 
     enum StakeType {
         FLEX,
@@ -54,7 +54,7 @@ contract FTGStaking is Ownable {
         if (totalFTGStaked != 0) {
             emit Log("_reward", _reward);
             uint256 rewardPer1BFTG = PRBMath.mulDiv(
-                1000000000,
+                1_000_000_000,// TODO whats this number?
                 _reward,
                 totalFTGStaked
             );
@@ -138,7 +138,7 @@ contract FTGStaking is Ownable {
                 rewardsSum += PRBMath.mulDiv(
                     rewardsList[i].rewardPer1BFTG,
                     stakeholderStakeAtRewardtime,
-                    1000000000
+                    1_000_000_000 // TODO whats this number?
                 );
                 emit Log("rewardsSum=", rewardsSum);
             }
@@ -149,7 +149,7 @@ contract FTGStaking is Ownable {
         }
     }
 
-    // function called by stakeholder to stake ftg
+    // stake ftg token 
     function stake(uint256 _amount, StakeType _stakeType) public {
         // Check that user does not stake 0
         require(_amount > 0, "Cannot stake nothing");
@@ -159,7 +159,7 @@ contract FTGStaking is Ownable {
             "Insufficient FTG Balance"
         );
 
-        // Transfer of ftg token to the staking Contract (contract need to be approved first ...)
+        // Transfer of ftg token to the staking Contract (contract need to be approved first)
         ftgToken.transferFrom(msg.sender, address(this), _amount);
 
         if (_stakeType == StakeType.FLEX) {
@@ -183,6 +183,7 @@ contract FTGStaking is Ownable {
             // Emit a NewStake event
             emit NewStake(msg.sender, amountStaked, block.timestamp);
         }
+        //
     }
 
     //function to deposit reward
@@ -260,7 +261,7 @@ contract FTGStaking is Ownable {
     }
 
     // returns the rewardsList array
-    function getRewardsList() public view returns (Reward[] memory) {
+    function viewRewardsList() public view returns (Reward[] memory) {
         return rewardsList;
     }
 
@@ -285,8 +286,4 @@ contract FTGStaking is Ownable {
         );
     }
 
-    // returns total FTG Staked on contract
-    function getTotalFTGStaked() public view returns (uint256) {
-        return totalFTGStaked;
-    }
 }
