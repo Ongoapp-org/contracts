@@ -8,6 +8,9 @@ import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 contract FTGStaking is Ownable {
     IERC20 public immutable ftgToken;
 
+    uint256 constant INITIAL_STAKING_FEE = 5; // %
+    uint256 constant UNSTAKING_FEE = 2; // %
+
     //Can be new stake or unstake
     struct Staking {
         uint256 totalStaked;
@@ -89,9 +92,8 @@ contract FTGStaking is Ownable {
         address _stakeholderAddress,
         uint256 _time
     ) private view returns (uint256) {
-        uint256 i = stakeholders[_stakeholderAddress].flexStakings.length > 0
-            ? stakeholders[_stakeholderAddress].flexStakings.length - 1
-            : 0;
+        uint256 len = stakeholders[_stakeholderAddress].flexStakings.length;
+        uint256 i = len > 0 ? len - 1 : 0;
         while (
             stakeholders[_stakeholderAddress].flexStakings[i].timestamp >
             _time &&
@@ -167,7 +169,7 @@ contract FTGStaking is Ownable {
             uint256 fee;
             if (stakeholders[msg.sender].flexStakings.length == 0) {
                 // calculate initial fee
-                fee = PRBMath.mulDiv(5, _amount, 100);
+                fee = PRBMath.mulDiv(INITIAL_STAKING_FEE, _amount, 100);
                 _addNewReward(fee);
             }
             uint256 amountStaked = _amount - fee;
@@ -187,7 +189,7 @@ contract FTGStaking is Ownable {
     }
 
     //function to deposit reward
-    function depositReward(uint256 _amount) external {
+    function depositReward(uint256 _amount) external onlyOwner {
         _addNewReward(_amount);
         // Transfer of ftg token to the staking Contract (contract need to be approved first)
         ftgToken.transferFrom(msg.sender, address(this), _amount);
@@ -213,7 +215,11 @@ contract FTGStaking is Ownable {
                     Staking(0, block.timestamp)
                 );
                 // unstaking 2%(?) fee
-                uint256 fee = PRBMath.mulDiv(2, amountToUnstake, 100);
+                uint256 fee = PRBMath.mulDiv(
+                    UNSTAKING_FEE,
+                    amountToUnstake,
+                    100
+                );
                 _addNewReward(fee);
                 ftgToken.transfer(msg.sender, amountToUnstake - fee);
                 emit NewUnstake(
@@ -252,6 +258,10 @@ contract FTGStaking is Ownable {
 
     // function for the stakeholder to stake his accumulated rewards
     function stakeReward(uint256 _amount) public {
+        require(
+            _amount <= stakeholders[msg.sender].totalReward,
+            "reward Balance exceeded"
+        );
         // firstly update reward balance
         _updateStakeholderReward(msg.sender, StakeType.FLEX);
         // transfer reward balance to the staking balance

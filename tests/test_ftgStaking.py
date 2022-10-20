@@ -21,10 +21,12 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     # wait 3650 secs
     timeTravel = 3650
     chain.sleep(timeTravel)
-    # second staking 10000 ftg by accounts[0]
-    ftgtoken.approve(ftgstaking, 10000, {"from": accounts[0]})
-    ftgstaking.stake(10000, 0, {"from": accounts[0]})
+    # second staking 10000 ftg by accounts[1]
+    ftgtoken.transfer(accounts[1],20000)
+    ftgtoken.approve(ftgstaking, 10000, {"from": accounts[1]})
+    ftgstaking.stake(10000, 0, {"from": accounts[1]})
     print("3) accounts[0] ftg balance = \n",ftgtoken.balanceOf(accounts[0]))
+    print("3) accounts[1] ftg balance = \n",ftgtoken.balanceOf(accounts[1]))
     # verifies Stakeholder's stakings
     flexStakings = ftgstaking.getStakings(accounts[0])
     print("stakeholders[accounts[0]].totalStaked=", flexStakings)
