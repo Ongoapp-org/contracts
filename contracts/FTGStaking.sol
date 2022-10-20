@@ -18,7 +18,7 @@ contract FTGStaking is Ownable {
         uint256 totalStaked;
         uint256 totalReward;
         uint256 lastRewardUpdate;
-        Staking[] flexStakes;
+        Staking[] flexStakings;
     }
 
     struct Reward {
@@ -89,11 +89,12 @@ contract FTGStaking is Ownable {
         address _stakeholderAddress,
         uint256 _time
     ) private view returns (uint256) {
-        uint256 i = stakeholders[_stakeholderAddress].flexStakes.length > 0
-            ? stakeholders[_stakeholderAddress].flexStakes.length - 1
+        uint256 i = stakeholders[_stakeholderAddress].flexStakings.length > 0
+            ? stakeholders[_stakeholderAddress].flexStakings.length - 1
             : 0;
         while (
-            stakeholders[_stakeholderAddress].flexStakes[i].timestamp > _time &&
+            stakeholders[_stakeholderAddress].flexStakings[i].timestamp >
+            _time &&
             i != 0
         ) {
             unchecked {
@@ -125,7 +126,7 @@ contract FTGStaking is Ownable {
                 );
                 uint256 stakeholderStakeAtRewardtime = stakeholders[
                     _stakeholderAddress
-                ].flexStakes[stakeholderStakeIndexAtRewardTime].totalStaked;
+                ].flexStakings[stakeholderStakeIndexAtRewardTime].totalStaked;
                 emit Log(
                     "stakeholderStakeAtRewardtime=",
                     stakeholderStakeAtRewardtime
@@ -164,7 +165,7 @@ contract FTGStaking is Ownable {
         if (_stakeType == StakeType.FLEX) {
             // first staking ?
             uint256 fee;
-            if (stakeholders[msg.sender].flexStakes.length == 0) {
+            if (stakeholders[msg.sender].flexStakings.length == 0) {
                 // calculate initial fee
                 fee = PRBMath.mulDiv(5, _amount, 100);
                 _addNewReward(fee);
@@ -175,7 +176,7 @@ contract FTGStaking is Ownable {
             totalFTGStaked += amountStaked;
             emit Log("totalFTGStaked", totalFTGStaked);
             // Add the new Stake to the stakeholder's stakes List
-            stakeholders[msg.sender].flexStakes.push(
+            stakeholders[msg.sender].flexStakings.push(
                 Staking(stakeholders[msg.sender].totalStaked, block.timestamp)
             );
 
@@ -206,7 +207,7 @@ contract FTGStaking is Ownable {
                 uint256 amountToUnstake = stakeholders[msg.sender].totalStaked;
                 totalFTGStaked -= amountToUnstake;
                 stakeholders[msg.sender].totalStaked = 0;
-                stakeholders[msg.sender].flexStakes.push(
+                stakeholders[msg.sender].flexStakings.push(
                     Staking(0, block.timestamp)
                 );
                 // unstaking 2%(?) fee
@@ -221,7 +222,7 @@ contract FTGStaking is Ownable {
             } else {
                 //stakeholder is only partly withdrawing his staking balance
                 stakeholders[msg.sender].totalStaked -= _amount;
-                stakeholders[msg.sender].flexStakes.push(
+                stakeholders[msg.sender].flexStakings.push(
                     Staking(
                         stakeholders[msg.sender].totalStaked,
                         block.timestamp
@@ -254,7 +255,7 @@ contract FTGStaking is Ownable {
         // transfer reward balance to the staking balance
         stakeholders[msg.sender].totalReward -= _amount;
         stakeholders[msg.sender].totalStaked += _amount;
-        stakeholders[msg.sender].flexStakes.push(
+        stakeholders[msg.sender].flexStakings.push(
             Staking(stakeholders[msg.sender].totalStaked, block.timestamp)
         );
     }
@@ -264,13 +265,13 @@ contract FTGStaking is Ownable {
         return rewardsList;
     }
 
-    // returns the stakeholder's flexStakes array
-    function getStakes(address _stakeholderAddress)
+    // returns the stakeholder's flexStakings array
+    function getStakings(address _stakeholderAddress)
         public
         view
         returns (Staking[] memory)
     {
-        return stakeholders[_stakeholderAddress].flexStakes;
+        return stakeholders[_stakeholderAddress].flexStakings;
     }
 
     // returns the stakeholder's last updated reward

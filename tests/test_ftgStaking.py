@@ -7,21 +7,24 @@ from scripts.deploy_FTGStaking import deploy_FTGStaking
 def test_ftgStaking(accounts, pm, ftgtoken):
     for i in range(1, 3):
         assert ftgtoken.balanceOf(accounts[i]) == 10000
-    # deploy the contract and test mock chainlink data feed
+    # deploy the contract
     print("accounts[0] in test_FTGToken = ", accounts[0])
-    print("balance ETH/AVAX accounts[0] in test_FTGToken = ", accounts[0].balance())
+    print("balance accounts[0] in test_FTGToken = ", accounts[0].balance())
     print("chain in test_FTGToken = ", network.chain)
     ftgstaking = deploy_FTGStaking(ftgtoken.address)
+    # first staking 1000 ftg by accounts[0]
     ftgtoken.approve(ftgstaking, 1000, {"from": accounts[0]})
     tx = ftgstaking.stake(1000, 0, {"from": accounts[0]})
     print(tx.events)
+    # wait 3650 secs
     timeTravel = 3650
     chain.sleep(timeTravel)
+    # second staking 10000 ftg by accounts[0]
     ftgtoken.approve(ftgstaking, 10000, {"from": accounts[0]})
     ftgstaking.stake(10000, 0, {"from": accounts[0]})
 
-    flexStakes = ftgstaking.getStakes(accounts[0])
-    print("stakeholders[accounts[0]].totalStaked=", flexStakes)
+    flexStakings = ftgstaking.getStakings(accounts[0])
+    print("stakeholders[accounts[0]].totalStaked=", flexStakings)
     print("Contracts totalFTGStaked=", ftgstaking.totalFTGStaked())
     timeTravel = 150
     chain.sleep(timeTravel)
@@ -32,7 +35,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
 
     ftgtoken.approve(ftgstaking, 4000, {"from": accounts[0]})
     ftgstaking.stake(4000, 0, {"from": accounts[0]})
-    # print("stakeholders[accounts[0]].totalStaked=",ftgstaking.getStakes(accounts[0])[2].totalStaked)
+    # print("stakeholders[accounts[0]].totalStaked=",ftgstaking.getStakings(accounts[0])[2].totalStaked)
     # print("Contracts totalFTGStaked=",ftgstaking.totalFTGStaked)
     ftgstaking.depositReward(200)
     timeTravel = 100
@@ -44,7 +47,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     ftgstaking.stake(100, 0, {"from": accounts[0]})
     rewardsList = ftgstaking.viewRewardsList()
     print("rewardsList=", rewardsList)
-    print("stakeholders[accounts[0]].flexStakes=", ftgstaking.getStakes(accounts[0]))
+    print("stakeholders[accounts[0]].flexStakings=", ftgstaking.getStakings(accounts[0]))
     print(
         "Before Reward update: stakeholders[accounts[0]].totalReward=",
         ftgstaking.getAccountRewardInfo(accounts[0]),
@@ -71,7 +74,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print(tx.events)
     rewardsList = ftgstaking.viewRewardsList()
     print("rewardsList=", rewardsList)
-    print("stakeholders[accounts[0]].flexStakes=", ftgstaking.getStakes(accounts[0]))
+    print("stakeholders[accounts[0]].flexStakings=", ftgstaking.getStakings(accounts[0]))
 
     # test of staking some reward
     ftgstaking.updateReward()
@@ -84,7 +87,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
         "after staking 200ftg from reward: stakeholder accumulated rewards = ",
         ftgstaking.getAccountRewardInfo(accounts[0]),
     )
-    print("stakeholders[accounts[0]].flexStakes=", ftgstaking.getStakes(accounts[0]))
+    print("stakeholders[accounts[0]].flexStakings=", ftgstaking.getStakings(accounts[0]))
 
     # test of withdrawing the reward balance
     print("contract's address = ", ftgstaking.address)
