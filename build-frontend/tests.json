@@ -1,0 +1,23 @@
+{
+  "contracts": {
+    "FTGStaking": "f2639aec6f995cd8e47a2dd6f3e701734bbb26d0",
+    "FTGToken": "b6cd3f1cc819afd37e57ef662b850c41d91a0192",
+    "OpenZeppelin/openzeppelin-contracts@4.3.0/ERC20": "7e4b46976aab58f4bf915c42e8c0fd3d0e3d896f",
+    "paulrberg/prb-math@2.5.0/PRBMath": "1ce946f6a4eaa185320328620ccf999b9e86db7c"
+  },
+  "tests": {
+    "tests/test_ftgStaking.py": {
+      "coverage": false,
+      "isolated": [
+        "FTGStaking",
+        "FTGToken",
+        "OpenZeppelin/openzeppelin-contracts@4.3.0/ERC20",
+        "paulrberg/prb-math@2.5.0/PRBMath"
+      ],
+      "results": ".",
+      "sha1": "c18e16d0a9693038e14cfa432493c33a88556443",
+      "txhash": []
+    }
+  },
+  "tx": {}
+}
