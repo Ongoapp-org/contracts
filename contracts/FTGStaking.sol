@@ -189,6 +189,8 @@ contract FTGStaking is Ownable {
     //function to deposit reward
     function depositReward(uint256 _amount) external {
         _addNewReward(_amount);
+        // Transfer of ftg token to the staking Contract (contract need to be approved first)
+        ftgToken.transferFrom(msg.sender, address(this), _amount);
     }
 
     //public function to update Rewards
