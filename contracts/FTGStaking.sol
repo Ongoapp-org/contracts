@@ -5,7 +5,6 @@ import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/IERC20.s
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/access/Ownable.sol";
 import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 
-
 contract FTGStaking is Ownable {
     IERC20 public immutable ftgToken;
 
@@ -54,7 +53,7 @@ contract FTGStaking is Ownable {
         if (totalFTGStaked != 0) {
             emit Log("_reward", _reward);
             uint256 rewardPer1BFTG = PRBMath.mulDiv(
-                1_000_000_000,// TODO whats this number?
+                1_000_000_000, // multiplier for calculation precision
                 _reward,
                 totalFTGStaked
             );
@@ -138,7 +137,7 @@ contract FTGStaking is Ownable {
                 rewardsSum += PRBMath.mulDiv(
                     rewardsList[i].rewardPer1BFTG,
                     stakeholderStakeAtRewardtime,
-                    1_000_000_000 // TODO whats this number?
+                    1_000_000_000 // multiplier for calculation precision
                 );
                 emit Log("rewardsSum=", rewardsSum);
             }
@@ -149,7 +148,7 @@ contract FTGStaking is Ownable {
         }
     }
 
-    // stake ftg token 
+    // stake ftg token
     function stake(uint256 _amount, StakeType _stakeType) public {
         // Check that user does not stake 0
         require(_amount > 0, "Cannot stake nothing");
@@ -285,5 +284,4 @@ contract FTGStaking is Ownable {
             stakeholders[_stakeholderAddress].lastRewardUpdate
         );
     }
-
 }
