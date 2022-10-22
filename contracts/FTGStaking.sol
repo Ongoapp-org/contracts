@@ -9,19 +9,31 @@ contract FTGStaking is Ownable {
     IERC20 public immutable ftgToken;
 
     uint256 constant INITIAL_STAKING_FEE = 5; // %
-    uint256 constant UNSTAKING_FEE = 2; // %
+    uint256 constant UNSTAKING_FEE = 15; // %
+
+    // Staking Tiers
+    enum StakeType {
+        FLEX,
+        LOCK
+    }
 
     //Can be new stake or unstake
     struct Staking {
         uint256 totalStaked;
         uint256 timestamp;
+        int256 amount;
+        StakeType stakeType;
+        uint256 lockedDuration;
     }
 
     struct Stakeholder {
         uint256 totalStaked;
+        uint256 totalLocked;
+        uint256 totalOver30DaysStaked;
+        uint256 lastOver30DaysStakedUpdate;
         uint256 totalReward;
         uint256 lastRewardUpdate;
-        Staking[] flexStakings;
+        Staking[] stakings;
     }
 
     struct Reward {
@@ -31,11 +43,6 @@ contract FTGStaking is Ownable {
     }
 
     uint256 public totalFTGStaked;
-
-    enum StakeType {
-        FLEX,
-        LOCK30DAYS
-    }
 
     Reward[] public rewardsList;
 
@@ -68,6 +75,7 @@ contract FTGStaking is Ownable {
             emit NewReward(_reward, block.timestamp);
         }
     }
+    
 
     // to retrieve the first reward index to add from last updated time
     function _getfirstRewardsIndexToAdd(uint256 lastUpdateTime)
@@ -92,10 +100,10 @@ contract FTGStaking is Ownable {
         address _stakeholderAddress,
         uint256 _time
     ) private view returns (uint256) {
-        uint256 len = stakeholders[_stakeholderAddress].flexStakings.length;
+        uint256 len = stakeholders[_stakeholderAddress].stakings.length;
         uint256 i = len > 0 ? len - 1 : 0;
         while (
-            stakeholders[_stakeholderAddress].flexStakings[i].timestamp >
+            stakeholders[_stakeholderAddress].stakings[i].timestamp >
             _time &&
             i != 0
         ) {
@@ -108,10 +116,8 @@ contract FTGStaking is Ownable {
 
     // to update the reward balance of a stakeholder
     function _updateStakeholderReward(
-        address _stakeholderAddress,
-        StakeType _stakeType
+        address _stakeholderAddress
     ) private {
-        if (_stakeType == StakeType.FLEX) {
             uint256 startIndex = _getfirstRewardsIndexToAdd(
                 stakeholders[_stakeholderAddress].lastRewardUpdate
             );
@@ -128,7 +134,7 @@ contract FTGStaking is Ownable {
                 );
                 uint256 stakeholderStakeAtRewardtime = stakeholders[
                     _stakeholderAddress
-                ].flexStakings[stakeholderStakeIndexAtRewardTime].totalStaked;
+                ].stakings[stakeholderStakeIndexAtRewardTime].totalStaked;
                 emit Log(
                     "stakeholderStakeAtRewardtime=",
                     stakeholderStakeAtRewardtime
@@ -148,6 +154,7 @@ contract FTGStaking is Ownable {
             stakeholders[_stakeholderAddress].totalReward += rewardsSum;
             stakeholders[_stakeholderAddress].lastRewardUpdate = block
                 .timestamp;
+
         }
     }
 
@@ -167,7 +174,7 @@ contract FTGStaking is Ownable {
         if (_stakeType == StakeType.FLEX) {
             // first staking ?
             uint256 fee;
-            if (stakeholders[msg.sender].flexStakings.length == 0) {
+            if (stakeholders[msg.sender].stakings.length == 0) {
                 // calculate initial fee
                 fee = PRBMath.mulDiv(INITIAL_STAKING_FEE, _amount, 100);
                 _addNewReward(fee);
@@ -178,13 +185,13 @@ contract FTGStaking is Ownable {
             totalFTGStaked += amountStaked;
             emit Log("totalFTGStaked", totalFTGStaked);
             // Add the new Stake to the stakeholder's stakes List
-            stakeholders[msg.sender].flexStakings.push(
+            stakeholders[msg.sender].stakings.push(
                 Staking(stakeholders[msg.sender].totalStaked, block.timestamp)
             );
 
             // Emit a NewStake event
             emit NewStake(msg.sender, amountStaked, block.timestamp);
-        }
+        } else if (_stakeType)
         //
     }
 
@@ -201,7 +208,7 @@ contract FTGStaking is Ownable {
     }
 
     // function called by stakeholder to unstake ftg
-    function unstake(uint256 _amount, StakeType _stakeType) public {
+    function unstake(uint256 _amount, StakeType _stakeType, uint256 _stakeIndex) public {
         if (_stakeType == StakeType.FLEX) {
             //verify that stakeholder has staking
             require(stakeholders[msg.sender].totalStaked != 0, "No FTG staked");
@@ -211,7 +218,7 @@ contract FTGStaking is Ownable {
                 uint256 amountToUnstake = stakeholders[msg.sender].totalStaked;
                 totalFTGStaked -= amountToUnstake;
                 stakeholders[msg.sender].totalStaked = 0;
-                stakeholders[msg.sender].flexStakings.push(
+                stakeholders[msg.sender].stakings.push(
                     Staking(0, block.timestamp)
                 );
                 // unstaking 2%(?) fee
@@ -230,7 +237,7 @@ contract FTGStaking is Ownable {
             } else {
                 //stakeholder is only partly withdrawing his staking balance
                 stakeholders[msg.sender].totalStaked -= _amount;
-                stakeholders[msg.sender].flexStakings.push(
+                stakeholders[msg.sender].stakings.push(
                     Staking(
                         stakeholders[msg.sender].totalStaked,
                         block.timestamp
@@ -243,6 +250,8 @@ contract FTGStaking is Ownable {
                 ftgToken.transfer(msg.sender, _amount - fee);
                 emit NewUnstake(msg.sender, _amount, block.timestamp);
             }
+        } else if (stakeType == StakeType.LOCK) {
+
         }
     }
 
@@ -267,7 +276,7 @@ contract FTGStaking is Ownable {
         // transfer reward balance to the staking balance
         stakeholders[msg.sender].totalReward -= _amount;
         stakeholders[msg.sender].totalStaked += _amount;
-        stakeholders[msg.sender].flexStakings.push(
+        stakeholders[msg.sender].stakings.push(
             Staking(stakeholders[msg.sender].totalStaked, block.timestamp)
         );
     }
@@ -277,13 +286,13 @@ contract FTGStaking is Ownable {
         return rewardsList;
     }
 
-    // returns the stakeholder's flexStakings array
+    // returns the stakeholder's stakings array
     function getStakings(address _stakeholderAddress)
         public
         view
         returns (Staking[] memory)
     {
-        return stakeholders[_stakeholderAddress].flexStakings;
+        return stakeholders[_stakeholderAddress].stakings;
     }
 
     // returns the stakeholder's last updated reward
