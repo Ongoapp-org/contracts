@@ -12,6 +12,7 @@ contract FTGStaking is Ownable {
     uint256 constant UNSTAKING_FEE = 15; // %
 
     // Staking Tiers
+    // StakeType not used, replaced by stakingDuration
     enum StakeType {
         FLEX,
         LOCK30DAYS,
@@ -31,7 +32,7 @@ contract FTGStaking is Ownable {
     struct Stakeholder {
         uint256 totalStaked;
         uint256 totalLockedBalance;
-        uint256 FreeToUnstakeBalance;
+        uint256 freeToUnstakeBalance;
         uint256 lastBalancesUpdate;
         uint256 totalReward;
         uint256 lastRewardUpdate;
@@ -202,21 +203,23 @@ contract FTGStaking is Ownable {
                 Staking(
                     stakeholders[msg.sender].totalStaked,
                     block.timestamp,
-                    amountStaked,
+                    int256(amountStaked),
                     0
                 )
             );
             // Emit a NewStake event
             emit NewStake(msg.sender, amountStaked, 0, block.timestamp);
         } else if (
-            _lockDuration == 30 || _lockDuration == 60 || _lockDuration == 90
+            _lockDuration == 30 days ||
+            _lockDuration == 60 days ||
+            _lockDuration == 90 days
         ) {
             // Add the new Stake to the stakeholder's stakes List
             stakeholders[msg.sender].stakings.push(
                 Staking(
                     stakeholders[msg.sender].totalStaked,
                     block.timestamp,
-                    amountStaked,
+                    int256(amountStaked),
                     _lockDuration
                 )
             );
@@ -233,23 +236,27 @@ contract FTGStaking is Ownable {
         //
     }
 
-    // function to update the FreeToUnstakeBalance and totalLockedBalance
+    // function to update the freeToUnstakeBalance and totalLockedBalance
     function _updateStakeholderBalances(address _stakeholderAddress) public {
-        // We get staking index just after last FreeToUnstakeBalance update
-        uint256 startIndexToUpdate = _getStakeHolderStakeIndexBeforeTime(
+        // We get staking index just after last freeToUnstakeBalance update
+        uint256 StakingIndexBeforeTime = _getStakeHolderStakeIndexBeforeTime(
             _stakeholderAddress,
             stakeholders[_stakeholderAddress].lastBalancesUpdate
-        ) + 1;
-        emit Log("startIndexToUpdate=", startIndexToUpdate);
+        );
+        uint256 indexToStartUpdate = StakingIndexBeforeTime > 0
+            ? StakingIndexBeforeTime + 1
+            : 0;
+        emit Log("indexToStartUpdate = ", indexToStartUpdate);
         uint256 stakingslen = stakeholders[_stakeholderAddress].stakings.length;
         // check if stakings after last update time are free to unstake
-        for (uint256 i = startIndexToUpdate; i < stakingslen - 1; i++) {
-            Staking _staking = stakeholders[_stakeholderAddress].stakings[i];
+        for (uint256 i = indexToStartUpdate; i < stakingslen; i++) {
+            Staking memory _staking = stakeholders[_stakeholderAddress]
+                .stakings[i];
             if (_staking.lockDuration == 0) {
                 // in case we deal with flex staking
                 if (block.timestamp - _staking.timestamp > 30 days) {
                     stakeholders[_stakeholderAddress]
-                        .FreeToUnstakeBalance += _staking.amount;
+                        .freeToUnstakeBalance += uint256(_staking.amount); //staking._amount should be >0
                 }
             } else {
                 // in case we deal with locked Staking
@@ -258,9 +265,9 @@ contract FTGStaking is Ownable {
                 ) {
                     // lockTime finished, update totalLockedBalance
                     stakeholders[_stakeholderAddress]
-                        .totalLockedBalance -= _staking.amount;
+                        .totalLockedBalance -= uint256(_staking.amount);
                     stakeholders[_stakeholderAddress]
-                        .FreeToUnstakeBalance += _staking.amount;
+                        .freeToUnstakeBalance += uint256(_staking.amount);
                 }
             }
         }
@@ -274,18 +281,20 @@ contract FTGStaking is Ownable {
         require(stakeholders[msg.sender].totalStaked != 0, "No FTG staked");
         // update stakeholder's balances
         _updateStakeholderBalances(msg.sender);
+        // calculate not locked stacking balance
         uint256 totalNotLocked = stakeholders[msg.sender].totalStaked -
             stakeholders[msg.sender].totalLockedBalance;
         // if amount exceeds totalStaked, we withdraw everything?
-        if (_amount <= stakeholders[msg.sender].FreeToUnstakeBalance) {
+        if (_amount <= stakeholders[msg.sender].freeToUnstakeBalance) {
             // no fee to unstake
             // stakeholder is only partly withdrawing his staking balance
             stakeholders[msg.sender].totalStaked -= _amount;
+            stakeholders[msg.sender].freeToUnstakeBalance -= _amount;
             stakeholders[msg.sender].stakings.push(
                 Staking(
                     stakeholders[msg.sender].totalStaked,
                     block.timestamp,
-                    -_amount,
+                    -int256(_amount),
                     0
                 )
             );
@@ -303,23 +312,21 @@ contract FTGStaking is Ownable {
                     Staking(
                         stakeholders[msg.sender].totalStaked,
                         block.timestamp,
-                        -totalNotLocked,
+                        -int256(totalNotLocked),
                         0
                     )
                 );
                 totalFTGStaked -= totalNotLocked;
                 // unstaking fee
                 uint256 amountCharged = totalNotLocked -
-                    stakeholders[msg.sender].FreeToUnstakeBalance;
+                    stakeholders[msg.sender].freeToUnstakeBalance;
                 uint256 fee = PRBMath.mulDiv(UNSTAKING_FEE, amountCharged, 100);
                 _addNewReward(fee);
+                // reset freeToUnstakeBalance to zero
+                stakeholders[msg.sender].freeToUnstakeBalance = 0;
                 // transfer to stakeholder
                 ftgToken.transfer(msg.sender, totalNotLocked - fee);
-                emit NewUnstake(
-                    msg.sender,
-                    stakeholders[msg.sender].totalNotLocked,
-                    block.timestamp
-                );
+                emit NewUnstake(msg.sender, totalNotLocked, block.timestamp);
             } else {
                 //stakeholder is only partly withdrawing his staking balance
                 stakeholders[msg.sender].totalStaked -= _amount;
@@ -327,16 +334,18 @@ contract FTGStaking is Ownable {
                     Staking(
                         stakeholders[msg.sender].totalStaked,
                         block.timestamp,
-                        -_amount,
+                        -int256(_amount),
                         0
                     )
                 );
                 totalFTGStaked -= _amount;
                 // unstaking fee
                 uint256 amountCharged = _amount -
-                    stakeholders[msg.sender].FreeToUnstakeBalance;
+                    stakeholders[msg.sender].freeToUnstakeBalance;
                 uint256 fee = PRBMath.mulDiv(UNSTAKING_FEE, amountCharged, 100);
                 _addNewReward(fee);
+                // reset freeToUnstakeBalance to zero
+                stakeholders[msg.sender].freeToUnstakeBalance = 0;
                 // transfer to stakeholder
                 ftgToken.transfer(msg.sender, _amount - fee);
                 emit NewUnstake(msg.sender, _amount, block.timestamp);
@@ -357,7 +366,7 @@ contract FTGStaking is Ownable {
     }
 
     // function for the stakeholder to stake his accumulated rewards
-    function stakeReward(uint256 _amount) public {
+    function stakeReward(uint256 _amount, uint256 _lockDuration) public {
         require(
             _amount <= stakeholders[msg.sender].totalReward,
             "reward Balance exceeded"
@@ -368,7 +377,12 @@ contract FTGStaking is Ownable {
         stakeholders[msg.sender].totalReward -= _amount;
         stakeholders[msg.sender].totalStaked += _amount;
         stakeholders[msg.sender].stakings.push(
-            Staking(stakeholders[msg.sender].totalStaked, block.timestamp)
+            Staking(
+                stakeholders[msg.sender].totalStaked,
+                block.timestamp,
+                int256(_amount),
+                _lockDuration
+            )
         );
     }
 
@@ -384,6 +398,25 @@ contract FTGStaking is Ownable {
         returns (Staking[] memory)
     {
         return stakeholders[_stakeholderAddress].stakings;
+    }
+
+    // returns stakeholder's balances
+    function getBalances(address _stakeholderAddress)
+        public
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256
+        )
+    {
+        return (
+            stakeholders[_stakeholderAddress].totalStaked,
+            stakeholders[_stakeholderAddress].totalLockedBalance,
+            stakeholders[_stakeholderAddress].freeToUnstakeBalance,
+            stakeholders[_stakeholderAddress].lastBalancesUpdate
+        );
     }
 
     // returns the stakeholder's last updated reward
