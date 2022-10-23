@@ -23,33 +23,33 @@ contract FTGStaking is Ownable {
     //Can be new stake or unstake
     //amount is negative for unstake
     struct Staking {
-        uint256 totalStaked;
-        uint256 timestamp;
-        int256 amount;
-        uint256 lockDuration;
+        uint256 totalStaked; // totalStaked after this staking
+        uint256 timestamp; // time of staking
+        int256 amount; // amount of staking (>0 staking, <0 unstaking)
+        uint256 lockDuration; // duration of locked time in secs (flex = 0, LOCK30DAYS = 2592000, LOCK60DAYS = 5184000, LOCK90DAYS = 7776000)
     }
 
     struct Stakeholder {
-        uint256 totalStaked;
-        uint256 totalLockedBalance;
-        uint256 freeToUnstakeBalance;
-        uint256 lastBalancesUpdate;
-        uint256 totalReward;
-        uint256 lastRewardUpdate;
-        Staking[] stakings;
+        uint256 totalStaked; // current total ftg staking of the stakeholder
+        uint256 totalLockedBalance; // current total ftg locked (for 30,60 or 90 days)
+        uint256 freeToUnstakeBalance; // current part of the staked ftg that are free to unstake without fee incurring
+        uint256 lastBalancesUpdate; // last time totalLockedBalance and freeToUnstakeBalance were updated
+        uint256 totalReward; // total reward accumulated by the stakeholder
+        uint256 lastRewardUpdate; // last time totalReward was updated
+        Staking[] stakings; // list of staking(positive amount) or unstaking (negative amount) by a stakeholder
     }
 
     struct Reward {
-        uint256 rewards;
-        uint256 rewardPer1BFTG;
-        uint256 timestamp;
+        uint256 rewards; // incoming reward distributed to stakeholders
+        uint256 rewardPer1BFTG; // mean reward for 1 billion ftg
+        uint256 timestamp; // time when reward was deposited
     }
 
-    uint256 public totalFTGStaked;
+    uint256 public totalFTGStaked; // contract's total amount of FTG staked
 
-    Reward[] public rewardsList;
+    Reward[] public rewardsList; //list of reward events
 
-    mapping(address => Stakeholder) public stakeholders;
+    mapping(address => Stakeholder) public stakeholders; // list of stakeholders
 
     event NewStake(
         address indexed user,
