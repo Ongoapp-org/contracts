@@ -5,6 +5,16 @@ import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/IERC20.s
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/access/Ownable.sol";
 import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 
+/**
+ * @title FTGStaking
+ * @notice Rewards for Stakeholders come from fees (initial staking fee, before 30 days unstaking fee)
+ * or rewards deposited by admin. Rewards are gained depending on the amount staked by stakeholder.
+ * Reward is not compounded, it is accumulated in a separate balance, but can be moved to staking using stakeReward().
+ * Stakeholders incur a fee of 15% for unstaking before 30 days. Staking can be locked for 30, 60 or 90 days
+ * and stakeholder receive special privileges during allocation for this. Rewards and Balances are updated
+ * only when needed and last update times recorded.
+ */
+
 contract FTGStaking is Ownable {
     IERC20 public immutable ftgToken;
 
