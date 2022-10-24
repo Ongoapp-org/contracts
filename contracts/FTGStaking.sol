@@ -247,7 +247,7 @@ contract FTGStaking is Ownable {
     }
 
     // function to update the freeToUnstakeBalance and totalLockedBalance
-    function _updateStakeholderBalances(address _stakeholderAddress) public {
+    function _updateStakeholderBalances(address _stakeholderAddress) private {
         // We get staking index just after last freeToUnstakeBalance update
         uint256 StakingIndexBeforeTime = _getStakeHolderStakeIndexBeforeTime(
             _stakeholderAddress,
@@ -294,6 +294,9 @@ contract FTGStaking is Ownable {
         // calculate not locked stacking balance
         uint256 totalNotLocked = stakeholders[msg.sender].totalStaked -
             stakeholders[msg.sender].totalLockedBalance;
+        // verifies that staking can be unstaked
+        require(totalNotLocked > 0, "nothing to unstake");
+        require(_amount <= totalNotLocked, "withdrawable amount exceeded");
         // if amount exceeds totalStaked, we withdraw everything?
         if (_amount <= stakeholders[msg.sender].freeToUnstakeBalance) {
             // no fee to unstake
@@ -313,53 +316,26 @@ contract FTGStaking is Ownable {
             ftgToken.transfer(msg.sender, _amount);
             emit NewUnstake(msg.sender, _amount, block.timestamp);
         } else {
-            //fee applies to unstake that exceeds freeToUnstakeBalance
-            if (_amount >= totalNotLocked) {
-                //stakeholder is completely withdrawing his unlocked staking
-                stakeholders[msg.sender].totalStaked = stakeholders[msg.sender]
-                    .totalLockedBalance;
-                stakeholders[msg.sender].stakings.push(
-                    Staking(
-                        stakeholders[msg.sender].totalStaked,
-                        block.timestamp,
-                        -int256(totalNotLocked),
-                        0
-                    )
-                );
-                totalFTGStaked -= totalNotLocked;
-                // unstaking fee
-                uint256 amountCharged = totalNotLocked -
-                    stakeholders[msg.sender].freeToUnstakeBalance;
-                uint256 fee = PRBMath.mulDiv(UNSTAKING_FEE, amountCharged, 100);
-                _addNewReward(fee);
-                // reset freeToUnstakeBalance to zero
-                stakeholders[msg.sender].freeToUnstakeBalance = 0;
-                // transfer to stakeholder
-                ftgToken.transfer(msg.sender, totalNotLocked - fee);
-                emit NewUnstake(msg.sender, totalNotLocked, block.timestamp);
-            } else {
-                //stakeholder is only partly withdrawing his staking balance
-                stakeholders[msg.sender].totalStaked -= _amount;
-                stakeholders[msg.sender].stakings.push(
-                    Staking(
-                        stakeholders[msg.sender].totalStaked,
-                        block.timestamp,
-                        -int256(_amount),
-                        0
-                    )
-                );
-                totalFTGStaked -= _amount;
-                // unstaking fee
-                uint256 amountCharged = _amount -
-                    stakeholders[msg.sender].freeToUnstakeBalance;
-                uint256 fee = PRBMath.mulDiv(UNSTAKING_FEE, amountCharged, 100);
-                _addNewReward(fee);
-                // reset freeToUnstakeBalance to zero
-                stakeholders[msg.sender].freeToUnstakeBalance = 0;
-                // transfer to stakeholder
-                ftgToken.transfer(msg.sender, _amount - fee);
-                emit NewUnstake(msg.sender, _amount, block.timestamp);
-            }
+            stakeholders[msg.sender].totalStaked -= _amount;
+            stakeholders[msg.sender].stakings.push(
+                Staking(
+                    stakeholders[msg.sender].totalStaked,
+                    block.timestamp,
+                    -int256(_amount),
+                    0
+                )
+            );
+            totalFTGStaked -= _amount;
+            // unstaking fee
+            uint256 amountCharged = _amount -
+                stakeholders[msg.sender].freeToUnstakeBalance;
+            uint256 fee = PRBMath.mulDiv(UNSTAKING_FEE, amountCharged, 100);
+            _addNewReward(fee);
+            // reset freeToUnstakeBalance to zero
+            stakeholders[msg.sender].freeToUnstakeBalance = 0;
+            // transfer to stakeholder
+            ftgToken.transfer(msg.sender, _amount - fee);
+            emit NewUnstake(msg.sender, _amount, block.timestamp);
         }
         // update LastBalancesUpdate to avoid counting unstake in next BalancesUpdate
         stakeholders[msg.sender].lastBalancesUpdate = block.timestamp;
