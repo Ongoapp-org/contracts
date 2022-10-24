@@ -57,7 +57,7 @@ contract FTGStaking is Ownable {
 
     uint256 public totalFTGStaked; // contract's total amount of FTG staked
 
-    Reward[] public rewardsList; //list of reward events
+    Reward[] public rewardsList; // list of reward events
 
     mapping(address => Stakeholder) public stakeholders; // list of stakeholders
 
