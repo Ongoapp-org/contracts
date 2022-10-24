@@ -20,8 +20,17 @@ contract FTGStaking is Ownable {
         LOCK90DAYS
     }
 
-    //Can be new stake or unstake
-    //amount is negative for unstake
+    struct Stakeholder {
+        uint256 totalStaked; // current total ftg staking of the stakeholder
+        uint256 totalLockedBalance; // current total ftg locked (for 30,60 or 90 days)
+        uint256 freeToUnstakeBalance; // current part of the staked ftg that are free to unstake without incurring fee
+        uint256 lastBalancesUpdate; // last time totalLockedBalance and freeToUnstakeBalance were updated
+        uint256 totalReward; // total reward accumulated by the stakeholder
+        uint256 lastRewardUpdate; // last time totalReward was updated
+        Staking[] stakings; // list of staking (positive amount) or unstaking (negative amount) by a stakeholder
+    }
+
+    // New staking or unstaking
     struct Staking {
         uint256 totalStaked; // totalStaked after this staking
         uint256 timestamp; // time of staking
@@ -29,16 +38,7 @@ contract FTGStaking is Ownable {
         uint256 lockDuration; // duration of locked time in secs (flex = 0, LOCK30DAYS = 2592000, LOCK60DAYS = 5184000, LOCK90DAYS = 7776000)
     }
 
-    struct Stakeholder {
-        uint256 totalStaked; // current total ftg staking of the stakeholder
-        uint256 totalLockedBalance; // current total ftg locked (for 30,60 or 90 days)
-        uint256 freeToUnstakeBalance; // current part of the staked ftg that are free to unstake without fee incurring
-        uint256 lastBalancesUpdate; // last time totalLockedBalance and freeToUnstakeBalance were updated
-        uint256 totalReward; // total reward accumulated by the stakeholder
-        uint256 lastRewardUpdate; // last time totalReward was updated
-        Staking[] stakings; // list of staking(positive amount) or unstaking (negative amount) by a stakeholder
-    }
-
+    // New reward (deposit or fee)
     struct Reward {
         uint256 rewards; // incoming reward distributed to stakeholders
         uint256 rewardPer1BFTG; // mean reward for 1 billion ftg
