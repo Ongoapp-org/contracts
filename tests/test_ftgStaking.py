@@ -100,7 +100,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print(tx.events)
     # test if stakeholder unstakes completely
     print("completely unstaking test \n")
-    tx = ftgstaking.unstake(20000, {"from": accounts[0]})
+    tx = ftgstaking.unstake(4050, {"from": accounts[0]})
     print("10) accounts[0] ftg balance = \n",ftgtoken.balanceOf(accounts[0]))
     print(tx.events)
     rewardsList = ftgstaking.viewRewardsList()
