@@ -32,4 +32,8 @@ contract FTGSale {
         // Price of the token quoted in USD
         uint256 tokenPriceInUSD;
     }
+
+    //2 pools
+    //Guaranteed Pool
+    //Public Pool
 }
