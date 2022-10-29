@@ -10,11 +10,11 @@ contract AllocationStaking  {
     // ISalesFactory public salesFactory;
 
     // Info of each user.
-    struct UserInfo {
-        //
-        //uint256 tokensUnlockTime; // If user registered for sale, returns when tokens are getting unlocked
-        //address [] salesRegistered;
-    }
+    // struct UserInfo {
+    //     //
+    //     //uint256 tokensUnlockTime; // If user registered for sale, returns when tokens are getting unlocked
+    //     //address [] salesRegistered;
+    // }
 
     constructor(){
 
