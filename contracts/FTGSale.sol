@@ -60,7 +60,7 @@ contract FTGSale is Ownable {
     uint256 amountGuaranteedPool = 1_000_000;
     uint256 amountPublicPool = 500_000;
 
-    constructor(string _name, address _stakingContractAddress, uint _amountGuaranteedPool, uint256 _tokenPriceInUSD) {
+    constructor(string memory _name, address _stakingContractAddress, uint256 _amountGuaranteedPool, uint256 _tokenPriceInUSD) {
         nameSale = _name;
         stakingContract = FTGStaking(_stakingContractAddress);
         amountGuaranteedPool = _amountGuaranteedPool;
@@ -68,13 +68,13 @@ contract FTGSale is Ownable {
     }
 
     //determine which level
-    function checkMembership() {
+    function checkMembership() private {
 
         //TODO calculate score potentially
         //TODO maybe need to loop through 
         //calculate lock at least 30days
         //uint256 amountStaked = stakingContract.stakeholders[msg.sender].stakings;
-        uint256 amountStaked = stakingContract.totalFTGStaked;
+        uint256 amountStaked = stakingContract.totalFTGStaked();
         if (amountStaked > diamondMinimum){
             //TODO calcualte total available in guarnateed pool and subtract??
             uint256 participantAmount = 100;
@@ -88,11 +88,11 @@ contract FTGSale is Ownable {
     }
 
     // TODO calculate amount eligible
-    function amountEligible() {
-
+    function amountEligible(address account) private returns (uint256) {
+        return 0;
     }
 
-    function checkStaking() {
+    function _checkStaking() private  {
         //calculate amount staked in 30 days or more
 
         //subtract amount from available pool
@@ -100,7 +100,7 @@ contract FTGSale is Ownable {
         
     }
 
-    function addWhitelist(address p) onlyOwner {
+    function addWhitelist(address p) external onlyOwner {
         whitelist[p] = true;
 
         //TODO other steps?
@@ -111,7 +111,7 @@ contract FTGSale is Ownable {
 
 
     //take part in the sale i.e buy tokens, pass signature on frontend
-    function participate(uint256 amountTokensBuy) {
+    function participate(uint256 amountTokensBuy) external {
         //TODO which pool
 
         require(whitelist[msg.sender], "not in whitelist");
@@ -125,7 +125,7 @@ contract FTGSale is Ownable {
         //price is fixed
 
         uint256 costInUSD = amountTokensBuy * tokenPriceInUSD;
-        IERC20(investToken).transferFrom(costInUSD, address(this));
+        IERC20(investToken).transferFrom(msg.sender, address(this), costInUSD);
 
         IERC20(saleToken).transfer(msg.sender, amountTokensBuy);
 
