@@ -17,7 +17,7 @@ contract FTGSale is Ownable {
         uint256 amountAllocated;
     }
 
-    string nameSale;
+    string public saleName;
 
     mapping(address => Participant) public participants;
 
@@ -57,14 +57,15 @@ contract FTGSale is Ownable {
     uint256 rubyMinimum = 100_000;
 
     //TODO
-    uint256 amountGuaranteedPool = 1_000_000;
-    uint256 amountPublicPool = 500_000;
+    uint256 public amountGuaranteedPool;
+    uint256 public amountPublicPool;
 
-    constructor(string memory _name, address _stakingContractAddress, uint256 _amountGuaranteedPool, uint256 _tokenPriceInUSD) {
-        nameSale = _name;
+    constructor(string memory _name, address _stakingContractAddress, uint256 _amountGuaranteedPool, uint256 _amountPublicPool, uint256 _tokenPriceInUSD) {
+        saleName = _name;
         stakingContract = FTGStaking(_stakingContractAddress);
         amountGuaranteedPool = _amountGuaranteedPool;
         tokenPriceInUSD = _tokenPriceInUSD;
+        amountPublicPool = _amountPublicPool;
     }
 
     //determine which level
