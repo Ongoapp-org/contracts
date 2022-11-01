@@ -91,11 +91,6 @@ contract FTGSale is Ownable {
         return ticketAmount;
     }
 
-    // TODO calculate amount eligible
-    function amountEligible(address account) private returns (uint256) {
-        return 0;
-    }
-
     function _checkStaking() private  {
         //calculate amount staked in 30 days or more
 
@@ -120,7 +115,7 @@ contract FTGSale is Ownable {
 
         require(whitelist[msg.sender], "not in whitelist");
         //determine allocation size
-        uint256 amountElig = amountEligible(msg.sender);
+        uint256 amountElig = calculateTicketSize(msg.sender);
         require(amountTokensBuy <= amountElig, "amount too high not eliglbe");
 
         // bytes calldata signature
