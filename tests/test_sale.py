@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 import brownie
-from brownie import chain, network, FTGStaking, FTGSale
+from brownie import chain, network, FTGStaking, FTGSale, MockFTGToken
 from scripts.deploy_FTGStaking import deploy_FTGStaking
 
 
@@ -12,7 +12,10 @@ def test_basicsale(accounts, pm, ftgtoken):
     _amountGuaranteedPool = 1000000
     _amountPublicPool = 1000000
     _tokenPriceInUSD = 100
-    salectr = FTGSale.deploy("TestSale",ftgstaking, _amountGuaranteedPool, _amountPublicPool, _tokenPriceInUSD, {"from": accounts[0]})
+    MockFTGToken.deploy(30000000 * 10**18, {"from": accounts[0]})
+    saletoken = ftgtoken
+    investtoken = ftgtoken
+    salectr = FTGSale.deploy("TestSale", saletoken, investtoken, ftgstaking, _amountGuaranteedPool, _amountPublicPool, _tokenPriceInUSD, {"from": accounts[0]})
     print("accounts[0] = ", accounts[0])
 
     assert salectr.saleName() == "TestSale"

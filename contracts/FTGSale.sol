@@ -24,9 +24,9 @@ contract FTGSale is Ownable {
     mapping(address => bool) public whitelist; 
 
     // Token being sold
-    IERC20 saleToken;
+    address saleToken;
     // invest token
-    IERC20 investToken;
+    address investToken;
     // Is sale created
     bool isCreated;
     // Are earnings withdrawn
@@ -56,11 +56,12 @@ contract FTGSale is Ownable {
     uint256 sapphireMinimum = 250_000;
     uint256 rubyMinimum = 100_000;
 
-    //TODO
     uint256 public amountGuaranteedPool;
     uint256 public amountPublicPool;
 
-    constructor(string memory _name, address _stakingContractAddress, uint256 _amountGuaranteedPool, uint256 _amountPublicPool, uint256 _tokenPriceInUSD) {
+    constructor(string memory _name, address _saleToken, address _investToken, address _stakingContractAddress, uint256 _amountGuaranteedPool, uint256 _amountPublicPool, uint256 _tokenPriceInUSD) {
+        saleToken = _saleToken;
+        investToken = _investToken;
         saleName = _name;
         stakingContract = FTGStaking(_stakingContractAddress);
         amountGuaranteedPool = _amountGuaranteedPool;
@@ -68,10 +69,11 @@ contract FTGSale is Ownable {
         amountPublicPool = _amountPublicPool;
     }
 
-    //determine which level
-    function checkMembership() private {
-
-        //TODO calculate score potentially
+    //determine the ticket sizes in %
+    //ticket size is between 0.1% and 2%
+    //TODO 
+    function calculateTicketSize() private returns (uint256) {
+        uint256 ticketAmount = 0;
         //TODO maybe need to loop through 
         //calculate lock at least 30days
         //uint256 amountStaked = stakingContract.stakeholders[msg.sender].stakings;
@@ -86,6 +88,7 @@ contract FTGSale is Ownable {
 
         }
 
+        return ticketAmount;
     }
 
     // TODO calculate amount eligible
