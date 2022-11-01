@@ -14,7 +14,8 @@ contract FTGSale is Ownable {
 
     struct Participant {
         address partaddr;
-        uint256 amountAllocated;
+        uint256 ticketSize;
+        uint256 invested;
     }
 
     string public saleName;
@@ -115,8 +116,8 @@ contract FTGSale is Ownable {
 
         require(whitelist[msg.sender], "not in whitelist");
         //determine allocation size
-        uint256 amountElig = calculateTicketSize(msg.sender);
-        require(amountTokensBuy <= amountElig, "amount too high not eliglbe");
+        uint256 ticket = calculateTicketSize(msg.sender);
+        require(amountTokensBuy <= ticket, "amount too high not eliglbe");
 
         // bytes calldata signature
         // signature verifies KYC
@@ -127,6 +128,7 @@ contract FTGSale is Ownable {
         IERC20(investToken).transferFrom(msg.sender, address(this), costInUSD);
 
         IERC20(saleToken).transfer(msg.sender, amountTokensBuy);
+        //set invested
 
 
     }
