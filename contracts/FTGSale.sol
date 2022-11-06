@@ -26,12 +26,12 @@ contract FTGSale is Ownable {
         uint256 lockDuration; // duration of locked time in secs (flex = 0, LOCK30DAYS = 2592000, LOCK60DAYS = 5184000, LOCK90DAYS = 7776000)
     }
 
-    public enum Tiers {
-        DIAMOND,
+    enum Tiers {
+        NONE,
+        RUBY,
         EMERALD,
         SAPPHIRE,
-        RUBY,
-        NONE
+        DIAMOND
     }
 
     string nameSale;

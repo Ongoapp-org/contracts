@@ -30,6 +30,14 @@ contract FTGStaking is Ownable {
         LOCK90DAYS
     }
 
+    enum Tiers {
+        DIAMOND,
+        EMERALD,
+        SAPPHIRE,
+        RUBY,
+        NONE
+    }
+
     struct Stakeholder {
         uint256 totalStaked; // current total ftg staking of the stakeholder
         uint256 totalLockedBalance; // current total ftg locked (for 30,60 or 90 days)
