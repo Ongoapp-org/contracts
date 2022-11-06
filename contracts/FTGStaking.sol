@@ -416,4 +416,72 @@ contract FTGStaking is Ownable {
             stakeholders[_stakeholderAddress].lastRewardUpdate
         );
     }
+
+    //TODO
+    // function checkMembership(address _memberAddress)
+    //     public
+    //     returns (Tiers tier)
+    // {
+    //     // (
+    //     //     uint256 totalStaked,
+    //     //     uint256 totalLockedBalance,
+    //     //     uint256 freeToUnstakeBalance,
+    //     //     uint256 lastBalancesUpdate,
+    //     //     uint256 totalReward,
+    //     //     uint256 lastRewardUpdate
+    //     // ) = stakingContract.stakeholders(_memberAddress);
+
+    //     Tiers membership = Tiers.NONE;
+
+    //     // update member balances
+    //     //TODO??
+    //     //stakingContract.updateStakeholderBalances(_memberAddress);
+    //     // verifies if address is eligible for membership
+    //     //TODO weird number
+    //     // if (totalLockedBalance < rubyMinimum) {
+    //     //     return membership;
+    //     // }
+
+    //     for (
+    //         uint i = 0;
+    //         i < stakingContract.getStakingsLength(_memberAddress);
+    //         i++
+    //     ) {
+    //         (
+    //             uint256 totalStaked,
+    //             uint256 timestamp,
+    //             int256 stakingAmount,
+    //             uint256 lockDuration
+    //         ) = stakingContract.getStakingByIndex(_memberAddress, i);
+
+    //         if (
+    //             // check if staking is locked
+    //             lockDuration >= 90 days &&
+    //             block.timestamp - lockDuration < timestamp
+    //         ) {
+    //             // check if enough FTG staked for earning membership
+    //             if (stakingAmount < rubyMinimum) {
+    //                 //no privileges membership
+    //                 membership = Tiers.NONE;
+    //             } else if (
+    //                 stakingAmount >= rubyMinimum && stakingAmount < sapphireMinimum
+    //             ) {                    
+    //                 membership = Tiers.RUBY;
+    //             } else if (
+    //                 stakingAmount >= sapphireMinimum && stakingAmount < emeraldMinimum
+    //             ) {
+    //                 membership = Tiers.SAPPHIRE;
+    //             } else if (
+    //                 stakingAmount >= emeraldMinimum && stakingAmount < diamondMinimum
+    //             ) {
+    //                 membership = Tiers.EMERALD;
+    //             } else {
+    //                 membership = Tiers.RUBY;                    
+    //             }
+    //         }
+    //     }
+
+    //     return membership;
+    // }
+
 }

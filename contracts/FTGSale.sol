@@ -26,7 +26,7 @@ contract FTGSale is Ownable {
         uint256 lockDuration; // duration of locked time in secs (flex = 0, LOCK30DAYS = 2592000, LOCK60DAYS = 5184000, LOCK90DAYS = 7776000)
     }
 
-    enum Tiers {
+    public enum Tiers {
         DIAMOND,
         EMERALD,
         SAPPHIRE,
@@ -195,87 +195,8 @@ contract FTGSale is Ownable {
     //     return (stakingContract.stakeholders(add));
     // }
 
-    function checkMembership(address _memberAddress)
-        public
-        returns (Tiers tier)
-    {
-        // (
-        //     uint256 totalStaked,
-        //     uint256 totalLockedBalance,
-        //     uint256 freeToUnstakeBalance,
-        //     uint256 lastBalancesUpdate,
-        //     uint256 totalReward,
-        //     uint256 lastRewardUpdate
-        // ) = stakingContract.stakeholders(_memberAddress);
-
-        Tiers membership = Tiers.NONE;
-
-        // update member balances
-        //TODO??
-        //stakingContract.updateStakeholderBalances(_memberAddress);
-        // verifies if address is eligible for membership
-        //TODO weird number
-        // if (totalLockedBalance < rubyMinimum) {
-        //     return membership;
-        // }
-
-        for (
-            uint i = 0;
-            i < stakingContract.getStakingsLength(_memberAddress);
-            i++
-        ) {
-            (
-                uint256 totalStaked,
-                uint256 timestamp,
-                int256 stakingAmount,
-                uint256 lockDuration
-            ) = stakingContract.getStakingByIndex(_memberAddress, i);
-
-            if (
-                // check if staking is locked
-                lockDuration >= 90 days &&
-                block.timestamp - lockDuration < timestamp
-            ) {
-                // check if enough FTG staked for earning membership
-                if (stakingAmount < rubyMinimum) {
-                    //no privileges membership
-                    membership = Tiers.NONE;
-                } else if (
-                    stakingAmount >= rubyMinimum && stakingAmount < sapphireMinimum
-                ) {
-                    //ruby membership
-                    tiersAllocated[Tiers.RUBY] -=                        
-                        eachRubyTicket;
-                    ticketAllocated[Tiers.RUBY] +=                        
-                        eachRubyTicket;
-                    membership = Tiers.RUBY;
-                } else if (
-                    stakingAmount >= sapphireMinimum && stakingAmount < emeraldMinimum
-                ) {
-                    tiersAllocated[Tiers.SAPPHIRE] -=                        
-                        eachSapphireTicket;
-                    ticketAllocated[Tiers.SAPPHIRE] +=                        
-                        eachSapphireTicket;
-                    
-                    membership = Tiers.SAPPHIRE;
-                } else if (
-                    stakingAmount >= emeraldMinimum && stakingAmount < diamondMinimum
-                ) {
-                    tiersAllocated[Tiers.EMERALD] -= eachEmeraldTicket;
-                    ticketAllocated[Tiers.EMERALD] += eachEmeraldTicket;
-                    //emerald membership
-                    membership = Tiers.EMERALD;
-                } else {
-                    //diamond membership
-                    tiersAllocated[Tiers.RUBY] -= eachDiamondTicket;
-                    ticketAllocated[Tiers.RUBY] +=                        
-                        eachDiamondTicket;
-
-                    membership = Tiers.RUBY;                    
-                }
-            }
-        }
-
-        return membership;
-    }
+    //memberShipTickets
+    // tiersAllocated[Tiers.RUBY] -= eachDiamondTicket;
+    // ticketAllocated[Tiers.RUBY] +=                        
+    //     eachDiamondTicket;
 }
