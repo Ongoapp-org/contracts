@@ -1,3 +1,5 @@
+//!COPIED FRMO last change
+
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
@@ -28,14 +30,6 @@ contract FTGStaking is Ownable {
         LOCK30DAYS,
         LOCK60DAYS,
         LOCK90DAYS
-    }
-
-    enum Tiers {
-        DIAMOND,
-        EMERALD,
-        SAPPHIRE,
-        RUBY,
-        NONE
     }
 
     struct Stakeholder {
@@ -79,6 +73,7 @@ contract FTGStaking is Ownable {
     event NewReward(uint256 indexed amount, uint256 timestamp);
     //event For debugging
     event Log(string message, uint256 data);
+    event Logint(string message, int256 data);
 
     constructor(address _stakingToken) {
         ftgToken = IERC20(_stakingToken);
@@ -228,9 +223,10 @@ contract FTGStaking is Ownable {
             // Emit a NewStake event
             emit NewStake(msg.sender, amountStaked, 0, block.timestamp);
         } else if (
-            _lockDuration == 30 days ||
+            /*  _lockDuration == 30 days ||
             _lockDuration == 60 days ||
-            _lockDuration == 90 days
+            _lockDuration == 90 days || */
+            _lockDuration >= 30 days
         ) {
             // Add the new Stake to the stakeholder's stakes List
             stakeholders[msg.sender].stakings.push(
@@ -425,71 +421,53 @@ contract FTGStaking is Ownable {
         );
     }
 
-    //TODO
-    // function checkMembership(address _memberAddress)
-    //     public
-    //     returns (Tiers tier)
-    // {
-    //     // (
-    //     //     uint256 totalStaked,
-    //     //     uint256 totalLockedBalance,
-    //     //     uint256 freeToUnstakeBalance,
-    //     //     uint256 lastBalancesUpdate,
-    //     //     uint256 totalReward,
-    //     //     uint256 lastRewardUpdate
-    //     // ) = stakingContract.stakeholders(_memberAddress);
-
-    //     Tiers membership = Tiers.NONE;
-
-    //     // update member balances
-    //     //TODO??
-    //     //stakingContract.updateStakeholderBalances(_memberAddress);
-    //     // verifies if address is eligible for membership
-    //     //TODO weird number
-    //     // if (totalLockedBalance < rubyMinimum) {
-    //     //     return membership;
-    //     // }
-
-    //     for (
-    //         uint i = 0;
-    //         i < stakingContract.getStakingsLength(_memberAddress);
-    //         i++
-    //     ) {
-    //         (
-    //             uint256 totalStaked,
-    //             uint256 timestamp,
-    //             int256 stakingAmount,
-    //             uint256 lockDuration
-    //         ) = stakingContract.getStakingByIndex(_memberAddress, i);
-
-    //         if (
-    //             // check if staking is locked
-    //             lockDuration >= 90 days &&
-    //             block.timestamp - lockDuration < timestamp
-    //         ) {
-    //             // check if enough FTG staked for earning membership
-    //             if (stakingAmount < rubyMinimum) {
-    //                 //no privileges membership
-    //                 membership = Tiers.NONE;
-    //             } else if (
-    //                 stakingAmount >= rubyMinimum && stakingAmount < sapphireMinimum
-    //             ) {                    
-    //                 membership = Tiers.RUBY;
-    //             } else if (
-    //                 stakingAmount >= sapphireMinimum && stakingAmount < emeraldMinimum
-    //             ) {
-    //                 membership = Tiers.SAPPHIRE;
-    //             } else if (
-    //                 stakingAmount >= emeraldMinimum && stakingAmount < diamondMinimum
-    //             ) {
-    //                 membership = Tiers.EMERALD;
-    //             } else {
-    //                 membership = Tiers.RUBY;                    
-    //             }
-    //         }
-    //     }
-
-    //     return membership;
-    // }
-
+    // returns the highest eligible membership (0:none, 1:ruby, 2:sapphire, 3:emerald, 4:diamond)
+    function checkMembership(address _memberAddress)
+        public
+        returns (uint256 membership)
+    {
+        // update member balances
+        _updateStakeholderBalances(_memberAddress);
+        // verifies if address is eligible for membership
+        if (stakeholders[_memberAddress].totalLockedBalance < 100_000) {
+            return membership;
+        }
+        int256 stakingAmount;
+        Staking[] memory memberStakings = stakeholders[_memberAddress].stakings;
+        for (uint256 i = 0; i < memberStakings.length; i++) {
+            stakingAmount = memberStakings[i].amount;
+            if (
+                // check if staking is locked
+                memberStakings[i].lockDuration >= 90 days &&
+                block.timestamp - memberStakings[i].lockDuration <
+                memberStakings[i].timestamp
+            ) {
+                // check if enough FTG staked for earning membership
+                if (stakingAmount < 100_000) {
+                    //no privileges membership
+                    membership = 0;
+                } else if (
+                    stakingAmount >= 100_000 && stakingAmount < 250_000
+                ) {
+                    //ruby membership
+                    membership = membership > 1 ? membership : 1;
+                } else if (
+                    stakingAmount >= 250_000 && stakingAmount < 500_000
+                ) {
+                    //sapphire membership
+                    membership = membership > 2 ? membership : 2;
+                } else if (
+                    stakingAmount >= 500_000 && stakingAmount < 1_000_000
+                ) {
+                    //emerald membership
+                    membership = 3;
+                } else {
+                    //diamond membership
+                    membership = 4;
+                    break;
+                }
+            }
+        }
+        return membership;
+    }
 }
