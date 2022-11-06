@@ -6,14 +6,15 @@ import "./FTGStaking.sol";
 
 //https://github.com/avalaunch-app/xava-protocol/blob/master/contracts/sales/AvalaunchSale.sol
 
-//
-//2 pools
+//TODO handle 2 pools
 //Guaranteed Pool
 //Public Pool
 contract FTGSale is Ownable {
+
     struct Participant {
         address partaddr;
         uint256 amountAllocated;
+        uint256 amountInvested;
     }
 
     // TODO move this is duplicate
@@ -29,7 +30,8 @@ contract FTGSale is Ownable {
         DIAMOND,
         EMERALD,
         SAPPHIRE,
-        RUBY
+        RUBY,
+        NONE
     }
 
     string nameSale;
@@ -37,9 +39,9 @@ contract FTGSale is Ownable {
     mapping(address => Participant) public participants;
 
     mapping(address => bool) public whitelist;
-    //all ticket alocated for each tier
-    mapping(Tiers => uint32) allAllocated;
-    //used ticket for each tocket
+    //all ticket allocated for each tier
+    mapping(Tiers => uint32) tiersAllocated;
+    //used ticket for each tier
     mapping(Tiers => uint32) ticketAllocated;
 
     // Token being sold
@@ -89,7 +91,7 @@ contract FTGSale is Ownable {
     //TODO make a setting
     uint256 amountGuaranteedPool = 1_000_000;
     uint256 amountPublicPool = 500_000;
-    uint8 factor = 10_000;
+    uint32 factor = 10_000;
 
     //TODO make a setting
     uint32 diamondAllocTotal = 40;
@@ -105,17 +107,17 @@ contract FTGSale is Ownable {
     ) {
         //TODO in constructor
         
-        allAllocated[Tiers.DIAMOND] = 40 * factor;
-        allAllocated[Tiers.EMERALD] = 30 * factor;
-        allAllocated[Tiers.SAPPHIRE] = 20 * factor;
-        allAllocated[Tiers.RUBY] = 10 * factor;
+        tiersAllocated[Tiers.DIAMOND] = 40 * factor;
+        tiersAllocated[Tiers.EMERALD] = 30 * factor;
+        tiersAllocated[Tiers.SAPPHIRE] = 20 * factor;
+        tiersAllocated[Tiers.RUBY] = 10 * factor;
 
-        eachDiamondTicket = allAllocated[Tiers.DIAMOND] / diamondParticipants;
-        eachEmeraldTicket = allAllocated[Tiers.EMERALD] / emeraldParticipants;
+        eachDiamondTicket = tiersAllocated[Tiers.DIAMOND] / diamondParticipants;
+        eachEmeraldTicket = tiersAllocated[Tiers.EMERALD] / emeraldParticipants;
         eachSapphireTicket =
-            allAllocated[Tiers.SAPPHIRE] /
+            tiersAllocated[Tiers.SAPPHIRE] /
             sapphireParticipants;
-        eachRubyTicket = allAllocated[Tiers.RUBY] / rubyParticipants;
+        eachRubyTicket = tiersAllocated[Tiers.RUBY] / rubyParticipants;
 
         nameSale = _name;
         stakingContract = FTGStaking(_stakingContractAddress);
@@ -173,7 +175,7 @@ contract FTGSale is Ownable {
 
     // mapping(Tiers => uint128) participants = [];
 
-    // function manipulateAllAllocated(Tiers tier) public {
+    // function manipulatetiersAllocated(Tiers tier) public {
     //     if (tier == Tiers.DIAMOND) {} else if (
     //         tier == Tiers.EMERALD
     //     ) {} else if (tier == Tiers.SAPPHIRE) {} else if (tier == Tiers.RUBY) {}
@@ -195,28 +197,27 @@ contract FTGSale is Ownable {
 
     function checkMembership(address _memberAddress)
         public
-        returns (uint256 membership)
+        returns (Tiers tier)
     {
-        (
-            uint256 totalStaked,
-            uint256 totalLockedBalance,
-            uint256 freeToUnstakeBalance,
-            uint256 lastBalancesUpdate,
-            uint256 totalReward,
-            uint256 lastRewardUpdate
-        ) = stakingContract.stakeholders(_memberAddress);
+        // (
+        //     uint256 totalStaked,
+        //     uint256 totalLockedBalance,
+        //     uint256 freeToUnstakeBalance,
+        //     uint256 lastBalancesUpdate,
+        //     uint256 totalReward,
+        //     uint256 lastRewardUpdate
+        // ) = stakingContract.stakeholders(_memberAddress);
 
-        //TODO return number not int
-        uint256 membership = 0;
-        //TODO need to add NONE as tier as well
+        Tiers membership = Tiers.NONE;
 
         // update member balances
-        stakingContract.updateStakeholderBalances(_memberAddress);
+        //TODO??
+        //stakingContract.updateStakeholderBalances(_memberAddress);
         // verifies if address is eligible for membership
         //TODO weird number
-        if (totalLockedBalance < rubyMinimum) {
-            return membership;
-        }
+        // if (totalLockedBalance < rubyMinimum) {
+        //     return membership;
+        // }
 
         for (
             uint i = 0;
@@ -238,51 +239,39 @@ contract FTGSale is Ownable {
                 // check if enough FTG staked for earning membership
                 if (stakingAmount < rubyMinimum) {
                     //no privileges membership
-                    membership = 0;
+                    membership = Tiers.NONE;
                 } else if (
                     stakingAmount >= rubyMinimum && stakingAmount < sapphireMinimum
                 ) {
                     //ruby membership
-                    allAllocated[Tiers.RUBY] =
-                        allAllocated[Tiers.RUBY] -
+                    tiersAllocated[Tiers.RUBY] -=                        
                         eachRubyTicket;
-                    ticketAllocated[Tiers.RUBY] =
-                        ticketAllocated[Tiers.RUBY] +
+                    ticketAllocated[Tiers.RUBY] +=                        
                         eachRubyTicket;
-                    membership = membership > 1 ? membership : 1;
+                    membership = Tiers.RUBY;
                 } else if (
                     stakingAmount >= sapphireMinimum && stakingAmount < emeraldMinimum
                 ) {
-                    allAllocated[Tiers.SAPPHIRE] =
-                        allAllocated[Tiers.SAPPHIRE] -
+                    tiersAllocated[Tiers.SAPPHIRE] -=                        
                         eachSapphireTicket;
-                    ticketAllocated[Tiers.SAPPHIRE] =
-                        ticketAllocated[Tiers.SAPPHIRE] +
+                    ticketAllocated[Tiers.SAPPHIRE] +=                        
                         eachSapphireTicket;
-                    //sapphire membership
-                    membership = membership > 2 ? membership : 2;
+                    
+                    membership = Tiers.SAPPHIRE;
                 } else if (
                     stakingAmount >= emeraldMinimum && stakingAmount < diamondMinimum
                 ) {
-                    allAllocated[Tiers.EMERALD] =
-                        allAllocated[Tiers.EMERALD] -
-                        eachEmeraldTicket;
-                    ticketAllocated[Tiers.EMERALD] =
-                        ticketAllocated[Tiers.EMERALD] +
-                        eachEmeraldTicket;
+                    tiersAllocated[Tiers.EMERALD] -= eachEmeraldTicket;
+                    ticketAllocated[Tiers.EMERALD] += eachEmeraldTicket;
                     //emerald membership
-                    membership = 3;
+                    membership = Tiers.EMERALD;
                 } else {
                     //diamond membership
-                    allAllocated[Tiers.RUBY] =
-                        allAllocated[Tiers.RUBY] -
-                        eachDiamondTicket;
-                    ticketAllocated[Tiers.RUBY] =
-                        ticketAllocated[Tiers.RUBY] +
+                    tiersAllocated[Tiers.RUBY] -= eachDiamondTicket;
+                    ticketAllocated[Tiers.RUBY] +=                        
                         eachDiamondTicket;
 
-                    membership = 4;
-                    break;
+                    membership = Tiers.RUBY;                    
                 }
             }
         }
