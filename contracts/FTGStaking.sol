@@ -430,9 +430,9 @@ contract FTGStaking is Ownable {
             if (
                 // check if staking is still active and was locked for more than lockDurationChecked
                 participantStakings[i].lockDuration >= lockDurationChecked &&
-                block.timestamp <
-                participantStakings[i].timestamp +
-                    participantStakings[i].lockDuration
+                (block.timestamp <
+                    participantStakings[i].timestamp +
+                        participantStakings[i].lockDuration)
             ) {
                 // add this staking to checkedStakingTotal
                 lockedStakingTotal += participantStakings[i].amount;

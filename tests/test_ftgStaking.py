@@ -105,7 +105,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     # wait 6 months
     timeTravel = 15552000
     chain.sleep(timeTravel)
-    print("time now = ", chain.time)
+    print("time now = ", chain.time())
      # Check Stakeholder's Stakings
     print("stakeholders[accounts[0]].stakings=", ftgstaking.getStakings(accounts[0]))
     totalActiveLocked0 = ftgstaking.checkParticipantLockedStaking(accounts[0],2592000)
