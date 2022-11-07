@@ -34,28 +34,25 @@ contract FTGSale is Ownable {
         DIAMOND
     }
 
-    string nameSale;
+    string public nameSale;
 
     mapping(address => Participant) public participants;
 
     mapping(address => bool) public whitelist;
-    //all ticket allocated for each tier
-    mapping(Tiers => uint32) tiersAllocated;
-    //used ticket for each tier
-    mapping(Tiers => uint32) ticketAllocated;
+    
 
     // Token being sold
-    IERC20 saleToken;
+    address public saleToken;
     // invest token
-    IERC20 investToken;
+    address public investToken;
     // Is sale created
     bool isCreated;
     // Are earnings withdrawn
-    bool earningsWithdrawn;
+    bool public earningsWithdrawn;
     // Is leftover withdrawn
-    bool leftoverWithdrawn;
+    bool public leftoverWithdrawn;
     // Have tokens been deposited
-    bool tokensDeposited;
+    bool public tokensDeposited;
     // Address of sale owner
     address saleOwner;
     // Price of the token quoted in ETH
@@ -71,63 +68,82 @@ contract FTGSale is Ownable {
     // Price of the token quoted in USD
     uint256 tokenPriceInUSD;
 
-    FTGStaking stakingContract;
-    uint256 diamondMinimum = 1_000_000;
-    uint256 emeraldMinimum = 500_000;
-    uint256 sapphireMinimum = 250_000;
-    uint256 rubyMinimum = 100_000;
+    address stakingContractAddress;
 
-    uint32 eachDiamondTicket;
-    uint32 eachEmeraldTicket;
-    uint32 eachSapphireTicket;
-    uint32 eachRubyTicket;
+    // uint256 diamondMinimum = 1_000_000;
+    // uint256 emeraldMinimum = 500_000;
+    // uint256 sapphireMinimum = 250_000;
+    // uint256 rubyMinimum = 100_000;
 
-    //TODO make a setting
-    uint32 diamondParticipants = 100;
-    uint32 emeraldParticipants = 500;
-    uint32 sapphireParticipants = 1000;
-    uint32 rubyParticipants = 2000;
-
-    //TODO make a setting
-    uint256 amountGuaranteedPool = 1_000_000;
-    uint256 amountPublicPool = 500_000;
     uint32 factor = 10_000;
 
-    //TODO make a setting
-    uint32 diamondAllocTotal = 40;
-    uint32 emeraldAllocTotal = 30;
-    uint32 sapphireAllocTotal = 20;
-    uint32 rubyAllocTotal = 10;
+    //total allocated per tier
+    mapping(Tiers => uint32) allocTotal;
+    //particpants per tier
+    mapping(Tiers => uint32) tiersParticipants;
+    //ticket allocated for each tier, intialized at maximum and subtracted
+    mapping(Tiers => uint32) tiersAllocated;   
+
+    mapping(Tiers => uint32) tiersMin;
 
     constructor(
         string memory _name,
+        address _investToken,
+        address _saleToken,
         address _stakingContractAddress,
-        uint256 _amountGuaranteedPool,
         uint256 _tokenPriceInUSD
     ) {
-        //TODO in constructor
-        
-        tiersAllocated[Tiers.DIAMOND] = 40 * factor;
-        tiersAllocated[Tiers.EMERALD] = 30 * factor;
-        tiersAllocated[Tiers.SAPPHIRE] = 20 * factor;
-        tiersAllocated[Tiers.RUBY] = 10 * factor;
-
-        eachDiamondTicket = tiersAllocated[Tiers.DIAMOND] / diamondParticipants;
-        eachEmeraldTicket = tiersAllocated[Tiers.EMERALD] / emeraldParticipants;
-        eachSapphireTicket =
-            tiersAllocated[Tiers.SAPPHIRE] /
-            sapphireParticipants;
-        eachRubyTicket = tiersAllocated[Tiers.RUBY] / rubyParticipants;
-
         nameSale = _name;
-        stakingContract = FTGStaking(_stakingContractAddress);
-        amountGuaranteedPool = _amountGuaranteedPool;
+        investToken = _investToken;
+        saleToken = _saleToken;
+        stakingContractAddress = _stakingContractAddress;
         tokenPriceInUSD = _tokenPriceInUSD;
     }
 
-    // TODO calculate amount eligible
+    function setMins(uint32 _rubyMin, uint32 _sapphireMin, uint32 _emeraldMin, uint32 _diamondMin) public onlyOwner {
+        tiersMin[Tiers.RUBY] = _rubyMin;
+        tiersMin[Tiers.SAPPHIRE] = _sapphireMin;
+        tiersMin[Tiers.EMERALD] = _emeraldMin;
+        tiersMin[Tiers.DIAMOND] = _diamondMin;
+    }
+
+    function setAllocs(uint32 _rubyAllocTotal, uint32 _sapphireAllocTotal, uint32 _emeraldAllocTotal, uint32 _diamondAllocTotal) public onlyOwner {
+        uint256 total = _rubyAllocTotal + _sapphireAllocTotal + _emeraldAllocTotal + _diamondAllocTotal;
+        require(total == 100, "not 100% allocated");
+
+        allocTotal[Tiers.RUBY] = _rubyAllocTotal;
+        allocTotal[Tiers.SAPPHIRE] = _sapphireAllocTotal;
+        allocTotal[Tiers.EMERALD] = _emeraldAllocTotal;
+        allocTotal[Tiers.DIAMOND] = _diamondAllocTotal;
+    }
+
+    function setParticipants(uint32 _rubyP, uint32 _sapphireP, uint32 _emeraldP, uint32 _diamondP) public onlyOwner {
+
+        tiersParticipants[Tiers.RUBY] = _rubyP;
+        tiersParticipants[Tiers.SAPPHIRE] = _sapphireP;
+        tiersParticipants[Tiers.EMERALD] = _emeraldP;
+        tiersParticipants[Tiers.DIAMOND] = _diamondP;
+
+        //init with maximum and count down
+        tiersAllocated[Tiers.RUBY] = allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
+        tiersAllocated[Tiers.SAPPHIRE] = allocTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
+        tiersAllocated[Tiers.EMERALD] = allocTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
+        tiersAllocated[Tiers.DIAMOND] = allocTotal[Tiers.DIAMOND] / tiersParticipants[Tiers.DIAMOND];
+
+    }
+
+    // TODO dynamic if pools unused
     function amountEligible(address account) private returns (uint256) {
-        return 0;
+        uint256 amountLocked = uint(IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(account, 30 days));
+        if (amountLocked > tiersMin[Tiers.DIAMOND]){
+            return allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
+        } else if (amountLocked > tiersMin[Tiers.EMERALD]) {
+            return allocTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
+        } else if (amountLocked > tiersMin[Tiers.SAPPHIRE]) {
+            return allocTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
+        } else if (amountLocked > tiersMin[Tiers.RUBY]) {
+            return allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
+        }
     }
 
     function _checkStaking() private {

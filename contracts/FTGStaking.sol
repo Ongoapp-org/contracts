@@ -17,6 +17,13 @@ import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
  * only when needed and last update times recorded.
  */
 
+interface IFTGStaking {
+    function checkParticipantLockedStaking  (
+        address _participantAddress,
+        uint256 lockDurationChecked
+    ) external view returns (int256 lockedStakingTotal);
+}
+
 contract FTGStaking is Ownable {
     IERC20 public immutable ftgToken;
 
