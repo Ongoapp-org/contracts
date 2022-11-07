@@ -14,27 +14,30 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     ftgstaking = deploy_FTGStaking(ftgtoken.address)
     print("1) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     # first staking 1000 ftg by accounts[0]
-    ftgtoken.approve(ftgstaking, 1000, {"from": accounts[0]})
-    tx = ftgstaking.stake(
-        1000, 2592000, {"from": accounts[0]}
-    )  # 30 days locked = 2592000 secs
+    ftgtoken.approve(ftgstaking, 600000, {"from": accounts[0]})
+    tx = ftgstaking.stake(600000, 2592000, {"from": accounts[0]})  # 30 days locked = 2592000 secs
     print("2) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     print(tx.events)
     # wait 3650 secs
     timeTravel = 3650
     chain.sleep(timeTravel)
-    
-    # second staking 10000 ftg by accounts[1]
-    ftgtoken.transfer(accounts[1], 20000)
-    ftgtoken.approve(ftgstaking, 10000, {"from": accounts[1]})
-    ftgstaking.stake(10000, 7776000, {"from": accounts[1]})  # 90 days = 7776000 secs
+    # second staking 120000 ftg by accounts[1]
+    ftgtoken.transfer(accounts[1], 200000)
+    ftgtoken.approve(ftgstaking, 120000, {"from": accounts[1]})
+    ftgstaking.stake(120000, 7776000, {"from": accounts[1]})  # 90 days = 7776000 secs
     print("3) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     print("3) accounts[1] ftg balance = \n", ftgtoken.balanceOf(accounts[1]))
-    # verifies Stakeholder's stakings
+     # verifies Stakeholder's stakings
     stakings0 = ftgstaking.getStakings(accounts[0])
-    print("stakeholders[accounts[0]].totalStaked=", stakings0)
+    print("stakeholders[accounts[0]].stakings=", stakings0)
     stakings1 = ftgstaking.getStakings(accounts[1])
-    print("stakeholders[accounts[1]].totalStaked=", stakings1)
+    print("stakeholders[accounts[1]].stakings=", stakings1)
+    # verifies more than 30 days Locked Staking
+    totalActiveLocked0 = ftgstaking.checkParticipantLockedStaking(accounts[0],2592000)
+    print("totalActiveLocked0 = ",totalActiveLocked0)
+    totalActiveLocked1 = ftgstaking.checkParticipantLockedStaking.call(accounts[1],2592000, {"from": accounts[0]})
+    print("totalActiveLocked1 = ",totalActiveLocked1)
+   
     print("Contracts totalFTGStaked=", ftgstaking.totalFTGStaked())
     # wait 150 secs
     timeTravel = 150
@@ -47,10 +50,15 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     # wait 30 days, first staking should be free to unstake
     timeTravel = 2592000
     chain.sleep(timeTravel)
-    # third staking 4000 ftg by accounts[0]
-    ftgtoken.approve(ftgstaking, 4000, {"from": accounts[0]})
-    ftgstaking.stake(4000, 0, {"from": accounts[0]})
+    # third staking 400000 ftg by accounts[0]
+    ftgtoken.approve(ftgstaking, 400000, {"from": accounts[0]})
+    ftgstaking.stake(400000, 10000000, {"from": accounts[0]})
     print("5) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
+    # verifies more than 30 days locked staking
+    totalActiveLocked0 = ftgstaking.checkParticipantLockedStaking.call(accounts[0], 2592000, {"from": accounts[0]})
+    print("totalActiveLocked0 = ",totalActiveLocked0)
+    totalActiveLocked1 = ftgstaking.checkParticipantLockedStaking.call(accounts[1], 2592000, {"from": accounts[0]})
+    print("totalActiveLocked1 = ",totalActiveLocked1)
     # second deposits 200 ftg reward to be distributed to stakers
     ftgtoken.approve(ftgstaking, 200, {"from": accounts[0]})
     ftgstaking.depositReward(200)
@@ -93,6 +101,15 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     # first testing okay, but there may be configurations/cases causing error, need to be checked further and compared gaswise with simpler methods calculating/updating
     # onchain rewards for every stakeholder every time a reward is deposited.
     # Also is precision set to 9 digits enough? ... and is integer rounding acceptable?
+
+    # wait 6 months
+    timeTravel = 15552000
+    chain.sleep(timeTravel)
+    print("time now = ", chain.time)
+     # Check Stakeholder's Stakings
+    print("stakeholders[accounts[0]].stakings=", ftgstaking.getStakings(accounts[0]))
+    totalActiveLocked0 = ftgstaking.checkParticipantLockedStaking(accounts[0],2592000)
+    print("after 6 months  ... totalActiveLocked0 = ",totalActiveLocked0)
 
     # test if stakeholder partly unstakes
     print("partly unstaking test \n")
@@ -150,3 +167,4 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print(
         "after withdrawing: stakeholder ftg balance = ", ftgtoken.balanceOf(accounts[0])
     )
+    

@@ -421,53 +421,25 @@ contract FTGStaking is Ownable {
         );
     }
 
-    // returns the highest eligible membership (0:none, 1:ruby, 2:sapphire, 3:emerald, 4:diamond)
-    function checkMembership(address _memberAddress)
-        public
-        returns (uint256 membership)
-    {
-        // update member balances
-        _updateStakeholderBalances(_memberAddress);
-        // verifies if address is eligible for membership
-        if (stakeholders[_memberAddress].totalLockedBalance < 100_000) {
-            return membership;
-        }
-        int256 stakingAmount;
-        Staking[] memory memberStakings = stakeholders[_memberAddress].stakings;
-        for (uint256 i = 0; i < memberStakings.length; i++) {
-            stakingAmount = memberStakings[i].amount;
+    // returns total active locked Staking of an sale participant
+    function checkParticipantLockedStaking(
+        address _participantAddress,
+        uint256 lockDurationChecked
+    ) external view returns (int256 lockedStakingTotal) {
+        Staking[] memory participantStakings = stakeholders[_participantAddress]
+            .stakings;
+        for (uint256 i = 0; i < participantStakings.length; i++) {
             if (
-                // check if staking is locked
-                memberStakings[i].lockDuration >= 90 days &&
-                block.timestamp - memberStakings[i].lockDuration <
-                memberStakings[i].timestamp
+                // check if staking is still active and was locked for more than lockDurationChecked
+                participantStakings[i].lockDuration >= lockDurationChecked &&
+                block.timestamp <
+                participantStakings[i].timestamp +
+                    participantStakings[i].lockDuration
             ) {
-                // check if enough FTG staked for earning membership
-                if (stakingAmount < 100_000) {
-                    //no privileges membership
-                    membership = 0;
-                } else if (
-                    stakingAmount >= 100_000 && stakingAmount < 250_000
-                ) {
-                    //ruby membership
-                    membership = membership > 1 ? membership : 1;
-                } else if (
-                    stakingAmount >= 250_000 && stakingAmount < 500_000
-                ) {
-                    //sapphire membership
-                    membership = membership > 2 ? membership : 2;
-                } else if (
-                    stakingAmount >= 500_000 && stakingAmount < 1_000_000
-                ) {
-                    //emerald membership
-                    membership = 3;
-                } else {
-                    //diamond membership
-                    membership = 4;
-                    break;
-                }
+                // add this staking to checkedStakingTotal
+                lockedStakingTotal += participantStakings[i].amount;
             }
         }
-        return membership;
+        return lockedStakingTotal;
     }
 }
