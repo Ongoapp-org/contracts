@@ -1,3 +1,5 @@
+//!COPIED FRMO last change
+
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
@@ -14,6 +16,13 @@ import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
  * and stakeholder receive special privileges during allocation for this. Rewards and Balances are updated
  * only when needed and last update times recorded.
  */
+
+interface IFTGStaking {
+    function checkParticipantLockedStaking  (
+        address _participantAddress,
+        uint256 lockDurationChecked
+    ) external view returns (int256 lockedStakingTotal);
+}
 
 contract FTGStaking is Ownable {
     IERC20 public immutable ftgToken;

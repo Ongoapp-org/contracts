@@ -167,5 +167,4 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print(
         "after withdrawing: stakeholder ftg balance = ", ftgtoken.balanceOf(accounts[0])
     )
-
     

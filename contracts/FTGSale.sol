@@ -6,8 +6,7 @@ import "./FTGStaking.sol";
 
 //https://github.com/avalaunch-app/xava-protocol/blob/master/contracts/sales/AvalaunchSale.sol
 
-//
-//2 pools
+//TODO handle 2 pools
 //Guaranteed Pool
 //Public Pool
 contract FTGSale is Ownable {
@@ -15,26 +14,45 @@ contract FTGSale is Ownable {
     struct Participant {
         address partaddr;
         uint256 amountAllocated;
+        uint256 amountInvested;
     }
 
-    string nameSale;
+    // TODO move this is duplicate
+    // New staking or unstaking
+    struct Staking {
+        uint256 totalStaked; // totalStaked after this staking
+        uint256 timestamp; // time of staking
+        int256 amount; // amount of staking (>0 staking, <0 unstaking)
+        uint256 lockDuration; // duration of locked time in secs (flex = 0, LOCK30DAYS = 2592000, LOCK60DAYS = 5184000, LOCK90DAYS = 7776000)
+    }
+
+    enum Tiers {
+        NONE,
+        RUBY,
+        EMERALD,
+        SAPPHIRE,
+        DIAMOND
+    }
+
+    string public nameSale;
 
     mapping(address => Participant) public participants;
 
-    mapping(address => bool) public whitelist; 
+    mapping(address => bool) public whitelist;
+    
 
     // Token being sold
-    IERC20 saleToken;
+    address public saleToken;
     // invest token
-    IERC20 investToken;
+    address public investToken;
     // Is sale created
     bool isCreated;
     // Are earnings withdrawn
-    bool earningsWithdrawn;
+    bool public earningsWithdrawn;
     // Is leftover withdrawn
-    bool leftoverWithdrawn;
+    bool public leftoverWithdrawn;
     // Have tokens been deposited
-    bool tokensDeposited;
+    bool public tokensDeposited;
     // Address of sale owner
     address saleOwner;
     // Price of the token quoted in ETH
@@ -50,54 +68,88 @@ contract FTGSale is Ownable {
     // Price of the token quoted in USD
     uint256 tokenPriceInUSD;
 
-    FTGStaking stakingContract;
-    uint256 diamondMinimum = 1_000_000;
-    uint256 emeraldMinimum = 500_000;
-    uint256 sapphireMinimum = 250_000;
-    uint256 rubyMinimum = 100_000;
+    address stakingContractAddress;
 
-    //TODO
-    uint256 amountGuaranteedPool = 1_000_000;
-    uint256 amountPublicPool = 500_000;
+    // uint256 diamondMinimum = 1_000_000;
+    // uint256 emeraldMinimum = 500_000;
+    // uint256 sapphireMinimum = 250_000;
+    // uint256 rubyMinimum = 100_000;
 
-    constructor(string memory _name, address _stakingContractAddress, uint256 _amountGuaranteedPool, uint256 _tokenPriceInUSD) {
+    uint32 factor = 10_000;
+
+    //total allocated per tier
+    mapping(Tiers => uint32) allocTotal;
+    //particpants per tier
+    mapping(Tiers => uint32) tiersParticipants;
+    //ticket allocated for each tier, intialized at maximum and subtracted
+    mapping(Tiers => uint32) tiersAllocated;   
+
+    mapping(Tiers => uint32) tiersMin;
+
+    constructor(
+        string memory _name,
+        address _investToken,
+        address _saleToken,
+        address _stakingContractAddress,
+        uint256 _tokenPriceInUSD
+    ) {
         nameSale = _name;
-        stakingContract = FTGStaking(_stakingContractAddress);
-        amountGuaranteedPool = _amountGuaranteedPool;
+        investToken = _investToken;
+        saleToken = _saleToken;
+        stakingContractAddress = _stakingContractAddress;
         tokenPriceInUSD = _tokenPriceInUSD;
     }
 
-    //determine which level
-    function checkMembership() private {
+    function setMins(uint32 _rubyMin, uint32 _sapphireMin, uint32 _emeraldMin, uint32 _diamondMin) public onlyOwner {
+        tiersMin[Tiers.RUBY] = _rubyMin;
+        tiersMin[Tiers.SAPPHIRE] = _sapphireMin;
+        tiersMin[Tiers.EMERALD] = _emeraldMin;
+        tiersMin[Tiers.DIAMOND] = _diamondMin;
+    }
 
-        //TODO calculate score potentially
-        //TODO maybe need to loop through 
-        //calculate lock at least 30days
-        //uint256 amountStaked = stakingContract.stakeholders[msg.sender].stakings;
-        uint256 amountStaked = stakingContract.totalFTGStaked();
-        if (amountStaked > diamondMinimum){
-            //TODO calcualte total available in guarnateed pool and subtract??
-            uint256 participantAmount = 100;
-            participants[msg.sender] = Participant(msg.sender, participantAmount);
+    function setAllocs(uint32 _rubyAllocTotal, uint32 _sapphireAllocTotal, uint32 _emeraldAllocTotal, uint32 _diamondAllocTotal) public onlyOwner {
+        uint256 total = _rubyAllocTotal + _sapphireAllocTotal + _emeraldAllocTotal + _diamondAllocTotal;
+        require(total == 100, "not 100% allocated");
 
-            
-        } else if (amountStaked > emeraldMinimum){
+        allocTotal[Tiers.RUBY] = _rubyAllocTotal;
+        allocTotal[Tiers.SAPPHIRE] = _sapphireAllocTotal;
+        allocTotal[Tiers.EMERALD] = _emeraldAllocTotal;
+        allocTotal[Tiers.DIAMOND] = _diamondAllocTotal;
+    }
 
-        }
+    function setParticipants(uint32 _rubyP, uint32 _sapphireP, uint32 _emeraldP, uint32 _diamondP) public onlyOwner {
+
+        tiersParticipants[Tiers.RUBY] = _rubyP;
+        tiersParticipants[Tiers.SAPPHIRE] = _sapphireP;
+        tiersParticipants[Tiers.EMERALD] = _emeraldP;
+        tiersParticipants[Tiers.DIAMOND] = _diamondP;
+
+        //init with maximum and count down
+        tiersAllocated[Tiers.RUBY] = allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
+        tiersAllocated[Tiers.SAPPHIRE] = allocTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
+        tiersAllocated[Tiers.EMERALD] = allocTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
+        tiersAllocated[Tiers.DIAMOND] = allocTotal[Tiers.DIAMOND] / tiersParticipants[Tiers.DIAMOND];
 
     }
 
-    // TODO calculate amount eligible
+    // TODO dynamic if pools unused
     function amountEligible(address account) private returns (uint256) {
-        return 0;
+        uint256 amountLocked = uint(IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(account, 30 days));
+        if (amountLocked > tiersMin[Tiers.DIAMOND]){
+            return allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
+        } else if (amountLocked > tiersMin[Tiers.EMERALD]) {
+            return allocTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
+        } else if (amountLocked > tiersMin[Tiers.SAPPHIRE]) {
+            return allocTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
+        } else if (amountLocked > tiersMin[Tiers.RUBY]) {
+            return allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
+        }
     }
 
-    function _checkStaking() private  {
+    function _checkStaking() private {
         //calculate amount staked in 30 days or more
-
         //subtract amount from available pool
         //amountGuaranteedPool -= participantAmount;
-        
     }
 
     function addWhitelist(address p) external onlyOwner {
@@ -106,9 +158,7 @@ contract FTGSale is Ownable {
         //TODO other steps?
     }
 
-
     //checkParticipationSignature
-
 
     //take part in the sale i.e buy tokens, pass signature on frontend
     function participate(uint256 amountTokensBuy) external {
@@ -128,8 +178,6 @@ contract FTGSale is Ownable {
         IERC20(investToken).transferFrom(msg.sender, address(this), costInUSD);
 
         IERC20(saleToken).transfer(msg.sender, amountTokensBuy);
-
-
     }
 
     // Function for owner to deposit tokens
@@ -141,4 +189,30 @@ contract FTGSale is Ownable {
     //TODO
     //function withdrawRaisedAssets() onlyOwner {}
 
+    // mapping(Tiers => uint128) participants = [];
+
+    // function manipulatetiersAllocated(Tiers tier) public {
+    //     if (tier == Tiers.DIAMOND) {} else if (
+    //         tier == Tiers.EMERALD
+    //     ) {} else if (tier == Tiers.SAPPHIRE) {} else if (tier == Tiers.RUBY) {}
+    // }
+
+    // function getStakeHohders(address add)
+    //     public
+    //     returns (
+    //         uint256 totalStaked,
+    //         uint256 totalLockedBalance,
+    //         uint256 freeToUnstakeBalance,
+    //         uint256 lastBalancesUpdate,
+    //         uint256 totalReward,
+    //         uint256 lastRewardUpdate
+    //     )
+    // {
+    //     return (stakingContract.stakeholders(add));
+    // }
+
+    //memberShipTickets
+    // tiersAllocated[Tiers.RUBY] -= eachDiamondTicket;
+    // ticketAllocated[Tiers.RUBY] +=                        
+    //     eachDiamondTicket;
 }
