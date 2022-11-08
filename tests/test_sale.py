@@ -22,7 +22,10 @@ def test_basicsale(accounts, pm, ftgtoken):
 
     salectr.setMins(1000000, 500000, 250000, 100000)
     salectr.setAllocs(40, 30, 20, 10)
-    #salectr.setParticipants()
+    salectr.setParticipants(1000, 500, 100, 50)
+
+    assert salectr.tiersMin[0] == 1000000
+
     # assert salectr.amountGuaranteedPool() == 1000000
     # assert salectr.amountPublicPool() == 1000000
 

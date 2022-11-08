@@ -136,14 +136,14 @@ contract FTGSale is Ownable {
     function amountEligible(address account) private returns (uint256) {
         uint256 amountLocked = uint(IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(account, 30 days));
         if (amountLocked > tiersMin[Tiers.DIAMOND]){
-            return allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
+            return allocTotal[Tiers.DIAMOND] / tiersParticipants[Tiers.DIAMOND];
         } else if (amountLocked > tiersMin[Tiers.EMERALD]) {
             return allocTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
         } else if (amountLocked > tiersMin[Tiers.SAPPHIRE]) {
             return allocTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
         } else if (amountLocked > tiersMin[Tiers.RUBY]) {
             return allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
-        }
+        } return 0;
     }
 
     function _checkStaking() private {
