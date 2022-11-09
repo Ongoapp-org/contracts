@@ -43,7 +43,7 @@ contract FTGSale is Ownable {
 
     // Token being sold
     address public saleToken;
-    // invest token
+    // invest token eg USDT
     address public investToken;
     // Is sale created
     bool isCreated;
@@ -52,28 +52,21 @@ contract FTGSale is Ownable {
     // Is leftover withdrawn
     bool public leftoverWithdrawn;
     // Have tokens been deposited
-    bool public tokensDeposited;
-    // Address of sale owner
-    address saleOwner;
+    bool public tokensDeposited;    
     // Price of the token quoted in ETH
-    uint256 tokenPriceInETH;
+    //uint256 tokenPriceInETH;
     // Amount of tokens to sell
-    uint256 amountOfTokensToSell;
+    uint256 public amountOfTokensToSell;
     // Total tokens being sold
-    uint256 totalTokensSold;
+    uint256 public totalTokensSold;
     // Total ETH Raised
-    uint256 totalETHRaised;
+    uint256 public totalUSDCRaised;
     // Sale end time
-    uint256 saleEnd;
+    uint256 public saleEnd;
     // Price of the token quoted in USD
-    uint256 tokenPriceInUSD;
+    uint256 public tokenPriceInUSD;
 
     address stakingContractAddress;
-
-    // uint256 diamondMinimum = 1_000_000;
-    // uint256 emeraldMinimum = 500_000;
-    // uint256 sapphireMinimum = 250_000;
-    // uint256 rubyMinimum = 100_000;
 
     uint32 factor = 10_000;
 
@@ -133,17 +126,19 @@ contract FTGSale is Ownable {
     }
 
     // TODO dynamic if pools unused
-    function amountEligible(address account) private returns (uint256) {
+    function amountEligible(address account) public returns (uint256) {
         uint256 amountLocked = uint(IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(account, 30 days));
+        uint256 amount = 0;
         if (amountLocked > tiersMin[Tiers.DIAMOND]){
-            return allocTotal[Tiers.DIAMOND] / tiersParticipants[Tiers.DIAMOND];
+            amount = allocTotal[Tiers.DIAMOND] / tiersParticipants[Tiers.DIAMOND];
         } else if (amountLocked > tiersMin[Tiers.EMERALD]) {
-            return allocTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
+            amount = allocTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
         } else if (amountLocked > tiersMin[Tiers.SAPPHIRE]) {
-            return allocTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
+            amount = allocTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
         } else if (amountLocked > tiersMin[Tiers.RUBY]) {
-            return allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
-        } return 0;
+            amount = allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
+        } 
+        return amount;
     }
 
     function _checkStaking() private {
@@ -167,14 +162,15 @@ contract FTGSale is Ownable {
         require(whitelist[msg.sender], "not in whitelist");
         //determine allocation size
         uint256 amountElig = amountEligible(msg.sender);
-        require(amountTokensBuy <= amountElig, "amount too high not eliglbe");
+        //TODO
+        //require(amountTokensBuy <= amountElig, "amount too high not eliglbe");
 
         // bytes calldata signature
         // signature verifies KYC
 
         //price is fixed
 
-        uint256 costInUSD = amountTokensBuy * tokenPriceInUSD;
+        uint256 costInUSD = amountTokensBuy * tokenPriceInUSD/factor;
         IERC20(investToken).transferFrom(msg.sender, address(this), costInUSD);
 
         IERC20(saleToken).transfer(msg.sender, amountTokensBuy);
