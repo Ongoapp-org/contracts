@@ -57,11 +57,13 @@ contract FTGSale is Ownable {
     // Price of the token quoted in ETH
     //uint256 tokenPriceInETH;
     // Amount of tokens to sell
-    uint256 public amountOfTokensToSell;
-    // Total tokens being sold
+    uint256 public totalTokensToSell;
+    // tokens sold so far
     uint256 public totalTokensSold;
-    // Total ETH Raised
-    uint256 public totalUSDCRaised;
+    // Total ETH Raised so far
+    uint256 public totalRaised;
+    // amount to raise in total
+    uint256 public totalToRaise;
     // Sale end time
     uint256 public saleEnd;
     // Price of the token quoted in USD
@@ -86,14 +88,18 @@ contract FTGSale is Ownable {
         address _saleToken,
         address _stakingContractAddress,
         uint256 _tokenPriceInUSD,
-        uint256 _totalTokensSold
+        uint256 _totalTokensToSell,
+        uint256 _totalToRaise
     ) {
         nameSale = _name;
         investToken = _investToken;
         saleToken = _saleToken;
         stakingContractAddress = _stakingContractAddress;
         tokenPriceInUSD = _tokenPriceInUSD;
-        totalTokensSold = _totalTokensSold;
+        totalTokensToSell = _totalTokensToSell;
+        totalToRaise = _totalToRaise;
+        totalTokensSold = 0;
+        totalRaised = 0;
     }
 
     function setMins(uint32 _rubyMin, uint32 _sapphireMin, uint32 _emeraldMin, uint32 _diamondMin) public onlyOwner {
@@ -174,13 +180,15 @@ contract FTGSale is Ownable {
 
         //price is fixed
 
-        uint256 costInUSD = amountTokensBuy * tokenPriceInUSD/factor;
-        IERC20(investToken).transferFrom(msg.sender, address(this), costInUSD);
-
+        uint256 tokenInvested = amountTokensBuy * tokenPriceInUSD/factor;
+        IERC20(investToken).transferFrom(msg.sender, address(this), tokenInvested);
         IERC20(saleToken).transfer(msg.sender, amountTokensBuy);
 
-        participants[msg.sender].amountInvested += costInUSD;
-        participants[msg.sender].tokensBought += amountTokensBuy;        
+        participants[msg.sender].amountInvested += tokenInvested;
+        participants[msg.sender].tokensBought += amountTokensBuy;  
+
+        totalTokensSold += amountTokensBuy;
+        totalRaised +=tokenInvested;
 
     }
 
