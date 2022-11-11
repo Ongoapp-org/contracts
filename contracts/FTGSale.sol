@@ -85,13 +85,15 @@ contract FTGSale is Ownable {
         address _investToken,
         address _saleToken,
         address _stakingContractAddress,
-        uint256 _tokenPriceInUSD
+        uint256 _tokenPriceInUSD,
+        uint256 _totalTokensSold
     ) {
         nameSale = _name;
         investToken = _investToken;
         saleToken = _saleToken;
         stakingContractAddress = _stakingContractAddress;
         tokenPriceInUSD = _tokenPriceInUSD;
+        totalTokensSold = _totalTokensSold;
     }
 
     function setMins(uint32 _rubyMin, uint32 _sapphireMin, uint32 _emeraldMin, uint32 _diamondMin) public onlyOwner {
@@ -127,19 +129,20 @@ contract FTGSale is Ownable {
     }
 
     // TODO dynamic if pools unused
-    function amountEligible(address account) public returns (uint256) {
+    function amountEligible(address account) public view returns (uint256) {
         uint256 amountLocked = uint(IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(account, 30 days));
-        uint256 amount = 0;
-        if (amountLocked > tiersMin[Tiers.DIAMOND]){
-            amount = allocTotal[Tiers.DIAMOND] / tiersParticipants[Tiers.DIAMOND];
-        } else if (amountLocked > tiersMin[Tiers.EMERALD]) {
-            amount = allocTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
-        } else if (amountLocked > tiersMin[Tiers.SAPPHIRE]) {
-            amount = allocTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
-        } else if (amountLocked > tiersMin[Tiers.RUBY]) {
-            amount = allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
+        uint256 amountElig = 0;
+        //TODO percent * total
+        if (amountLocked >= tiersMin[Tiers.DIAMOND]){
+            amountElig = factor * allocTotal[Tiers.DIAMOND] / tiersParticipants[Tiers.DIAMOND];
+        } else if (amountLocked >= tiersMin[Tiers.EMERALD]) {
+            amountElig = factor * allocTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
+        } else if (amountLocked >= tiersMin[Tiers.SAPPHIRE]) {
+            amountElig = factor * allocTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
+        } else if (amountLocked >= tiersMin[Tiers.RUBY]) {
+            amountElig = factor * allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
         } 
-        return amount;
+        return amountElig;
     }
 
     function _checkStaking() private {

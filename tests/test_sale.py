@@ -23,7 +23,8 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     #investtoken = ftgtoken
 
     owner = accounts[0]
-    salectr = FTGSale.deploy("TestSale", investtoken ,saletoken, ftgstaking, _tokenPriceInUSD, {"from": owner})
+    totalTokensSold = 1_000_000
+    salectr = FTGSale.deploy("TestSale", investtoken ,saletoken, ftgstaking, _tokenPriceInUSD, totalTokensSold, {"from": owner})
     # print("accounts[0] = ", accounts[0])
 
     assert salectr.nameSale() == "TestSale"
@@ -40,12 +41,32 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     assert salectr.whitelist(accounts[1])
     
     days30 = 2592000
-    ftgtoken.approve(ftgstaking, 100000, {"from": accounts[1]})
-    ftgstaking.stake(100000, days30, {"from": accounts[1]})  
+    stakeAmount = 1100000
+    ftgtoken.approve(ftgstaking, stakeAmount, {"from": accounts[1]})
+    ftgstaking.stake(stakeAmount, days30, {"from": accounts[1]})  
 
     #TODO
-    #ae = salectr.amountEligible(accounts[1], {"from": accounts[1]}).call()
-    #assert ae == 100
+    #uint256 amountLocked = uint(IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(account, 30 days));
+    # calculate init staking fee
+    amountlocked = ftgstaking.checkParticipantLockedStaking(accounts[1], days30)
+    assert amountlocked == stakeAmount * (1-0.05)    
+
+    #assert salectr.allocTotal(3) == 100
+    assert salectr.allocTotal(0) == 0
+    assert salectr.allocTotal(1) == 40
+    assert salectr.tiersParticipants(1) == 1000
+    assert salectr.tiersParticipants(4) == 50
+
+    #allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY]
+
+    assert stakeAmount > salectr.tiersMin(3) 
+    assert amountlocked > salectr.tiersMin(3) 
+    
+    assert salectr.allocTotal(1) / salectr.tiersParticipants(1) == 40/1000
+    #TODO
+    ae = salectr.amountEligible(accounts[1], {"from": accounts[1]})
+    #
+    #assert ae == totalTokensSold * 40/1000 /10000
 
     #salectr.participate(100, {"from": accounts[1]})
 
