@@ -11,20 +11,26 @@ import "./FTGStaking.sol";
 //Public Pool
 contract FTGSale is Ownable {
 
+    // Token being sold
+    address public saleToken;
+    // invest token eg USDT
+    address public investToken;
+
     struct Participant {
         address partaddr;
         uint256 amountAllocated;
         uint256 amountInvested;
+        uint256 tokensBought;
     }
 
     // TODO move this is duplicate
     // New staking or unstaking
-    struct Staking {
-        uint256 totalStaked; // totalStaked after this staking
-        uint256 timestamp; // time of staking
-        int256 amount; // amount of staking (>0 staking, <0 unstaking)
-        uint256 lockDuration; // duration of locked time in secs (flex = 0, LOCK30DAYS = 2592000, LOCK60DAYS = 5184000, LOCK90DAYS = 7776000)
-    }
+    // struct Staking {
+    //     uint256 totalStaked; // totalStaked after this staking
+    //     uint256 timestamp; // time of staking
+    //     int256 amount; // amount of staking (>0 staking, <0 unstaking)
+    //     uint256 lockDuration; // duration of locked time in secs (flex = 0, LOCK30DAYS = 2592000, LOCK60DAYS = 5184000, LOCK90DAYS = 7776000)
+    // }
 
     enum Tiers {
         NONE,
@@ -40,11 +46,6 @@ contract FTGSale is Ownable {
 
     mapping(address => bool) public whitelist;
     
-
-    // Token being sold
-    address public saleToken;
-    // invest token eg USDT
-    address public investToken;
     // Is sale created
     bool isCreated;
     // Are earnings withdrawn
@@ -71,13 +72,13 @@ contract FTGSale is Ownable {
     uint32 factor = 10_000;
 
     //total allocated per tier
-    mapping(Tiers => uint32) allocTotal;
+    mapping(Tiers => uint32) public allocTotal;
     //particpants per tier
-    mapping(Tiers => uint32) tiersParticipants;
+    mapping(Tiers => uint32) public tiersParticipants;
     //ticket allocated for each tier, intialized at maximum and subtracted
-    mapping(Tiers => uint32) tiersAllocated;   
+    mapping(Tiers => uint32) public tiersAllocated;   
 
-    mapping(Tiers => uint32) tiersMin;
+    mapping(Tiers => uint32) public tiersMin;
 
     constructor(
         string memory _name,
@@ -157,13 +158,13 @@ contract FTGSale is Ownable {
 
     //take part in the sale i.e buy tokens, pass signature on frontend
     function participate(uint256 amountTokensBuy) external {
-        //TODO which pool
+        //TODO is tier allowed?
 
         require(whitelist[msg.sender], "not in whitelist");
         //determine allocation size
         uint256 amountElig = amountEligible(msg.sender);
         //TODO
-        //require(amountTokensBuy <= amountElig, "amount too high not eliglbe");
+        require(amountTokensBuy <= amountElig, "amount too high not eliglbe");
 
         // bytes calldata signature
         // signature verifies KYC
@@ -174,16 +175,26 @@ contract FTGSale is Ownable {
         IERC20(investToken).transferFrom(msg.sender, address(this), costInUSD);
 
         IERC20(saleToken).transfer(msg.sender, amountTokensBuy);
+
+        participants[msg.sender].amountInvested += costInUSD;
+        participants[msg.sender].tokensBought += amountTokensBuy;        
+
     }
 
     // Function for owner to deposit tokens
-    //function depositTokens() onlyOwner {}
+    function depositSaleTokens(uint256 amount) public onlyOwner {
+        IERC20(saleToken).transferFrom(msg.sender, address(this), amount);
+    }
+    
+    function withdrawLeftOverTokens() public onlyOwner {
+        uint256 bal = IERC20(saleToken).balanceOf(address(this));
+        IERC20(saleToken).transfer(msg.sender, bal);
+    }
 
-    //TODO
-    //function withdrawLeftOverTokens() onlyOwner {}
-
-    //TODO
-    //function withdrawRaisedAssets() onlyOwner {}
+    function withdrawRaisedAssets() public onlyOwner {
+        uint256 bal = IERC20(investToken).balanceOf(address(this));
+        IERC20(saleToken).transfer(msg.sender, bal);
+    }
 
     // mapping(Tiers => uint128) participants = [];
 
