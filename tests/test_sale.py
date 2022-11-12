@@ -16,15 +16,18 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
 
     _amountGuaranteedPool = 1000000
     _amountPublicPool = 1000000
-    _tokenPriceInUSD = 100
+    
     MockFTGToken.deploy(30000000 * 10**18, {"from": accounts[0]})
     saletoken = ftgtoken
     #TODO
     #investtoken = ftgtoken
 
     owner = accounts[0]
-    totalTokensSold = 1_000_000
-    salectr = FTGSale.deploy("TestSale", investtoken ,saletoken, ftgstaking, _tokenPriceInUSD, totalTokensSold, {"from": owner})
+    _totalTokensToSell = 1_000_000
+    _totalToRaise = 100_000
+    _tokenPriceInUSD = _totalTokensToSell/_totalToRaise
+
+    salectr = FTGSale.deploy("TestSale", investtoken ,saletoken, ftgstaking, _tokenPriceInUSD, _totalTokensToSell, _totalToRaise, {"from": owner})
     # print("accounts[0] = ", accounts[0])
 
     assert salectr.nameSale() == "TestSale"
