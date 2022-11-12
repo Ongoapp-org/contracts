@@ -20,17 +20,8 @@ contract FTGSale is Ownable {
         address partaddr;
         uint256 amountAllocated;
         uint256 amountInvested;
-        uint256 tokensBought;
+        uint256 tokensBought;    
     }
-
-    // TODO move this is duplicate
-    // New staking or unstaking
-    // struct Staking {
-    //     uint256 totalStaked; // totalStaked after this staking
-    //     uint256 timestamp; // time of staking
-    //     int256 amount; // amount of staking (>0 staking, <0 unstaking)
-    //     uint256 lockDuration; // duration of locked time in secs (flex = 0, LOCK30DAYS = 2592000, LOCK60DAYS = 5184000, LOCK90DAYS = 7776000)
-    // }
 
     enum Tiers {
         NONE,
@@ -45,13 +36,7 @@ contract FTGSale is Ownable {
     mapping(address => Participant) public participants;
 
     mapping(address => bool) public whitelist;
-    
-    // Is sale created
-    bool isCreated;
-    // Are earnings withdrawn
-    bool public earningsWithdrawn;
-    // Is leftover withdrawn
-    bool public leftoverWithdrawn;
+                
     // Have tokens been deposited
     bool public tokensDeposited;    
     // Price of the token quoted in ETH
