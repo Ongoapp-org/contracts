@@ -188,30 +188,4 @@ contract FTGSale is Ownable {
         IERC20(saleToken).transfer(msg.sender, bal);
     }
 
-    // mapping(Tiers => uint128) participants = [];
-
-    // function manipulatetiersAllocated(Tiers tier) public {
-    //     if (tier == Tiers.DIAMOND) {} else if (
-    //         tier == Tiers.EMERALD
-    //     ) {} else if (tier == Tiers.SAPPHIRE) {} else if (tier == Tiers.RUBY) {}
-    // }
-
-    // function getStakeHohders(address add)
-    //     public
-    //     returns (
-    //         uint256 totalStaked,
-    //         uint256 totalLockedBalance,
-    //         uint256 freeToUnstakeBalance,
-    //         uint256 lastBalancesUpdate,
-    //         uint256 totalReward,
-    //         uint256 lastRewardUpdate
-    //     )
-    // {
-    //     return (stakingContract.stakeholders(add));
-    // }
-
-    //memberShipTickets
-    // tiersAllocated[Tiers.RUBY] -= eachDiamondTicket;
-    // ticketAllocated[Tiers.RUBY] +=                        
-    //     eachDiamondTicket;
 }
