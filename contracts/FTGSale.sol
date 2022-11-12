@@ -20,17 +20,8 @@ contract FTGSale is Ownable {
         address partaddr;
         uint256 amountAllocated;
         uint256 amountInvested;
-        uint256 tokensBought;
+        uint256 tokensBought;    
     }
-
-    // TODO move this is duplicate
-    // New staking or unstaking
-    // struct Staking {
-    //     uint256 totalStaked; // totalStaked after this staking
-    //     uint256 timestamp; // time of staking
-    //     int256 amount; // amount of staking (>0 staking, <0 unstaking)
-    //     uint256 lockDuration; // duration of locked time in secs (flex = 0, LOCK30DAYS = 2592000, LOCK60DAYS = 5184000, LOCK90DAYS = 7776000)
-    // }
 
     enum Tiers {
         NONE,
@@ -45,23 +36,13 @@ contract FTGSale is Ownable {
     mapping(address => Participant) public participants;
 
     mapping(address => bool) public whitelist;
-    
-    // Is sale created
-    bool isCreated;
-    // Are earnings withdrawn
-    bool public earningsWithdrawn;
-    // Is leftover withdrawn
-    bool public leftoverWithdrawn;
-    // Have tokens been deposited
-    bool public tokensDeposited;    
-    // Price of the token quoted in ETH
-    //uint256 tokenPriceInETH;
+                    
     // Amount of tokens to sell
     uint256 public totalTokensToSell;
     // tokens sold so far
-    uint256 public totalTokensSold;
+    uint256 public tokensSold;
     // Total ETH Raised so far
-    uint256 public totalRaised;
+    uint256 public investRaised;
     // amount to raise in total
     uint256 public totalToRaise;
     // Sale end time
@@ -98,8 +79,8 @@ contract FTGSale is Ownable {
         tokenPriceInUSD = _tokenPriceInUSD;
         totalTokensToSell = _totalTokensToSell;
         totalToRaise = _totalToRaise;
-        totalTokensSold = 0;
-        totalRaised = 0;
+        tokensSold = 0;
+        investRaised = 0;
     }
 
     function setMins(uint32 _rubyMin, uint32 _sapphireMin, uint32 _emeraldMin, uint32 _diamondMin) public onlyOwner {
@@ -187,8 +168,8 @@ contract FTGSale is Ownable {
         participants[msg.sender].amountInvested += tokenInvested;
         participants[msg.sender].tokensBought += amountTokensBuy;  
 
-        totalTokensSold += amountTokensBuy;
-        totalRaised +=tokenInvested;
+        tokensSold += amountTokensBuy;
+        investRaised +=tokenInvested;
 
     }
 
