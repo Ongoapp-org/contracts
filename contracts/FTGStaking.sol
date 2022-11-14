@@ -18,7 +18,7 @@ import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
  */
 
 interface IFTGStaking {
-    function checkParticipantLockedStaking  (
+    function checkParticipantLockedStaking(
         address _participantAddress,
         uint256 lockDurationChecked
     ) external view returns (int256 lockedStakingTotal);
@@ -436,12 +436,13 @@ contract FTGStaking is Ownable {
         Staking[] memory participantStakings = stakeholders[_participantAddress]
             .stakings;
         for (uint256 i = 0; i < participantStakings.length; i++) {
+            //emit Logint("lockedStakingtotal=", lockedStakingTotal);
             if (
                 // check if staking is still active and was locked for more than lockDurationChecked
                 participantStakings[i].lockDuration >= lockDurationChecked &&
-                block.timestamp <
-                participantStakings[i].timestamp +
-                    participantStakings[i].lockDuration
+                (block.timestamp <
+                    participantStakings[i].timestamp +
+                        participantStakings[i].lockDuration)
             ) {
                 // add this staking to checkedStakingTotal
                 lockedStakingTotal += participantStakings[i].amount;
