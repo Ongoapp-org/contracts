@@ -432,7 +432,7 @@ contract FTGStaking is Ownable {
     function checkParticipantLockedStaking(
         address _participantAddress,
         uint256 lockDurationChecked
-    ) external returns (int256 lockedStakingTotal) {
+    ) external view returns (int256 lockedStakingTotal) {
         Staking[] memory participantStakings = stakeholders[_participantAddress]
             .stakings;
         for (uint256 i = 0; i < participantStakings.length; i++) {
