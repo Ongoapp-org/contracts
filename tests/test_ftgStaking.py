@@ -37,7 +37,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print("stakeholders[accounts[1]].stakings=", stakings1)
     # verifies more than 30 days Locked Staking
     print("**************verifies more than 30 days Locked Staking still active after one hour \n")
-    totalActiveLocked0 = ftgstaking.checkParticipantLockedStaking(accounts[0],2592000)
+    totalActiveLocked0 = ftgstaking.checkParticipantLockedStaking.call(accounts[0],2592000, {"from": accounts[0]})
     assert totalActiveLocked0 == 570000
     print("totalActiveLocked0 = ",totalActiveLocked0)
     totalActiveLocked1 = ftgstaking.checkParticipantLockedStaking.call(accounts[1],2592000, {"from": accounts[0]})
@@ -54,6 +54,9 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     tx = ftgstaking.depositReward(100)
     print("4) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     print(tx.events)
+    # Check rewardsList
+    rewardsList = ftgstaking.viewRewardsList()
+    print("rewardsList=", rewardsList)
     # wait 30 days, first staking should be free to unstake
     timeTravel = 2592000
     chain.sleep(timeTravel)
@@ -72,6 +75,9 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     ftgtoken.approve(ftgstaking, 200, {"from": accounts[0]})
     ftgstaking.depositReward(200)
     print("6) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
+     # Check rewardsList
+    rewardsList = ftgstaking.viewRewardsList()
+    print("rewardsList=", rewardsList)
     # wait 30 days
     timeTravel = 2592000
     chain.sleep(timeTravel)
@@ -79,6 +85,9 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     ftgtoken.approve(ftgstaking, 300, {"from": accounts[0]})
     ftgstaking.depositReward(300)
     print("7) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
+    # Check rewardsList
+    rewardsList = ftgstaking.viewRewardsList()
+    print("rewardsList=", rewardsList)
     # wait 200 secs
     timeTravel = 200
     chain.sleep(timeTravel)
@@ -91,17 +100,19 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print("rewardsList=", rewardsList)
     # Check Stakeholder's Stakings
     print("stakeholders[accounts[0]].stakings=", ftgstaking.getStakings(accounts[0]))
-    # Verify updateRewards() outcome after scenario
+    # Verify updateRewards() outcome after scenario for accounts[0]
     print(
         "Before Reward update: stakeholders[accounts[0]].totalReward=",
         ftgstaking.getAccountRewardInfo(accounts[0]),
     )
+    assert ftgstaking.getAccountRewardInfo(accounts[0]) == (0,0)
     tx = ftgstaking.updateReward()
     print(tx.events)
     print(
         "After Reward update: stakeholders[accounts[0]].totalReward=",
         ftgstaking.getAccountRewardInfo(accounts[0]),
     )
+    assert ftgstaking.getAccountRewardInfo(accounts[0]) == (6528,chain.time())
     # updateRewards Outcome:
     # in this example, startindex=1, for loop goes from 1 to 3 (3 passes):
     # i=1, rewardsList[i].rewardPer1BFTG =9132420,  stakeholderStakeIndexAtRewardTime = 1,rewardsList[i].rewardPer1BFTG =10950,->rewardSum=99 (correct)
@@ -119,18 +130,19 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print("*********** after 6 months, no active staking should be found ...")
     print("stakeholders[accounts[0]].stakings=", ftgstaking.getStakings(accounts[0]))
     totalActiveLocked0 = ftgstaking.checkParticipantLockedStaking(accounts[0],2592000)
-    assert totalActiveLocked0 == 0
-    print("after 6 months  ... totalActiveLocked0 = ",totalActiveLocked0)
+    print(totalActiveLocked0.events)
+    assert totalActiveLocked0.return_value == 0
+    print("after 6 months  ... totalActiveLocked0 = \n",totalActiveLocked0)
 
     # test if stakeholder partly unstakes
     print("partly unstaking test \n")
     print(
-        "before unstaking accounts[0] stakeholder Balances Info :",
+        "before unstaking 1000 accounts[0] stakeholder Balances Info :",
         ftgstaking.getBalances(accounts[0]),
     )
     tx = ftgstaking.unstake(1000, {"from": accounts[0]})
     print(
-        "9) after unstaking accounts[0] ftg balance = \n",
+        "9) after unstaking 1000 accounts[0] ftg balance = \n",
         ftgtoken.balanceOf(accounts[0]),
     )
     print(
