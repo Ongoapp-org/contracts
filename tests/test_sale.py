@@ -17,15 +17,16 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     _amountGuaranteedPool = 1000000
     _amountPublicPool = 1000000
     
-    MockFTGToken.deploy(30000000 * 10**18, {"from": accounts[0]})
-    saletoken = ftgtoken
+    saletoken = MockFTGToken.deploy(30_000_000 * 10**18, {"from": accounts[0]})
+    assert saletoken.balanceOf(accounts[0]) == 30_000_000 * 10**18
+    #saletoken = ftgtoken
     #TODO
     #investtoken = ftgtoken
 
     owner = accounts[0]
-    _totalTokensToSell = 1_000_000
+    _totalTokensToSell = 10_000_000
     _totalToRaise = 100_000
-    _tokenPriceInUSD = _totalTokensToSell/_totalToRaise
+    _tokenPriceInUSD = 100 #_totalTokensToSell/_totalToRaise
 
     salectr = FTGSale.deploy("TestSale", investtoken ,saletoken, ftgstaking, _tokenPriceInUSD, _totalTokensToSell, _totalToRaise, {"from": owner})
     # print("accounts[0] = ", accounts[0])
@@ -67,14 +68,25 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     
     assert salectr.allocTotal(1) / salectr.tiersParticipants(1) == 40/1000
     #TODO
-    ae = salectr.amountEligible(accounts[1], {"from": accounts[1]})
-    #
+    #ae = salectr.amountEligible(accounts[1], {"from": accounts[1]})
+    assert salectr.totalTokensToSell() == _totalTokensToSell
+    assert salectr.tokensSold() == 0
+
+    saletoken.transfer(salectr, _totalTokensToSell, {"from": accounts[0]})
+    assert investtoken.balanceOf(accounts[1]) >= _totalTokensToSell
+    investtoken.approve(salectr, 100, {"from": accounts[1]})
+    salectr.participate(100, {"from": accounts[1]})
+
     #assert ae == totalTokensSold * 40/1000 /10000
+    assert salectr.tokensSold() == 100
+    assert salectr.investRaised() == 1
 
-    #salectr.participate(100, {"from": accounts[1]})
+    #assert salectr.participants(accounts[1]).tokensBought == 100
+    #assert salectr.participants(accounts[1]).amountInvested == 1
 
+    assert salectr.participants(accounts[1]) == (1, 100)
 
-    #salectr.Participants[accounts[1]].
+    
 
     # assert salectr.amountGuaranteedPool() == 1000000
     # assert salectr.amountPublicPool() == 1000000

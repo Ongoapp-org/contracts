@@ -6,6 +6,7 @@ import "./FTGStaking.sol";
 
 //https://github.com/avalaunch-app/xava-protocol/blob/master/contracts/sales/AvalaunchSale.sol
 
+// TODO double check decimals
 //TODO handle 2 pools
 //Guaranteed Pool
 //Public Pool
@@ -17,10 +18,9 @@ contract FTGSale is Ownable {
     address public investToken;
 
     struct Participant {
-        address partaddr;
-        uint256 amountAllocated;
         uint256 amountInvested;
         uint256 tokensBought;    
+        //uint256 amountAllocated;
     }
 
     enum Tiers {
@@ -139,6 +139,7 @@ contract FTGSale is Ownable {
     }
 
     function addWhitelist(address p) external onlyOwner {
+        //TODO set amount?
         whitelist[p] = true;
 
         //TODO other steps?
