@@ -9,8 +9,6 @@ import "./FTGStaking.sol";
  * @notice This contract is deployed for every sale and specific to a given sale
  */
 
-//https://github.com/avalaunch-app/xava-protocol/blob/master/contracts/sales/AvalaunchSale.sol
-
 // TODO double check decimals
 //TODO handle 2 pools
 //Guaranteed Pool
@@ -75,7 +73,7 @@ contract FTGSale is Ownable {
         address _investToken,
         address _saleToken,
         address _stakingContractAddress,
-        uint256 _tokenPriceInUSD,
+        uint256 _tokenPrice,
         uint256 _totalTokensToSell,
         uint256 _totalToRaise,
         uint256 _duration
@@ -84,7 +82,7 @@ contract FTGSale is Ownable {
         investToken = _investToken;
         saleToken = _saleToken;
         stakingContractAddress = _stakingContractAddress;
-        tokenPriceInUSD = _tokenPriceInUSD;
+        tokenPrice = _tokenPrice;
         totalTokensToSell = _totalTokensToSell;
         totalToRaise = _totalToRaise;
         saleEnd = block.timestamp + _duration;
@@ -203,7 +201,7 @@ contract FTGSale is Ownable {
 
         //price is fixed
 
-        uint256 tokenInvested = (amountTokensBuy * tokenPriceInUSD) / factor;
+        uint256 tokenInvested = (amountTokensBuy * tokenPrice) / factor;
         IERC20(investToken).transferFrom(
             msg.sender,
             address(this),

@@ -53,7 +53,7 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     print(type(salectr.tiersMin(0)))
 
     salectr.addWhitelist(accounts[1], {"from": owner})
-    assert salectr.whitelist(accounts[1])
+    assert salectr.participants(accounts[1]) == (0, 0, True)
 
     days30 = 2592000
     stakeAmount = 1100000
@@ -80,7 +80,7 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     assert salectr.tiersTotal(1) / salectr.tiersParticipants(1) == 40 / 1000
     # TODO
     ae = salectr.amountEligible(accounts[1], {"from": accounts[1]})
-    assert ae == 40
+    assert ae == 1000 * 0.4 * _totalTokensToSell
     assert salectr.totalTokensToSell() == _totalTokensToSell
     assert salectr.tokensSold() == 0
 
