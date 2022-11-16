@@ -19,7 +19,8 @@ contract FTGSale is Ownable {
 
     struct Participant {
         uint256 amountInvested;
-        uint256 tokensBought;    
+        uint256 tokensBought;
+        //bool whitelisted   
         //uint256 amountAllocated;
     }
 
@@ -55,13 +56,15 @@ contract FTGSale is Ownable {
     uint32 factor = 10_000;
 
     //total allocated per tier
-    mapping(Tiers => uint32) public allocTotal;
+    mapping(Tiers => uint32) public tiersTotal;
     //particpants per tier
     mapping(Tiers => uint32) public tiersParticipants;
     //ticket allocated for each tier, intialized at maximum and subtracted
     mapping(Tiers => uint32) public tiersAllocated;   
-
+    //minimum for tiers
     mapping(Tiers => uint32) public tiersMin;
+    //is tier active to participate
+    mapping(Tiers => bool) public tiersActiveSale;
 
     constructor(
         string memory _name,
@@ -70,7 +73,8 @@ contract FTGSale is Ownable {
         address _stakingContractAddress,
         uint256 _tokenPriceInUSD,
         uint256 _totalTokensToSell,
-        uint256 _totalToRaise
+        uint256 _totalToRaise,
+        uint256 _duration
     ) {
         nameSale = _name;
         investToken = _investToken;
@@ -79,6 +83,7 @@ contract FTGSale is Ownable {
         tokenPriceInUSD = _tokenPriceInUSD;
         totalTokensToSell = _totalTokensToSell;
         totalToRaise = _totalToRaise;
+        saleEnd = block.timestamp + _duration;
         tokensSold = 0;
         investRaised = 0;
     }
@@ -94,10 +99,10 @@ contract FTGSale is Ownable {
         uint256 total = _rubyAllocTotal + _sapphireAllocTotal + _emeraldAllocTotal + _diamondAllocTotal;
         require(total == 100, "not 100% allocated");
 
-        allocTotal[Tiers.RUBY] = _rubyAllocTotal;
-        allocTotal[Tiers.SAPPHIRE] = _sapphireAllocTotal;
-        allocTotal[Tiers.EMERALD] = _emeraldAllocTotal;
-        allocTotal[Tiers.DIAMOND] = _diamondAllocTotal;
+        tiersTotal[Tiers.RUBY] = _rubyAllocTotal;
+        tiersTotal[Tiers.SAPPHIRE] = _sapphireAllocTotal;
+        tiersTotal[Tiers.EMERALD] = _emeraldAllocTotal;
+        tiersTotal[Tiers.DIAMOND] = _diamondAllocTotal;
     }
 
     function setParticipants(uint32 _rubyP, uint32 _sapphireP, uint32 _emeraldP, uint32 _diamondP) public onlyOwner {
@@ -108,10 +113,10 @@ contract FTGSale is Ownable {
         tiersParticipants[Tiers.DIAMOND] = _diamondP;
 
         //init with maximum and count down
-        tiersAllocated[Tiers.RUBY] = allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
-        tiersAllocated[Tiers.SAPPHIRE] = allocTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
-        tiersAllocated[Tiers.EMERALD] = allocTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
-        tiersAllocated[Tiers.DIAMOND] = allocTotal[Tiers.DIAMOND] / tiersParticipants[Tiers.DIAMOND];
+        tiersAllocated[Tiers.RUBY] = tiersTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
+        tiersAllocated[Tiers.SAPPHIRE] = tiersTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
+        tiersAllocated[Tiers.EMERALD] = tiersTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
+        tiersAllocated[Tiers.DIAMOND] = tiersTotal[Tiers.DIAMOND] / tiersParticipants[Tiers.DIAMOND];
 
     }
 
@@ -121,28 +126,21 @@ contract FTGSale is Ownable {
         uint256 amountElig = 0;
         //TODO percent * total
         if (amountLocked >= tiersMin[Tiers.DIAMOND]){
-            amountElig = factor * allocTotal[Tiers.DIAMOND] / tiersParticipants[Tiers.DIAMOND];
+            amountElig = factor * tiersTotal[Tiers.DIAMOND] / tiersParticipants[Tiers.DIAMOND];
         } else if (amountLocked >= tiersMin[Tiers.EMERALD]) {
-            amountElig = factor * allocTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
+            amountElig = factor * tiersTotal[Tiers.EMERALD] / tiersParticipants[Tiers.EMERALD];
         } else if (amountLocked >= tiersMin[Tiers.SAPPHIRE]) {
-            amountElig = factor * allocTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
+            amountElig = factor * tiersTotal[Tiers.SAPPHIRE] / tiersParticipants[Tiers.SAPPHIRE];
         } else if (amountLocked >= tiersMin[Tiers.RUBY]) {
-            amountElig = factor * allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
+            amountElig = factor * tiersTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY];
         } 
         return amountElig;
     }
 
-    function _checkStaking() private {
-        //calculate amount staked in 30 days or more
-        //subtract amount from available pool
-        //amountGuaranteedPool -= participantAmount;
-    }
-
     function addWhitelist(address p) external onlyOwner {
-        //TODO set amount?
         whitelist[p] = true;
 
-        //TODO other steps?
+        //add eligble now?
     }
 
     //checkParticipationSignature
@@ -152,6 +150,8 @@ contract FTGSale is Ownable {
         //TODO is tier allowed?
 
         require(whitelist[msg.sender], "not in whitelist");
+        require(block.timestamp < saleEnd, "sale ended");
+
         //determine allocation size
         uint256 amountElig = amountEligible(msg.sender);
         //TODO

@@ -10,9 +10,10 @@ def main():
     #account = accounts[0] 
     #pk1 = "b5f58344a9513b68d2f20435107de17d865b01d603f4558fef27c1fed071d8e2"
     pk2 = "c43766a57a118e09e3b4dcda38685d2b1bc6e0872af1f9e51dd4bd704d77abde"
+    print(network.chain.id)
     mainaccount = accounts.add(pk2)
     print(mainaccount)
-    print(mainaccount.balance()/10**18)
+    print("balance ", mainaccount.balance()/10**18)
 
     #FTGToken deployed to  0xC54Aee27538ae906034e9f2f1A784778ab55d861
     #FTGStaking deployed to  0x7cba9dcC55C3493325db6EBbe7ffbe7AA9F9c4df
@@ -32,9 +33,9 @@ def main():
     saletoken = "0x61Ba43a2469a32801520160ca0e29b2726874CC5"
 
     #salectr = FTGSale.deploy("TestSale", investtoken , saletoken, ftgstaking, _tokenPriceInUSD, {"from": mainaccount})
-    salectr = FTGSale.at("0xEa958dADd3Fee6DFcf6F4545ABD3ed2c8c28D427")
-    print(salectr.nameSale())
-    #salectr.setMins(1000, 500, 200, 100, {"from": mainaccount})
-    salectr.setAllocs(40, 30, 20, 10, {"from": mainaccount})
+    # salectr = FTGSale.at("0xEa958dADd3Fee6DFcf6F4545ABD3ed2c8c28D427")
+    # print(salectr.nameSale())
+    # #salectr.setMins(1000, 500, 200, 100, {"from": mainaccount})
+    # salectr.setAllocs(40, 30, 20, 10, {"from": mainaccount})
     #print(salectr)
    
