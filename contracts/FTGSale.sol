@@ -26,6 +26,15 @@ contract FTGSale is Ownable {
         //uint256 amountEligible;
     }
 
+    enum Phase {
+        Registration,
+        GuarantedPool,
+        PublicPool,
+        SaleCompleted
+    }
+
+    Phase salePhase;
+
     enum Tiers {
         NONE,
         RUBY,
@@ -60,11 +69,11 @@ contract FTGSale is Ownable {
     //total allocated per tier
     mapping(Tiers => uint32) public tiersTotal;
     //participants per tier
-    mapping(Tiers => uint32) public tiersParticipants;
+    mapping(Tiers => uint32) public tiersNbOFParticipants;
     //ticket allocated for each tier, initialized at maximum and dynamically updated
     mapping(Tiers => uint32) public tiersAllocated;
     //ftg staking threshold  for tiers
-    mapping(Tiers => uint32) public tiersMin;
+    mapping(Tiers => uint32) public tiersMinFTGStaking;
     //is tier active to participate
     mapping(Tiers => bool) public tiersActiveSale;
 
@@ -97,10 +106,10 @@ contract FTGSale is Ownable {
         uint32 _emeraldMin,
         uint32 _diamondMin
     ) public onlyOwner {
-        tiersMin[Tiers.RUBY] = _rubyMin;
-        tiersMin[Tiers.SAPPHIRE] = _sapphireMin;
-        tiersMin[Tiers.EMERALD] = _emeraldMin;
-        tiersMin[Tiers.DIAMOND] = _diamondMin;
+        tiersMinFTGStaking[Tiers.RUBY] = _rubyMin;
+        tiersMinFTGStaking[Tiers.SAPPHIRE] = _sapphireMin;
+        tiersMinFTGStaking[Tiers.EMERALD] = _emeraldMin;
+        tiersMinFTGStaking[Tiers.DIAMOND] = _diamondMin;
     }
 
     // set repartition of tokens for sale between Tiers
@@ -115,7 +124,6 @@ contract FTGSale is Ownable {
             _emeraldAllocTotal +
             _diamondAllocTotal;
         require(total == 100, "not 100% allocated");
-
         tiersTotal[Tiers.RUBY] = _rubyAllocTotal;
         tiersTotal[Tiers.SAPPHIRE] = _sapphireAllocTotal;
         tiersTotal[Tiers.EMERALD] = _emeraldAllocTotal;
@@ -123,156 +131,104 @@ contract FTGSale is Ownable {
     }
 
     function signupForSale() public {
-        //require KYC has been done
-        require(checkKYC(), "KYC requirements not fullfilled")
-        Tier tier = 
-        require()
-
+        //requirement that we are in the Registration Phase
+        require(phase == Phase.Registration, "Registration not open");
+        //requirement that KYC has been done
+        require(checkKYC(msg.sender), "KYC requirements not fullfilled");
+        //requirement that caller is eligible
+        Tiers tier = checkTierEligibility(msg.sender);
+        require(tier != Tiers.NONE, "Not enough locked Staking");
+        // add participant
+        participants[msg.sender] = participant(0, 0, true);
+        // add participant to tiersNbOfParticipants
+        tiersNbOfParticipants[tier]++;
     }
 
     //
-    function setParticipants(
+    function tiersMaxTokenAmount(
         uint32 _rubyP,
         uint32 _sapphireP,
         uint32 _emeraldP,
         uint32 _diamondP
     ) public onlyOwner {
-        tiersParticipants[Tiers.RUBY] = _rubyP;
-        tiersParticipants[Tiers.SAPPHIRE] = _sapphireP;
-        tiersParticipants[Tiers.EMERALD] = _emeraldP;
-        tiersParticipants[Tiers.DIAMOND] = _diamondP;
+        tiersNbOfParticipants[Tiers.RUBY] = _rubyP;
+        tiersNbOfParticipants[Tiers.SAPPHIRE] = _sapphireP;
+        tiersNbOfParticipants[Tiers.EMERALD] = _emeraldP;
+        tiersNbOfParticipants[Tiers.DIAMOND] = _diamondP;
 
         //init with maximum and count down
         tiersAllocated[Tiers.RUBY] =
             tiersTotal[Tiers.RUBY] /
-            tiersParticipants[Tiers.RUBY];
+            tiersNbOfParticipants[Tiers.RUBY];
         tiersAllocated[Tiers.SAPPHIRE] =
             tiersTotal[Tiers.SAPPHIRE] /
-            tiersParticipants[Tiers.SAPPHIRE];
+            tiersNbOfParticipants[Tiers.SAPPHIRE];
         tiersAllocated[Tiers.EMERALD] =
             tiersTotal[Tiers.EMERALD] /
-            tiersParticipants[Tiers.EMERALD];
+            tiersNbOfParticipants[Tiers.EMERALD];
         tiersAllocated[Tiers.DIAMOND] =
             tiersTotal[Tiers.DIAMOND] /
-            tiersParticipants[Tiers.DIAMOND];
+            tiersNbOfParticipants[Tiers.DIAMOND];
     }
-
-
- // returns the highest eligible membership (0:none, 1:ruby, 2:sapphire, 3:emerald, 4:diamond)
-    function checkMembership(address _memberAddress)
-        public
-        returns (uint256 membership)
-    {
-        // update member balances
-        _updateStakeholderBalances(_memberAddress);
-        // verifies if address is eligible for membership
-        if (stakeholders[_memberAddress].totalLockedBalance < 100_000) {
-            return membership;
-        }
-        int256 stakingAmount;
-        Staking[] memory memberStakings = stakeholders[_memberAddress].stakings;
-        for (uint256 i = 0; i < memberStakings.length; i++) {
-            stakingAmount = memberStakings[i].amount;
-            if (
-                // check if staking is locked
-                memberStakings[i].lockDuration >= 90 days &&
-                block.timestamp - memberStakings[i].lockDuration <
-                memberStakings[i].timestamp
-            ) {
-                // check if enough FTG staked for earning membership
-                if (stakingAmount < 100_000) {
-                    //no privileges membership
-                    membership = 0;
-                } else if (
-                    stakingAmount >= 100_000 && stakingAmount < 250_000
-                ) {
-                    //ruby membership
-                    membership = membership > 1 ? membership : 1;
-                } else if (
-                    stakingAmount >= 250_000 && stakingAmount < 500_000
-                ) {
-                    //sapphire membership
-                    membership = membership > 2 ? membership : 2;
-                } else if (
-                    stakingAmount >= 500_000 && stakingAmount < 1_000_000
-                ) {
-                    //emerald membership
-                    membership = 3;
-                } else {
-                    //diamond membership
-                    membership = 4;
-                    break;
-                }
-            }
-        }
-        return membership;
-    }
-
-
-
-
-
 
     // TODO dynamic if pools unused
-    function amountEligible(address account) public view returns (uint256) {
-        uint256 amountLocked = uint256(
+    function checkTierEligibility(address account) public view returns (Tier) {
+        // check active locked staking for account
+        uint256 activeStakingLocked = uint256(
             IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(
                 account,
                 30 days
             )
         );
-
-        // check if enough FTG staked for earning membership
-                if (stakingAmount < 100_000) {
-                    //no privileges membership
-                    membership = 0;
-                } else if (
-                    stakingAmount >= 100_000 && stakingAmount < 250_000
-                ) {
-                    //ruby membership
-                    membership = membership > 1 ? membership : 1;
-                } else if (
-                    stakingAmount >= 250_000 && stakingAmount < 500_000
-                ) {
-                    //sapphire membership
-                    membership = membership > 2 ? membership : 2;
-                } else if (
-                    stakingAmount >= 500_000 && stakingAmount < 1_000_000
-                ) {
-                    //emerald membership
-                    membership = 3;
-                } else {
-                    //diamond membership
-                    membership = 4;
-                    break;
-                }
-            }
+        // check eligible tier earned
+        if (activeStakingLocked < tiersMinFTGStaking[0]) {
+            //no privileges membership
+            return Tiers.NONE;
+        } else if (
+            activeStakingLocked >= tiersMinFTGStaking[0] &&
+            activeStakingLocked < tiersMinFTGStaking[1]
+        ) {
+            //ruby membership
+            return Tiers.RUBY;
+        } else if (
+            activeStakingLocked >= tiersMinFTGStaking[1] &&
+            activeStakingLocked < tiersMinFTGStaking[2]
+        ) {
+            //sapphire membership
+            return Tiers.SAPPHIRE;
+        } else if (
+            activeStakingLocked >= tiersMinFTGStaking[2] &&
+            activeStakingLocked < tiersMinFTGStaking[3]
+        ) {
+            //emerald membership
+            return Tiers.EMERALD;
+        } else {
+            //diamond membership
+            return DIAMOND;
         }
-        return membership;
+    }
 
-
-
-        uint256 amountElig = 0;
+    /* uint256 amountElig = 0;
         //TODO percent * total
         if (amountLocked >= tiersMin[Tiers.DIAMOND]) {
             amountElig =
                 (factor * tiersTotal[Tiers.DIAMOND]) /
-                tiersParticipants[Tiers.DIAMOND];
+                tiersNbOfParticipants[Tiers.DIAMOND];
         } else if (amountLocked >= tiersMin[Tiers.EMERALD]) {
             amountElig =
                 (factor * tiersTotal[Tiers.EMERALD]) /
-                tiersParticipants[Tiers.EMERALD];
+                tiersNbOfParticipants[Tiers.EMERALD];
         } else if (amountLocked >= tiersMin[Tiers.SAPPHIRE]) {
             amountElig =
                 (factor * tiersTotal[Tiers.SAPPHIRE]) /
-                tiersParticipants[Tiers.SAPPHIRE];
+                tiersNbOfParticipants[Tiers.SAPPHIRE];
         } else if (amountLocked >= tiersMin[Tiers.RUBY]) {
             amountElig =
                 (factor * tiersTotal[Tiers.RUBY]) /
-                tiersParticipants[Tiers.RUBY];
+                tiersNbOfParticipants[Tiers.RUBY];
         }
         return amountElig;
-    }
+    } */
 
     function addWhitelist(address p) external onlyOwner {
         participants[p].whitelisted = true;
