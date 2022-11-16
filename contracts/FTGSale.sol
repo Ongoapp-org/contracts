@@ -63,7 +63,7 @@ contract FTGSale is Ownable {
     mapping(Tiers => uint32) public tiersParticipants;
     //ticket allocated for each tier, initialized at maximum and dynamically updated
     mapping(Tiers => uint32) public tiersAllocated;
-    //minimum for tiers
+    //ftg staking threshold  for tiers
     mapping(Tiers => uint32) public tiersMin;
     //is tier active to participate
     mapping(Tiers => bool) public tiersActiveSale;
@@ -90,6 +90,7 @@ contract FTGSale is Ownable {
         investRaised = 0;
     }
 
+    //function allows owner to set ftg staking threshold for tiers
     function setMins(
         uint32 _rubyMin,
         uint32 _sapphireMin,
@@ -102,6 +103,7 @@ contract FTGSale is Ownable {
         tiersMin[Tiers.DIAMOND] = _diamondMin;
     }
 
+    // set repartition of tokens for sale between Tiers
     function setAllocs(
         uint32 _rubyAllocTotal,
         uint32 _sapphireAllocTotal,
@@ -120,6 +122,15 @@ contract FTGSale is Ownable {
         tiersTotal[Tiers.DIAMOND] = _diamondAllocTotal;
     }
 
+    function signupForSale() public {
+        //require KYC has been done
+        require(checkKYC(), "KYC requirements not fullfilled")
+        Tier tier = 
+        require()
+
+    }
+
+    //
     function setParticipants(
         uint32 _rubyP,
         uint32 _sapphireP,
