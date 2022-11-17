@@ -78,9 +78,7 @@ contract FTGSale is Ownable {
     // ticket allocated for each tier, initialized at maximum and dynamically updated
     mapping(Tiers => uint32) public tiersMaxTokensForSalePerParticipant;
     // ftg staking threshold  for tiers
-    mapping(Tiers => uint32) public tiersMinFTGStaking;
-    // is tier active to participate ??? Probably not needed
-    mapping(Tiers => bool) public tiersActiveSale;
+    mapping(Tiers => uint32) public tiersMinFTGStaking;    
 
     //Owner deploy contract and launches sale at the same time
     constructor(
