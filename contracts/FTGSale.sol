@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/IERC20.sol";
-
+import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 import "./FTGStaking.sol";
 
 /**
@@ -14,14 +14,10 @@ import "./FTGStaking.sol";
 //Guaranteed Pool
 //Public Pool
 contract FTGSale is Ownable {
-
-    //tiers Memberships
-    enum Tiers {
-        NONE,
-        RUBY,
-        EMERALD,
-        SAPPHIRE,
-        DIAMOND
+    struct Participant {
+        uint256 tokensBalance;
+        bool whitelisted;
+        tier participantTier;
     }
 
     //Sale Phases
@@ -32,17 +28,19 @@ contract FTGSale is Ownable {
         PublicPool,
         SaleCompleted
     }
-
-    //participant in this sale
-    struct Participant {
-        uint256 amountInvested;
-        uint256 tokensBought;
-        bool whitelisted;
-        Tier participantTier;
-    }
-
     Phases salePhase;
 
+    //tiers Memberships
+    enum Tiers {
+        NONE,
+        RUBY,
+        EMERALD,
+        SAPPHIRE,
+        DIAMOND
+    }
+
+    // tokens sale's name
+    string public saleName;
     // Phases durations
     uint256 immutable registrationPhaseDuration;
     uint256 immutable garanteedPoolPhaseDuration;
@@ -57,7 +55,7 @@ contract FTGSale is Ownable {
     uint256 immutable tokenPrice;
     // amount of tokens to sell
     uint256 immutable totalTokensToSell;
-    // amount to raise in total
+    // amount to raise in total ?? Should we end the sale when it is reached?
     uint256 immutable totalToRaise;
     // sale starts with registration ...
     uint256 public registrationPhaseStart;
@@ -67,8 +65,14 @@ contract FTGSale is Ownable {
     uint256 public tokensSold;
     // total Raised so far
     uint256 public investmentRaised;
-    // precision factor
-    uint32 constant factor = 10_000;
+    // precision Factor
+    uint256 constant precisionFactor = 1_000_000_000;
+    // ruby tier max number of tokens per participant
+    uint256 public n;
+    // nb of participants
+    uint256 public np;
+    // tokens to sell during public sale
+    uint256 publicSaleTokens;
 
     // list of participants to the sale
     mapping(address => Participant) public participants;
@@ -79,19 +83,26 @@ contract FTGSale is Ownable {
     // ticket allocated for each tier, initialized at maximum and dynamically updated
     mapping(Tiers => uint32) public tiersMaxTokensForSalePerParticipant;
     // ftg staking threshold  for tiers
-    mapping(Tiers => uint32) public tiersMinFTGStaking;    
+    mapping(Tiers => uint32) public tiersMinFTGStaking;
+    // is tier active to participate ??? Probably not needed
+    mapping(Tiers => bool) public tiersActiveSale;
 
     //Owner deploy contract and launches sale at the same time
     constructor(
+        string memory _name,
         uint256 _registrationPhaseDuration,
         uint256 _guaranteedPoolPhaseDuration,
         uint256 _publicPoolPhaseDuration,
         address _saleToken,
         address _investToken,
         address _stakingContractAddress,
-        uint256 _tokenPrice,
+        uint256 _tokenPrice, // fix price for entire sale ?
         uint256 _totalTokensToSell,
-        uint256 _totalToRaise        
+        uint256 _totalToRaise,
+        uint32 _rubyMin,
+        uint32 _sapphireMin,
+        uint32 _emeraldMin,
+        uint32 _diamondMin
     ) {
         saleName = _name;
         registrationPhaseDuration = _registrationPhaseDuration;
@@ -116,9 +127,13 @@ contract FTGSale is Ownable {
             registrationPhaseStart = block.timestamp;
             phase = Phases.Registration;
         } else if (phase == Phases.Registration) {
+            //once the registration time is finished
+            //calculate the max number of tokens for sale by participants
+            _guaranteedSalePreliminaryCalculation();
             guaranteedPoolPhaseStart = block.timestamp;
             phase = Phases.GuaranteedPool;
         } else if (phase == Phases.GuaranteedPool) {
+            _publicSalePreliminaryCalculation();
             publicPoolPhaseStart = block.timestamp;
             phase = Phases.PublicPool;
         } else if (phase == Phases.PublicPool) {
@@ -130,8 +145,8 @@ contract FTGSale is Ownable {
 
     //********************* Setup Phase functions *********************/
 
-    //function allows owner to set tiers min ftg staking threshold
-    //should it really be setup here? does it vary between sales?
+    // function allows owner to set tiers min ftg staking threshold
+    // should it really be setup here? does it vary between sales?
     function setTiersMinFTGStakings(
         uint32 _rubyMin,
         uint32 _sapphireMin,
@@ -145,21 +160,20 @@ contract FTGSale is Ownable {
     }
 
     // set tiers tokens allocation
-    function setTiersTotalTokensAllocations(
-        uint32 _rubyAllocTotal,
-        uint32 _sapphireAllocTotal,
-        uint32 _emeraldAllocTotal,
-        uint32 _diamondAllocTotal
+    function setTiersTokensAllocationFactors(
+        uint32 _sapphireAllocationFactor,
+        uint32 _emeraldAllocationFactor,
+        uint32 _diamondAllocationFactor
     ) public onlyOwner {
-        uint256 total = _rubyAllocTotal +
-            _sapphireAllocTotal +
-            _emeraldAllocTotal +
-            _diamondAllocTotal;
-        require(total == 100, "not 100% allocated");
-        tiersTotalTokenAllocation[Tiers.RUBY] = _rubyAllocTotal;
-        tiersTotalTokenAllocation[Tiers.SAPPHIRE] = _sapphireAllocTotal;
-        tiersTotalTokenAllocation[Tiers.EMERALD] = _emeraldAllocTotal;
-        tiersTotalTokenAllocation[Tiers.DIAMOND] = _diamondAllocTotal;
+        require(
+            _sapphireAllocationFactor < _emeraldAllocationFactor &&
+                _emeraldAllocationFactor < _diamondAllocationFactor,
+            "factors must be increasing from lower to higher tiers"
+        );
+        tiersTokensAllocationFactor[Tiers.RUBY] = 1;
+        tiersTokensAllocationFactor[Tiers.SAPPHIRE] = _sapphireAllocationFactor;
+        tiersTokensAllocationFactor[Tiers.EMERALD] = _emeraldAllocationFactor;
+        tiersTokensAllocationFactor[Tiers.DIAMOND] = _diamondAllocationFactor;
     }
 
     //********************* Registration Phase functions *********************/
@@ -171,56 +185,16 @@ contract FTGSale is Ownable {
                 registrationPhaseStart + registrationPhaseDuration,
             "Registration Phase ended"
         );
-        //requirement that KYC has been done in the frontend
-        //requirement that caller is eligible
+        // requirement that KYC has been done in the frontend
+        // requirement that caller is eligible
         Tiers tier = checkTierEligibility(msg.sender);
         require(tier != Tiers.NONE, "Not enough locked Staking");
         // add participant
-        participants[msg.sender] = participant(0, 0, true, tier);
+        participants[msg.sender] = Participant(0, true, tier);
         // add participant to tiersNbOfParticipants
         tiersNbOfParticipants[tier]++;
     }
 
-    //this function to calculate the max purchasable number of tokens by participant in each Tier
-    //need to use math function to calculate division !!!!!!
-    function calculateTiersMaxTokenAmountForSalePerParticipant()
-        public
-        onlyOwner
-    {
-        if (tiersNbOfParticipants[Tiers.RUBY] != 0) {
-            tiersMaxTokensForSalePerParticipant[Tiers.RUBY] =
-                tiersTotalTokenAllocation[Tiers.RUBY] /
-                tiersNbOfParticipants[Tiers.RUBY];
-        } else {
-            tiersMaxTokensForSalePerParticipant[Tiers.RUBY] = 0;
-        }
-
-        if (tiersNbOfParticipants[Tiers.SAPPHIRE] != 0) {
-            tiersMaxTokensForSalePerParticipant[Tiers.SAPPHIRE] =
-                tiersTotalTokenAllocation[Tiers.SAPPHIRE] /
-                tiersNbOfParticipants[Tiers.SAPPHIRE];
-        } else {
-            tiersMaxTokensForSalePerParticipant[Tiers.SAPPHIRE] = 0;
-        }
-
-        if (tiersNbOfParticipants[Tiers.EMERALD] != 0) {
-            tiersMaxTokensForSalePerParticipant[Tiers.EMERALD] =
-                tiersTotalTokenAllocation[Tiers.EMERALD] /
-                tiersNbOfParticipants[Tiers.EMERALD];
-        } else {
-            tiersMaxTokensForSalePerParticipant[Tiers.EMERALD] = 0;
-        }
-
-        if (tiersNbOfParticipants[Tiers.DIAMOND] != 0) {
-            tiersMaxTokensForSalePerParticipant[Tiers.DIAMOND] =
-                tiersTotalTokenAllocation[Tiers.DIAMOND] /
-                tiersNbOfParticipants[Tiers.DIAMOND];
-        } else {
-            tiersMaxTokensForSalePerParticipant[Tiers.DIAMOND] = 0;
-        }
-    }
-
-    // TODO dynamic if pools unused
     function checkTierEligibility(address account) public view returns (Tier) {
         // check active locked staking for account
         uint256 activeStakingLocked = uint256(
@@ -253,37 +227,90 @@ contract FTGSale is Ownable {
             return Tiers.EMERALD;
         } else {
             //diamond membership
-            return DIAMOND;
+            return Tiers.DIAMOND;
         }
     }
 
     function addWhitelist(address p) external onlyOwner {
         participants[p].whitelisted = true;
-
-        //add eligble now?
     }
 
-    //checkParticipationSignature
+    //********************* Sale Phases functions *********************/
 
-    //*********************Sale Phases functions*********************/
+    //this function to calculate n the max number of tokens for sale by participant in Ruby Tier
+    function _guaranteedSalePreliminaryCalculation() private {
+        //require registration phase is over
+        require(
+            registrationPhaseStart != 0 &&
+                block.timestamp >
+                registrationPhaseStart + registrationPhaseDuration,
+            "registration not finished"
+        );
+        uint256 sumFNP = tiersTokensAllocationFactor[Tiers.SAPPHIRE] *
+            tiersNbOfParticipants[Tiers.SAPPHIRE] +
+            tiersTokensAllocationFactor[Tiers.EMERALD] *
+            tiersNbOfParticipants[Tiers.EMERALD] +
+            tiersTokensAllocationFactor[Tiers.DIAMOND] *
+            tiersNbOfParticipants[Tiers.DIAMOND] +
+            tiersNbOfParticipants[Tiers.RUBY];
+        n = PRBMath.mulDiv(
+            precisionFactor, // multiplier for calculation precision
+            totalTokensToSell,
+            sumFNP
+        );
+    }
+
+    function _publicSalePreliminaryCalculation() private {
+        //require registration phase is over
+        require(
+            guaranteedPoolPhaseStart != 0 &&
+                block.timestamp >
+                guaranteedPoolPhaseStart + guaranteedPoolPhaseDuration,
+            "guaranteedPool Sale not finished"
+        );
+        //np = number of participants calculated
+        np =
+            tiersNbOfParticipants[Tiers.RUBY] +
+            tiersNbOfParticipants[Tiers.SAPPHIRE] +
+            tiersNbOfParticipants[Tiers.EMERALD] +
+            tiersNbOfParticipants[Tiers.DIAMOND];
+        publicSaleTokens = totalTokensToSell - tokensSold;
+        n2= PRBMath.mulDiv(
+            precisionFactor, // multiplier for calculation precision
+            publicSaleTokens,
+            np
+        ); 
+    }
 
     //function to buy tokens during Pool Phases
     function buytoken(uint256 tokensAmount) external {
         //verifies that participants has been KYCed
         require(participants[msg.sender].whitelisted, "not in whitelist");
-        require(investmentRaised + tokensAmount <= totalToRaise, "max raised reached");
+        Tier tier = participants[msg.sender].tier;
         if (phase == Phases.GuaranteedPool) {
-            //verifies that phase is not over
+            //Verifies that phase is not over
             require(
                 block.timestamp <
                     guaranteedPoolPhaseStart + guaranteedPoolPhaseDuration,
                 "Guaranteed Pool Phase ended"
             );
-            //verifies that participant has DIAMOND or EMERALD Membership
-            if (
-                participants[msg.sender].tier == Tiers.DIAMOND ||
-                participants[msg.sender].tier == Tiers.EMERALD
-            ) {}
+            //require participant is buying less than entitled to
+            require(
+                participants[msg.sender].tokensBalance + tokensAmount <
+                    n * tiersTokensAllocationFactor[tier],
+                "your tokensBalance would exceed the maximum allowed number of tokens"
+            );
+            uint256 tokensAmountPrice = tokenPrice * tokensAmount;
+            //purchase takes place
+            IERC20(investToken).transferFrom(
+                msg.sender,
+                address(this),
+                tokensAmountPrice
+            );
+            // balances are updated
+            tokensSold += tokensAmount;
+            investmentRaised += tokensAmountPrice;
+            participants[msg.sender].tokensBalance += tokensAmount;
         } else if (phase == Phases.PublicPool) {
             //verifies that phase is not over
             require(
@@ -291,36 +318,35 @@ contract FTGSale is Ownable {
                     publicPoolPhaseStart + publicPoolPhaseDuration,
                 "Public Pool Phase ended"
             );
+            //require participant is buying less than entitled to
+            require(
+                participants[msg.sender].tokensBalance + tokensAmount <
+                    n * tiersTokensAllocationFactor[tier],
+                "your tokensBalance would exceed the maximum allowed number of tokens"
+            );
+            uint256 tokensAmountPrice = tokenPrice * tokensAmount;
+            //purchase takes place
+            IERC20(investToken).transferFrom(
+                msg.sender,
+                address(this),
+                tokensAmountPrice
+            );
+            // balances are updated
+            investmentRaised += tokensAmountPrice;
+            participants[msg.sender].tokensBalance += tokensAmount;
+
         } else {
             revert("sales not open");
         }
 
-        //??
-        require(block.timestamp < 0, "sale ended");
+    }
 
-        //determine allocation size
-        uint256 amountElig = amountEligible(msg.sender);
-        //TODO
-        require(tokensAmount <= amountElig, "amount too high not eliglbe");
-
-        // bytes calldata signature
-        // signature verifies KYC
-
-        //price is fixed
-
-        uint256 tokenInvested = (tokensAmount * tokenPrice) / factor;
-        IERC20(investToken).transferFrom(
-            msg.sender,
-            address(this),
-            tokenInvested
-        );
-        IERC20(saleToken).transfer(msg.sender, tokensAmount);
-
-        participants[msg.sender].amountInvested += tokenInvested;
-        participants[msg.sender].tokensBought += tokensAmount;
-
-        tokensSold += tokensAmount;
-        investmentRaised += tokenInvested;
+    function claimTokens() public {
+        //require that saleSompleted Phase started
+        require(phase == Phases.SaleCompleted, "sale not completed yet");
+        require(participants[msg.sender].tokensBalance>0,"Nothing to claim");
+        IERC20(saleToken).transfer(msg.sender, participants[msg.sender].tokensBalance);
+        participants[msg.sender].tokensBalance = 0
     }
 
     // Function for owner to deposit tokens
