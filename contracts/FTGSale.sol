@@ -277,6 +277,7 @@ contract FTGSale is Ownable {
     function buytoken(uint256 tokensAmount) external {
         //verifies that participants has been KYCed
         require(participants[msg.sender].whitelisted, "not in whitelist");
+        require(investmentRaised + tokensAmount <= totalToRaise, "max raised reached");
         if (phase == Phases.GuaranteedPool) {
             //verifies that phase is not over
             require(
@@ -284,7 +285,7 @@ contract FTGSale is Ownable {
                     guaranteedPoolPhaseStart + guaranteedPoolPhaseDuration,
                 "Guaranteed Pool Phase ended"
             );
-            //verifies that participant has DIAMOND orEMERALD Membership
+            //verifies that participant has DIAMOND or EMERALD Membership
             if (
                 participants[msg.sender].tier == Tiers.DIAMOND ||
                 participants[msg.sender].tier == Tiers.EMERALD
@@ -300,6 +301,7 @@ contract FTGSale is Ownable {
             revert("sales not open");
         }
 
+        //??
         require(block.timestamp < 0, "sale ended");
 
         //determine allocation size
