@@ -14,22 +14,6 @@ import "./FTGStaking.sol";
 //Guaranteed Pool
 //Public Pool
 contract FTGSale is Ownable {
-    struct Participant {
-        uint256 amountInvested;
-        uint256 tokensBought;
-        bool whitelisted;
-        tier participantTier;
-    }
-
-    //Sale Phases
-    enum Phases {
-        Setup,
-        Registration,
-        GuaranteedPool,
-        PublicPool,
-        SaleCompleted
-    }
-    Phases salePhase;
 
     //tiers Memberships
     enum Tiers {
@@ -40,8 +24,25 @@ contract FTGSale is Ownable {
         DIAMOND
     }
 
-    // tokens sale's name
-    string public saleName;
+    //Sale Phases
+    enum Phases {
+        Setup,
+        Registration,
+        GuaranteedPool,
+        PublicPool,
+        SaleCompleted
+    }
+
+    //participant in this sale
+    struct Participant {
+        uint256 amountInvested;
+        uint256 tokensBought;
+        bool whitelisted;
+        Tier participantTier;
+    }
+
+    Phases salePhase;
+
     // Phases durations
     uint256 immutable registrationPhaseDuration;
     uint256 immutable garanteedPoolPhaseDuration;
@@ -56,7 +57,7 @@ contract FTGSale is Ownable {
     uint256 immutable tokenPrice;
     // amount of tokens to sell
     uint256 immutable totalTokensToSell;
-    // amount to raise in total ?? Should we end the sale when it is reached?
+    // amount to raise in total
     uint256 immutable totalToRaise;
     // sale starts with registration ...
     uint256 public registrationPhaseStart;
@@ -78,26 +79,19 @@ contract FTGSale is Ownable {
     // ticket allocated for each tier, initialized at maximum and dynamically updated
     mapping(Tiers => uint32) public tiersMaxTokensForSalePerParticipant;
     // ftg staking threshold  for tiers
-    mapping(Tiers => uint32) public tiersMinFTGStaking;
-    // is tier active to participate ??? Probably not needed
-    mapping(Tiers => bool) public tiersActiveSale;
+    mapping(Tiers => uint32) public tiersMinFTGStaking;    
 
     //Owner deploy contract and launches sale at the same time
     constructor(
-        string memory _name,
         uint256 _registrationPhaseDuration,
         uint256 _guaranteedPoolPhaseDuration,
         uint256 _publicPoolPhaseDuration,
         address _saleToken,
         address _investToken,
         address _stakingContractAddress,
-        uint256 _tokenPrice, // fix price for entire sale ?
+        uint256 _tokenPrice,
         uint256 _totalTokensToSell,
-        uint256 _totalToRaise,
-        uint32 _rubyMin,
-        uint32 _sapphireMin,
-        uint32 _emeraldMin,
-        uint32 _diamondMin
+        uint256 _totalToRaise        
     ) {
         saleName = _name;
         registrationPhaseDuration = _registrationPhaseDuration;
@@ -134,7 +128,7 @@ contract FTGSale is Ownable {
         }
     }
 
-    //*********************Setup Phase functions*********************/
+    //********************* Setup Phase functions *********************/
 
     //function allows owner to set tiers min ftg staking threshold
     //should it really be setup here? does it vary between sales?
@@ -168,7 +162,7 @@ contract FTGSale is Ownable {
         tiersTotalTokenAllocation[Tiers.DIAMOND] = _diamondAllocTotal;
     }
 
-    //*********************Registration Phase functions*********************/
+    //********************* Registration Phase functions *********************/
 
     function registerForSale() public {
         require(phase == Phases.Registration, "Registration not open");

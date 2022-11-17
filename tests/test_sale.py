@@ -30,7 +30,6 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     duration = 60*60*24
 
     salectr = FTGSale.deploy(
-        "TestSale",
         investtoken,
         saletoken,
         ftgstaking,
@@ -42,7 +41,7 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     )
     # print("accounts[0] = ", accounts[0])
 
-    assert salectr.nameSale() == "TestSale"
+    #assert salectr.nameSale() == "TestSale"
 
     salectr.setMins(1000000, 500000, 250000, 100000)
     salectr.setAllocs(40, 30, 20, 10)
