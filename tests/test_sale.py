@@ -12,6 +12,7 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     
     ftgstaking = deploy_FTGStaking(ftgtoken.address)
     ftgtoken.transfer(accounts[1], 10_000_000 * 10**18 , {"from": accounts[0]})
+    ftgtoken.transfer(accounts[2], 500_000 * 10**18 , {"from": accounts[0]})
     #investtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
     #assert investtoken.balanceOf(accounts[1]) == 100_000_000
 
@@ -49,15 +50,47 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     SAPPHIRE = 3
     DIAMOND = 4
 
-    #TODO problem with none?
+    assert salectr.salePhase() == 0
+
+    #setup sale
+
     assert salectr.tiersMinFTGStaking(NONE) == 0
     assert salectr.tiersMinFTGStaking(RUBY) == 100_000
     assert salectr.tiersMinFTGStaking(EMERALD) == 250_000
     assert salectr.tiersMinFTGStaking(SAPPHIRE) == 500_000
     assert salectr.tiersMinFTGStaking(DIAMOND) == 1_000_000
-    #salectr.setTiersTokensAllocationFactors
+
+    salectr.setTiersTokensAllocationFactors(2, 4, 8, {"from": accounts[0]})
+    assert salectr.tiersTokensAllocationFactor(RUBY) == 1
+    assert salectr.tiersTokensAllocationFactor(SAPPHIRE) == 2
+    assert salectr.tiersTokensAllocationFactor(EMERALD) == 4
+    assert salectr.tiersTokensAllocationFactor(DIAMOND) == 8
 
     salectr.launchNextPhase({"from": accounts[0]})
+
+    #register phase
+    assert salectr.salePhase() == 1
+
+    days30 = 2592000
+    stakeAmount = 1_100_000
+    ftgtoken.approve(ftgstaking, stakeAmount, {"from": accounts[1]})
+    ftgstaking.stake(stakeAmount, days30, {"from": accounts[1]})
+
+    salectr.registerForSale({"from": accounts[1]})
+
+    assert salectr.participants(accounts[1]) == (0, 0, True, DIAMOND)
+
+    days30 = 2592000
+    stakeAmount = 110_000
+    ftgtoken.approve(ftgstaking, stakeAmount, {"from": accounts[2]})
+    ftgstaking.stake(stakeAmount, days30, {"from": accounts[2]})
+
+    salectr.registerForSale({"from": accounts[2]})
+
+    assert salectr.participants(accounts[2]) == (0, 0, True, RUBY)
+
+    #salectr.registerForSale({"from": accounts[2]})
+    
 
     # print("accounts[0] = ", accounts[0])
 
@@ -72,10 +105,7 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     # salectr.addWhitelist(accounts[1], {"from": owner})
     # assert salectr.participants(accounts[1]) == (0, 0, True)
 
-    # days30 = 2592000
-    # stakeAmount = 1100000
-    # ftgtoken.approve(ftgstaking, stakeAmount, {"from": accounts[1]})
-    # ftgstaking.stake(stakeAmount, days30, {"from": accounts[1]})
+    
 
     # # TODO
     # # uint256 amountLocked = uint(IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(account, 30 days));

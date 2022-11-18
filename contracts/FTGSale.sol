@@ -42,7 +42,7 @@ contract FTGSale is Ownable {
         Tiers participantTier;
     }
 
-    Phases salePhase;
+    Phases public salePhase;
 
     // Phases durations
     uint256 registrationPhaseDuration;
