@@ -14,13 +14,13 @@ def isolate(fn_isolation):
 @pytest.fixture(scope="module", autouse=True)
 def ftgtoken(MockFTGToken, accounts):
     print("Reinitialize FTGToken by accounts[0]=", accounts[0])
-    return MockFTGToken.deploy(30000000 * 10**18, {"from": accounts[0]})
+    return MockFTGToken.deploy(30_000_000 * 10**18, {"from": accounts[0]})
 
 
 @pytest.fixture(scope="module", autouse=True)
 def investtoken(MockFTGToken, accounts):
     print("Reinitialize FTGToken by accounts[0]=", accounts[0])
-    return MockFTGToken.deploy(30000000 * 10**18, {"from": accounts[0]})
+    return MockFTGToken.deploy(30_000_000 * 10**18, {"from": accounts[0]})
 
 
 @pytest.fixture(scope="module", autouse=True)

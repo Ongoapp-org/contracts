@@ -8,26 +8,25 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     # for i in range(1, 3):
     #     assert ftgtoken.balanceOf(accounts[i]) == 10000
     # deploy the contract
+
+    
     ftgstaking = deploy_FTGStaking(ftgtoken.address)
-    ftgtoken.transfer(accounts[1], 100000000, {"from": accounts[0]})
-    investtoken.transfer(accounts[1], 100000000, {"from": accounts[0]})
-
-    assert investtoken.balanceOf(accounts[1]) == 100000000
-
-    _amountGuaranteedPool = 1000000
-    _amountPublicPool = 1000000
+    ftgtoken.transfer(accounts[1], 10_000_000 * 10**18 , {"from": accounts[0]})
+    #investtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
+    #assert investtoken.balanceOf(accounts[1]) == 100_000_000
 
     saletoken = MockFTGToken.deploy(30_000_000 * 10**18, {"from": accounts[0]})
-    assert saletoken.balanceOf(accounts[0]) == 30_000_000 * 10**18
-    # saletoken = ftgtoken
-    # TODO
-    # investtoken = ftgtoken
+    saletoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
+    assert saletoken.balanceOf(accounts[0]) == 20_000_000 * 10**18
+    assert saletoken.balanceOf(accounts[1]) == 10_000_000 * 10**18
 
-    owner = accounts[0]
-    _totalTokensToSell = 10_000_000
-    _totalToRaise = 100_000
-    _tokenPriceInUSD = 100  # _totalTokensToSell/_totalToRaise
-    duration = 60*60*24
+    _totalTokensToSell = 10_000_000 * 10**18
+    _totalToRaise = 100_000 * 10**18
+    #0.01
+    _tokenPriceInUSD = 1 * 10**16  
+    #assert _totalTokensToSell * _tokenPriceInUSD/10**18 == _totalToRaise
+    #TODO
+    #assert int(_totalTokensToSell/100) == int(_totalToRaise)
 
     nrt = NRT.deploy("NRT", 18, {"from": accounts[0]})
 
@@ -38,11 +37,20 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
         _tokenPriceInUSD,
         _totalTokensToSell,
         _totalToRaise,
-        {"from": owner},
+        {"from": accounts[0]},
     )
-    # print("accounts[0] = ", accounts[0])
+    day1 = 60*60*24
+    salectr.setPhasesDurations(day1, day1, day1)
+    salectr.setTiersMinFTGStakings(100_000, 250_000, 500_000, 1_000_000)
 
-    #assert salectr.nameSale() == "TestSale"
+    #TODO problem with none?
+    assert salectr.tiersMinFTGStaking(0) == 0
+    assert salectr.tiersMinFTGStaking(1) == 100_000
+    #assert salectr.tiersMinFTGStaking(2) == 250_000
+    #assert salectr.tiersMinFTGStaking(3) == 500_000
+    #salectr.setTiersTokensAllocationFactors
+
+    # print("accounts[0] = ", accounts[0])
 
     # salectr.setMins(1000000, 500000, 250000, 100000)
     # salectr.setAllocs(40, 30, 20, 10)

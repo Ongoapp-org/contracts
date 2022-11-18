@@ -252,6 +252,8 @@ contract FTGSale is Ownable {
                 registrationPhaseStart + registrationPhaseDuration,
             "registration not finished"
         );
+        //NP = number of participants 
+        //Factor * NP
         uint256 sumFNP = tiersTokensAllocationFactor[Tiers.SAPPHIRE] *
             tiersNbOFParticipants[Tiers.SAPPHIRE] +
             tiersTokensAllocationFactor[Tiers.EMERALD] *
@@ -259,6 +261,7 @@ contract FTGSale is Ownable {
             tiersTokensAllocationFactor[Tiers.DIAMOND] *
             tiersNbOFParticipants[Tiers.DIAMOND] +
             tiersNbOFParticipants[Tiers.RUBY];
+        //n = max number of tokens that ruby participant can buy
         n = PRBMath.mulDiv(
             precisionFactor, // multiplier for calculation precision
             totalTokensToSell,
@@ -289,7 +292,7 @@ contract FTGSale is Ownable {
     }
 
     //function to buy tokens during Pool Phases
-    function buytoken(uint256 tokensAmount) external {
+    function buytoken(uint256 buyTokenAmount) external {
         //verifies that participants has been KYCed
         require(participants[msg.sender].whitelisted, "not in whitelist");
         Tiers tier = participants[msg.sender].participantTier;
@@ -302,12 +305,12 @@ contract FTGSale is Ownable {
             );
             //require participant is buying less than entitled to
             require(
-                participants[msg.sender].tokensBalance + tokensAmount <
+                participants[msg.sender].tokensBalance + buyTokenAmount <
                     n * tiersTokensAllocationFactor[tier],
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
             //TODO double check precision
-            uint256 tokensAmountPrice = tokenPrice * tokensAmount;
+            uint256 tokensAmountPrice = tokenPrice * buyTokenAmount;
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
@@ -315,10 +318,10 @@ contract FTGSale is Ownable {
                 tokensAmountPrice
             );
             // balances are updated
-            tokensSold += tokensAmount;
+            tokensSold += buyTokenAmount;
             investmentRaised += tokensAmountPrice;
-            participants[msg.sender].tokensBalance += tokensAmount;
-            nrt.issue(msg.sender, tokensAmount);
+            participants[msg.sender].tokensBalance += buyTokenAmount;
+            nrt.issue(msg.sender, buyTokenAmount);
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
                 salePhase = Phases.SaleCompleted;
@@ -332,11 +335,11 @@ contract FTGSale is Ownable {
             );
             //require participant is buying less than entitled to
             require(
-                participants[msg.sender].tokensBalance + tokensAmount <
+                participants[msg.sender].tokensBalance + buyTokenAmount <
                     n * tiersTokensAllocationFactor[tier],
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
-            uint256 tokensAmountPrice = tokenPrice * tokensAmount;
+            uint256 tokensAmountPrice = tokenPrice * buyTokenAmount;
             //TODO issue
             //purchase takes place
             IERC20(investToken).transferFrom(
@@ -346,8 +349,8 @@ contract FTGSale is Ownable {
             );
             // balances are updated
             investmentRaised += tokensAmountPrice;
-            participants[msg.sender].tokensBalance += tokensAmount;
-            nrt.issue(msg.sender, tokensAmount);
+            participants[msg.sender].tokensBalance += buyTokenAmount;
+            nrt.issue(msg.sender, buyTokenAmount);
 
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
