@@ -146,16 +146,18 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     totalActiveLocked0 = ftgstaking.checkParticipantLockedStaking.call(
         accounts[0], 2592000, {"from": accounts[0]}
     )
-    #import pdb
-    #pdb.set_trace()
-    totalActiveLocked0 = ftgstaking.checkParticipantLockedStaking(accounts[0], 2592000, {"from": accounts[0]})
+    # import pdb
+    # pdb.set_trace()
+    totalActiveLocked0 = ftgstaking.checkParticipantLockedStaking(
+        accounts[0], 2592000, {"from": accounts[0]}
+    )
 
     # TODO doesnt work
     # print(totalActiveLocked0)
     #  assert 400000 == 0
     #
     # TODO should be 0 ??
-    #assert totalActiveLocked0 == 0
+    # assert totalActiveLocked0 == 0
     assert totalActiveLocked0 == 400000
     print("after 6 months  ... totalActiveLocked0 = \n", totalActiveLocked0)
 

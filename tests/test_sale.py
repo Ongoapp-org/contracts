@@ -9,40 +9,44 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     #     assert ftgtoken.balanceOf(accounts[i]) == 10000
     # deploy the contract
 
-    
     ftgstaking = deploy_FTGStaking(ftgtoken.address)
-    ftgtoken.transfer(accounts[1], 10_000_000 * 10**18 , {"from": accounts[0]})
-    ftgtoken.transfer(accounts[2], 500_000 * 10**18 , {"from": accounts[0]})
-    #investtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
-    #assert investtoken.balanceOf(accounts[1]) == 100_000_000
+    ftgtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
+    ftgtoken.transfer(accounts[2], 500_000 * 10**18, {"from": accounts[0]})
+    # investtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
+    # assert investtoken.balanceOf(accounts[1]) == 100_000_000
 
-    saletoken = MockFTGToken.deploy(30_000_000 * 10**18, {"from": accounts[0]})
-    saletoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
-    assert saletoken.balanceOf(accounts[0]) == 20_000_000 * 10**18
-    assert saletoken.balanceOf(accounts[1]) == 10_000_000 * 10**18
+    assert investtoken.balanceOf(accounts[0]) == 30_000_000 * 10**18    
+
+    investtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
+    investtoken.transfer(accounts[2], 1_000_000 * 10**18, {"from": accounts[0]})
+
+    assert investtoken.balanceOf(accounts[1]) == 10_000_000 * 10**18
+    assert investtoken.balanceOf(accounts[2]) == 1_000_000 * 10**18
 
     _totalTokensToSell = 10_000_000 * 10**18
     _totalToRaise = 100_000 * 10**18
-    #0.01
-    _tokenPriceInUSD = 1 * 10**16  
-    #assert _totalTokensToSell * _tokenPriceInUSD/10**18 == _totalToRaise
-    #TODO
-    #assert int(_totalTokensToSell/100) == int(_totalToRaise)
+    # 0.01
+    _tokenPriceInUSD = 1 * 10**16
+    # assert _totalTokensToSell * _tokenPriceInUSD/10**18 == _totalToRaise
+    # TODO
+    # assert int(_totalTokensToSell/100) == int(_totalToRaise)
 
     nrt = NRT.deploy("NRT", 18, {"from": accounts[0]})
 
     salectr = FTGSale.deploy(
         nrt,
-        investtoken,        
+        investtoken,
         ftgstaking,
         _tokenPriceInUSD,
         _totalTokensToSell,
         _totalToRaise,
         {"from": accounts[0]},
     )
-    day1 = 60*60*24
+    day1 = 60 * 60 * 24
     salectr.setPhasesDurations(day1, day1, day1)
     salectr.setTiersMinFTGStakings(100_000, 250_000, 500_000, 1_000_000)
+
+    nrt.addOwner(salectr, {"from": accounts[0]})
 
     NONE = 0
     RUBY = 1
@@ -52,7 +56,7 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
 
     assert salectr.salePhase() == 0
 
-    #setup sale
+    # setup sale
 
     assert salectr.tiersMinFTGStaking(NONE) == 0
     assert salectr.tiersMinFTGStaking(RUBY) == 100_000
@@ -68,7 +72,7 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
 
     salectr.launchNextPhase({"from": accounts[0]})
 
-    #register phase
+    # register phase
     assert salectr.salePhase() == 1
 
     days30 = 2592000
@@ -89,8 +93,71 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
 
     assert salectr.participants(accounts[2]) == (0, 0, True, RUBY)
 
-    #salectr.registerForSale({"from": accounts[2]})
-    
+    assert salectr.tiersNbOFParticipants(RUBY) == 1
+    assert salectr.tiersNbOFParticipants(DIAMOND) == 1
+
+    assert salectr.checkTierEligibility(accounts[1]) == DIAMOND
+    assert salectr.checkTierEligibility(accounts[2]) == RUBY
+
+    timeTravel = day1 + 60*60
+    chain.sleep(timeTravel)
+
+    salectr.launchNextPhase({"from": accounts[0]})
+
+    # guaranteed phase
+    assert salectr.salePhase() == 2
+
+    bamount = 100 * 10**18
+
+    assert investtoken.balanceOf(accounts[1]) == 10_000_000 * 10**18
+
+    investtoken.approve(salectr, bamount, {"from": accounts[1]})
+    salectr.buytoken(bamount, {"from": accounts[1]})
+
+    assert nrt.balanceOf(accounts[1]) == bamount
+
+    # how much can buy?
+    assert salectr.n() == 1111111111111111111111111111111111
+    #TODO
+    #assert salectr.n() == _totalTokensToSell/(1+8)
+
+    #TODO test cant buy more than diamond
+
+    #ruby cant buy?
+    bamount = 100 * 10**18
+
+    investtoken.approve(salectr, bamount, {"from": accounts[2]})
+    salectr.buytoken(bamount, {"from": accounts[2]})
+
+    ##### public phase
+
+    timeTravel = day1 + 60*60
+    chain.sleep(timeTravel)
+
+    #salectr.launchNextPhase({"from": accounts[0]})
+
+
+    #assert salectr.salePhase() == 3
+
+    #investtoken.approve(salectr, bamount, {"from": accounts[1]})
+    #alectr.buytoken(bamount, {"from": accounts[1]})
+
+
+    #investtoken.approve(salectr, bamount, {"from": accounts[2]})
+    #salectr.buytoken(bamount, {"from": accounts[1]})
+
+
+    # saletoken = MockFTGToken.deploy(30_000_000 * 10**18, {"from": accounts[0]})
+    # saletoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
+    # saletoken.transfer(accounts[2], 1_000_000 * 10**18, {"from": accounts[0]})
+    # assert saletoken.balanceOf(accounts[0]) == 19_000_000 * 10**18
+    # assert saletoken.balanceOf(accounts[1]) == 10_000_000 * 10**18
+    # assert saletoken.balanceOf(accounts[2]) == 1_000_000 * 10**18
+
+
+    ############ old
+
+    # salectr.registerForSale({"from": accounts[2]})
 
     # print("accounts[0] = ", accounts[0])
 
@@ -105,19 +172,11 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     # salectr.addWhitelist(accounts[1], {"from": owner})
     # assert salectr.participants(accounts[1]) == (0, 0, True)
 
-    
-
     # # TODO
     # # uint256 amountLocked = uint(IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(account, 30 days));
     # # calculate init staking fee
     # amountlocked = ftgstaking.checkParticipantLockedStaking(accounts[1], days30)
     # assert amountlocked == stakeAmount * (1 - 0.05)
-
-    # # assert salectr.allocTotal(3) == 100
-    # assert salectr.tiersTotal(0) == 0
-    # assert salectr.tiersTotal(1) == 40
-    # assert salectr.tiersParticipants(1) == 1000
-    # assert salectr.tiersParticipants(4) == 50
 
     # # allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY]
 

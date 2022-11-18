@@ -296,7 +296,7 @@ contract FTGSale is Ownable {
     }
 
     //function to buy tokens during Pool Phases
-    function buytoken(uint256 buyTokenAmount) external {
+    function buytoken(uint256 buyTokenAmount) public {
         //verifies that participants has been KYCed
         require(participants[msg.sender].whitelisted, "not in whitelist");
         Tiers tier = participants[msg.sender].participantTier;
@@ -314,7 +314,7 @@ contract FTGSale is Ownable {
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
             //TODO double check precision
-            uint256 investedAmount = tokenPrice * buyTokenAmount;
+            uint256 investedAmount = (tokenPrice * buyTokenAmount)/10**18;
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
