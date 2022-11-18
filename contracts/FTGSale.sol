@@ -14,7 +14,6 @@ import "./FTGStaking.sol";
 //Guaranteed Pool
 //Public Pool
 contract FTGSale is Ownable {
-
     //tiers Memberships
     enum Tiers {
         NONE,
@@ -44,9 +43,9 @@ contract FTGSale is Ownable {
     // tokens sale's name
     string public saleName;
     // Phases durations
-    uint256 immutable registrationPhaseDuration;
-    uint256 immutable garanteedPoolPhaseDuration;
-    uint256 immutable publicPoolPhaseDuration;
+    uint256 registrationPhaseDuration;
+    uint256 guaranteedPoolPhaseDuration;
+    uint256 publicPoolPhaseDuration;
     // token being sold
     address immutable saleToken;
     // invest token eg USDT
@@ -63,7 +62,7 @@ contract FTGSale is Ownable {
     uint256 public registrationPhaseStart;
     uint256 public guaranteedPoolPhaseStart;
     uint256 public publicPoolPhaseStart;
-    uint256 public guaranteedPoolPhaseDuration;
+
     // tokens sold so far
     uint256 public tokensSold;
     // total Raised so far
@@ -95,24 +94,14 @@ contract FTGSale is Ownable {
     //Owner deploy contract and launches sale at the same time
     constructor(
         string memory _name,
-        uint256 _registrationPhaseDuration,
-        uint256 _guaranteedPoolPhaseDuration,
-        uint256 _publicPoolPhaseDuration,
         address _saleToken,
         address _investToken,
         address _stakingContractAddress,
         uint256 _tokenPrice, // fix price for entire sale ?
         uint256 _totalTokensToSell,
-        uint256 _totalToRaise,
-        uint32 _rubyMin,
-        uint32 _sapphireMin,
-        uint32 _emeraldMin,
-        uint32 _diamondMin
+        uint256 _totalToRaise
     ) {
         saleName = _name;
-        registrationPhaseDuration = _registrationPhaseDuration;
-        guaranteedPoolPhaseDuration = _guaranteedPoolPhaseDuration;
-        publicPoolPhaseDuration = _publicPoolPhaseDuration;
         investToken = _investToken;
         saleToken = _saleToken;
         stakingContractAddress = _stakingContractAddress;
@@ -150,6 +139,17 @@ contract FTGSale is Ownable {
     }
 
     //********************* Setup Phase functions *********************/
+
+    // set phases durations
+    function setPhasesDurations(
+        uint256 _registrationPhaseDuration,
+        uint256 _guaranteedPoolPhaseDuration,
+        uint256 _publicPoolPhaseDuration
+    ) public onlyOwner {
+        registrationPhaseDuration = _registrationPhaseDuration;
+        guaranteedPoolPhaseDuration = _guaranteedPoolPhaseDuration;
+        publicPoolPhaseDuration = _publicPoolPhaseDuration;
+    }
 
     // function allows owner to set tiers min ftg staking threshold
     // should it really be setup here? does it vary between sales?
@@ -198,7 +198,7 @@ contract FTGSale is Ownable {
         // add participant
         participants[msg.sender] = Participant(0, true, tier);
         // add participant to tiersNbOFParticipants
-        tiersNbOFParticipants[tier]++;        
+        tiersNbOFParticipants[tier]++;
     }
 
     function checkTierEligibility(address account) public view returns (Tiers) {
@@ -210,28 +210,30 @@ contract FTGSale is Ownable {
             )
         );
         // check eligible tier earned
-        if (activeStakingLocked < tiersMinFTGStaking[0]) {
+        if (activeStakingLocked < tiersMinFTGStaking[Tiers.RUBY]) {
+            //if (activeStakingLocked < tiersMinFTGStaking[0]) {
             //no privileges membership
             return Tiers.NONE;
         } else if (
-            activeStakingLocked >= tiersMinFTGStaking[0] &&
-            activeStakingLocked < tiersMinFTGStaking[1]
+            activeStakingLocked >= tiersMinFTGStaking[Tiers.RUBY] &&
+            activeStakingLocked < tiersMinFTGStaking[Tiers.SAPPHIRE]
         ) {
             //ruby membership
             return Tiers.RUBY;
         } else if (
-            activeStakingLocked >= tiersMinFTGStaking[1] &&
-            activeStakingLocked < tiersMinFTGStaking[2]
+            activeStakingLocked >= tiersMinFTGStaking[Tiers.SAPPHIRE] &&
+            activeStakingLocked < tiersMinFTGStaking[Tiers.EMERALD]
         ) {
             //sapphire membership
             return Tiers.SAPPHIRE;
         } else if (
-            activeStakingLocked >= tiersMinFTGStaking[2] &&
-            activeStakingLocked < tiersMinFTGStaking[3]
+            activeStakingLocked >= tiersMinFTGStaking[Tiers.EMERALD] &&
+            activeStakingLocked < tiersMinFTGStaking[Tiers.DIAMOND]
         ) {
             //emerald membership
             return Tiers.EMERALD;
         } else {
+            //TODO double check
             //diamond membership
             return Tiers.DIAMOND;
         }
@@ -288,7 +290,7 @@ contract FTGSale is Ownable {
     function buytoken(uint256 tokensAmount) external {
         //verifies that participants has been KYCed
         require(participants[msg.sender].whitelisted, "not in whitelist");
-        Tiers tier = participants[msg.sender].tier;
+        Tiers tier = participants[msg.sender].participantTier;
         if (salePhase == Phases.GuaranteedPool) {
             //Verifies that phase is not over
             require(
