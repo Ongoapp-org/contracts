@@ -43,8 +43,6 @@ contract FTGSale is Ownable {
 
     Phases salePhase;
 
-    // tokens sale's name
-    string public saleName;
     // Phases durations
     uint256 registrationPhaseDuration;
     uint256 guaranteedPoolPhaseDuration;
@@ -98,16 +96,13 @@ contract FTGSale is Ownable {
 
     //Owner deploy contract and launches sale at the same time
     constructor(
-        string memory _name,
         address _nrt,
-        //address _saleToken,
         address _investToken,
         address _stakingContractAddress,
         uint256 _tokenPrice, // fix price for entire sale ?
         uint256 _totalTokensToSell,
         uint256 _totalToRaise
     ) {
-        saleName = _name;
         investToken = _investToken;
         //saleToken = _saleToken;
         nrt = NRT(_nrt);
