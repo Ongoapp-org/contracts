@@ -137,6 +137,7 @@ contract FTGSale is Ownable {
             publicPoolPhaseStart = block.timestamp;
             phase = Phases.PublicPool;
         } else if (phase == Phases.PublicPool) {
+            //owner launch this phase to open tokens claim by participants
             phase = Phases.SaleCompleted;
         } else {
             revert();
@@ -231,10 +232,6 @@ contract FTGSale is Ownable {
         }
     }
 
-    function addWhitelist(address p) external onlyOwner {
-        participants[p].whitelisted = true;
-    }
-
     //********************* Sale Phases functions *********************/
 
     //this function to calculate n the max number of tokens for sale by participant in Ruby Tier
@@ -311,6 +308,10 @@ contract FTGSale is Ownable {
             tokensSold += tokensAmount;
             investmentRaised += tokensAmountPrice;
             participants[msg.sender].tokensBalance += tokensAmount;
+            if (investmentRaised >= totalToRaise) {
+                // Sale is completed and participants can claim their tokens
+                phase = Phases.SaleCompleted;
+            }
         } else if (phase == Phases.PublicPool) {
             //verifies that phase is not over
             require(
@@ -334,7 +335,10 @@ contract FTGSale is Ownable {
             // balances are updated
             investmentRaised += tokensAmountPrice;
             participants[msg.sender].tokensBalance += tokensAmount;
-
+            if (investmentRaised >= totalToRaise) {
+                // Sale is completed and participants can claim their tokens
+                phase = Phases.SaleCompleted;
+            }
         } else {
             revert("sales not open");
         }
@@ -342,7 +346,7 @@ contract FTGSale is Ownable {
     }
 
     function claimTokens() public {
-        //require that saleSompleted Phase started
+        //require that saleCompleted Phase started
         require(phase == Phases.SaleCompleted, "sale not completed yet");
         require(participants[msg.sender].tokensBalance>0,"Nothing to claim");
         IERC20(saleToken).transfer(msg.sender, participants[msg.sender].tokensBalance);
@@ -355,6 +359,9 @@ contract FTGSale is Ownable {
     }
 
     function withdrawLeftOverTokens() public onlyOwner {
+        //Should add requirement to avoid owner able to withdraw tokens before participants claimed
+        //adding a claim Phase with duration could do it 
+        require(phase == Phases.SaleCompleted,"Sale not completed")
         uint256 bal = IERC20(saleToken).balanceOf(address(this));
         IERC20(saleToken).transfer(msg.sender, bal);
     }
