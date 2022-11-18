@@ -36,7 +36,8 @@ contract FTGSale is Ownable {
     }
 
     struct Participant {
-        uint256 tokensBalance;
+        uint256 tokensBalanceGP;
+        uint256 tokensBalancePP;
         bool whitelisted;
         Tiers participantTier;
     }
@@ -198,7 +199,7 @@ contract FTGSale is Ownable {
         Tiers tier = checkTierEligibility(msg.sender);
         require(tier != Tiers.NONE, "Not enough locked Staking");
         // add participant
-        participants[msg.sender] = Participant(0, true, tier);
+        participants[msg.sender] = Participant(0, 0, true, tier);
         // add participant to tiersNbOFParticipants
         tiersNbOFParticipants[tier]++;
     }
@@ -269,6 +270,7 @@ contract FTGSale is Ownable {
         );
     }
 
+    //calculation for public phase
     function _publicSalePreliminaryCalculation() private {
         //require registration phase is over
         require(
@@ -283,7 +285,9 @@ contract FTGSale is Ownable {
             tiersNbOFParticipants[Tiers.SAPPHIRE] +
             tiersNbOFParticipants[Tiers.EMERALD] +
             tiersNbOFParticipants[Tiers.DIAMOND];
+        //remaining
         publicSaleTokens = totalTokensToSell - tokensSold;
+        //n2 = max tokens someone can buy regardless the tier
         n2 = PRBMath.mulDiv(
             precisionFactor, // multiplier for calculation precision
             publicSaleTokens,
@@ -305,22 +309,22 @@ contract FTGSale is Ownable {
             );
             //require participant is buying less than entitled to
             require(
-                participants[msg.sender].tokensBalance + buyTokenAmount <
+                participants[msg.sender].tokensBalanceGP + buyTokenAmount <
                     n * tiersTokensAllocationFactor[tier],
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
             //TODO double check precision
-            uint256 tokensAmountPrice = tokenPrice * buyTokenAmount;
+            uint256 investedAmount = tokenPrice * buyTokenAmount;
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
                 address(this),
-                tokensAmountPrice
+                investedAmount
             );
             // balances are updated
             tokensSold += buyTokenAmount;
-            investmentRaised += tokensAmountPrice;
-            participants[msg.sender].tokensBalance += buyTokenAmount;
+            investmentRaised += investedAmount;
+            participants[msg.sender].tokensBalanceGP += buyTokenAmount;
             nrt.issue(msg.sender, buyTokenAmount);
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
@@ -334,22 +338,23 @@ contract FTGSale is Ownable {
                 "Public Pool Phase ended"
             );
             //require participant is buying less than entitled to
+
+            //TODO double check
             require(
-                participants[msg.sender].tokensBalance + buyTokenAmount <
-                    n * tiersTokensAllocationFactor[tier],
+                participants[msg.sender].tokensBalancePP + buyTokenAmount <
+                    n2,
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
-            uint256 tokensAmountPrice = tokenPrice * buyTokenAmount;
-            //TODO issue
+            uint256 investedAmount = tokenPrice * buyTokenAmount;
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
                 address(this),
-                tokensAmountPrice
+                investedAmount
             );
             // balances are updated
-            investmentRaised += tokensAmountPrice;
-            participants[msg.sender].tokensBalance += buyTokenAmount;
+            investmentRaised += investedAmount;
+            participants[msg.sender].tokensBalancePP += buyTokenAmount;
             nrt.issue(msg.sender, buyTokenAmount);
 
             if (investmentRaised >= totalToRaise) {
