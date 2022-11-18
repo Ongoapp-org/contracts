@@ -272,11 +272,11 @@ contract FTGSale is Ownable {
             tiersNbOfParticipants[Tiers.EMERALD] +
             tiersNbOfParticipants[Tiers.DIAMOND];
         publicSaleTokens = totalTokensToSell - tokensSold;
-        n2= PRBMath.mulDiv(
+        n2 = PRBMath.mulDiv(
             precisionFactor, // multiplier for calculation precision
             publicSaleTokens,
             np
-        ); 
+        );
     }
 
     //function to buy tokens during Pool Phases
@@ -342,15 +342,17 @@ contract FTGSale is Ownable {
         } else {
             revert("sales not open");
         }
-
     }
 
     function claimTokens() public {
         //require that saleCompleted Phase started
         require(phase == Phases.SaleCompleted, "sale not completed yet");
-        require(participants[msg.sender].tokensBalance>0,"Nothing to claim");
-        IERC20(saleToken).transfer(msg.sender, participants[msg.sender].tokensBalance);
-        participants[msg.sender].tokensBalance = 0
+        require(participants[msg.sender].tokensBalance > 0, "Nothing to claim");
+        IERC20(saleToken).transfer(
+            msg.sender,
+            participants[msg.sender].tokensBalance
+        );
+        participants[msg.sender].tokensBalance = 0;
     }
 
     // Function for owner to deposit tokens
@@ -360,8 +362,8 @@ contract FTGSale is Ownable {
 
     function withdrawLeftOverTokens() public onlyOwner {
         //Should add requirement to avoid owner able to withdraw tokens before participants claimed
-        //adding a claim Phase with duration could do it 
-        require(phase == Phases.SaleCompleted,"Sale not completed")
+        //adding a claim Phase with duration could do it
+        require(phase == Phases.SaleCompleted, "Sale not completed");
         uint256 bal = IERC20(saleToken).balanceOf(address(this));
         IERC20(saleToken).transfer(msg.sender, bal);
     }
