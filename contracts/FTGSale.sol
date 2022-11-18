@@ -63,6 +63,7 @@ contract FTGSale is Ownable {
     uint256 public registrationPhaseStart;
     uint256 public guaranteedPoolPhaseStart;
     uint256 public publicPoolPhaseStart;
+    uint256 public guaranteedPoolPhaseDuration;
     // tokens sold so far
     uint256 public tokensSold;
     // total Raised so far
@@ -118,29 +119,29 @@ contract FTGSale is Ownable {
         totalToRaise = _totalToRaise;
         tokensSold = 0;
         investmentRaised = 0;
-        phase = Phases.Setup;
+        salePhase = Phases.Setup;
     }
 
     //function to go to next phase
     function launchNextPhase() public onlyOwner {
-        if (phase == Phases.Setup) {
+        if (salePhase == Phases.Setup) {
             //requirement setTiersMinFTGStakings is valid , should it really be setup here?
             //requirement setTokenAllocation is valid ?
             registrationPhaseStart = block.timestamp;
-            phase = Phases.Registration;
-        } else if (phase == Phases.Registration) {
+            salePhase = Phases.Registration;
+        } else if (salePhase == Phases.Registration) {
             //once the registration time is finished
             //calculate the max number of tokens for sale by participants
             _guaranteedSalePreliminaryCalculation();
             guaranteedPoolPhaseStart = block.timestamp;
-            phase = Phases.GuaranteedPool;
-        } else if (phase == Phases.GuaranteedPool) {
+            salePhase = Phases.GuaranteedPool;
+        } else if (salePhase == Phases.GuaranteedPool) {
             _publicSalePreliminaryCalculation();
             publicPoolPhaseStart = block.timestamp;
-            phase = Phases.PublicPool;
-        } else if (phase == Phases.PublicPool) {
+            salePhase = Phases.PublicPool;
+        } else if (salePhase == Phases.PublicPool) {
             //owner launch this phase to open tokens claim by participants
-            phase = Phases.SaleCompleted;
+            salePhase = Phases.SaleCompleted;
         } else {
             revert();
         }
@@ -182,7 +183,7 @@ contract FTGSale is Ownable {
     //********************* Registration Phase functions *********************/
 
     function registerForSale() public {
-        require(phase == Phases.Registration, "Registration not open");
+        require(salePhase == Phases.Registration, "Registration not open");
         require(
             block.timestamp <
                 registrationPhaseStart + registrationPhaseDuration,
