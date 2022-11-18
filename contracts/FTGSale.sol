@@ -158,13 +158,13 @@ contract FTGSale is Ownable {
     // should it really be setup here? does it vary between sales?
     function setTiersMinFTGStakings(
         uint32 _rubyMin,
-        uint32 _sapphireMin,
         uint32 _emeraldMin,
+        uint32 _sapphireMin,
         uint32 _diamondMin
     ) public onlyOwner {
         tiersMinFTGStaking[Tiers.RUBY] = _rubyMin;
-        tiersMinFTGStaking[Tiers.SAPPHIRE] = _sapphireMin;
         tiersMinFTGStaking[Tiers.EMERALD] = _emeraldMin;
+        tiersMinFTGStaking[Tiers.SAPPHIRE] = _sapphireMin;
         tiersMinFTGStaking[Tiers.DIAMOND] = _diamondMin;
     }
 

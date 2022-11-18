@@ -43,16 +43,25 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     salectr.setPhasesDurations(day1, day1, day1)
     salectr.setTiersMinFTGStakings(100_000, 250_000, 500_000, 1_000_000)
 
+    NONE = 0
+    RUBY = 1
+    EMERALD = 2
+    SAPPHIRE = 3
+    DIAMOND = 4
+
     #TODO problem with none?
-    assert salectr.tiersMinFTGStaking(0) == 0
-    assert salectr.tiersMinFTGStaking(1) == 100_000
-    #assert salectr.tiersMinFTGStaking(2) == 250_000
-    #assert salectr.tiersMinFTGStaking(3) == 500_000
+    assert salectr.tiersMinFTGStaking(NONE) == 0
+    assert salectr.tiersMinFTGStaking(RUBY) == 100_000
+    assert salectr.tiersMinFTGStaking(EMERALD) == 250_000
+    assert salectr.tiersMinFTGStaking(SAPPHIRE) == 500_000
+    assert salectr.tiersMinFTGStaking(DIAMOND) == 1_000_000
     #salectr.setTiersTokensAllocationFactors
+
+    salectr.launchNextPhase({"from": accounts[0]})
 
     # print("accounts[0] = ", accounts[0])
 
-    # salectr.setMins(1000000, 500000, 250000, 100000)
+    # saectr.setMins(1000000, 500000, 250000, 100000)
     # salectr.setAllocs(40, 30, 20, 10)
     # salectr.setParticipants(1000, 500, 100, 50)
 
