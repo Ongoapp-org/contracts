@@ -3,12 +3,15 @@ pragma solidity 0.8.17;
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/IERC20.sol";
 import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 import "./FTGStaking.sol";
+import "./NRT.sol";
 
 /**
  * @title FTGSale
  * @notice This contract is deployed for every sale and specific to a given sale
  */
 
+//TODO double check decimals
+//TODO price precision factor
 // TODO double check decimals
 //TODO handle 2 pools
 //Guaranteed Pool
@@ -47,7 +50,7 @@ contract FTGSale is Ownable {
     uint256 guaranteedPoolPhaseDuration;
     uint256 publicPoolPhaseDuration;
     // token being sold
-    address immutable saleToken;
+    //address immutable saleToken;
     // invest token eg USDT
     address immutable investToken;
     // staking contract
@@ -75,8 +78,10 @@ contract FTGSale is Ownable {
     uint256 public np;
     // TODO max number purchaseable
     uint256 public n2;
-    // tokens to sell during public sale
+    // tokens to sell during public sale, remaining
     uint256 publicSaleTokens;
+
+    NRT public nrt;
 
     // list of participants to the sale
     mapping(address => Participant) public participants;
@@ -94,7 +99,8 @@ contract FTGSale is Ownable {
     //Owner deploy contract and launches sale at the same time
     constructor(
         string memory _name,
-        address _saleToken,
+        address _nrt,
+        //address _saleToken,
         address _investToken,
         address _stakingContractAddress,
         uint256 _tokenPrice, // fix price for entire sale ?
@@ -103,7 +109,8 @@ contract FTGSale is Ownable {
     ) {
         saleName = _name;
         investToken = _investToken;
-        saleToken = _saleToken;
+        //saleToken = _saleToken;
+        nrt = NRT(_nrt);
         stakingContractAddress = _stakingContractAddress;
         tokenPrice = _tokenPrice;
         totalTokensToSell = _totalTokensToSell;
@@ -304,6 +311,7 @@ contract FTGSale is Ownable {
                     n * tiersTokensAllocationFactor[tier],
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
+            //TODO double check precision
             uint256 tokensAmountPrice = tokenPrice * tokensAmount;
             //purchase takes place
             IERC20(investToken).transferFrom(
@@ -315,6 +323,7 @@ contract FTGSale is Ownable {
             tokensSold += tokensAmount;
             investmentRaised += tokensAmountPrice;
             participants[msg.sender].tokensBalance += tokensAmount;
+            nrt.issue(msg.sender, tokensAmount);
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
                 salePhase = Phases.SaleCompleted;
@@ -343,6 +352,8 @@ contract FTGSale is Ownable {
             // balances are updated
             investmentRaised += tokensAmountPrice;
             participants[msg.sender].tokensBalance += tokensAmount;
+            nrt.issue(msg.sender, tokensAmount);
+
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
                 salePhase = Phases.SaleCompleted;
@@ -352,32 +363,13 @@ contract FTGSale is Ownable {
         }
     }
 
-    function claimTokens() public {
-        //require that saleCompleted Phase started
-        require(salePhase == Phases.SaleCompleted, "sale not completed yet");
-        require(participants[msg.sender].tokensBalance > 0, "Nothing to claim");
-        IERC20(saleToken).transfer(
-            msg.sender,
-            participants[msg.sender].tokensBalance
-        );
-        participants[msg.sender].tokensBalance = 0;
-    }
-
-    // Function for owner to deposit tokens
-    function depositSaleTokens(uint256 amount) public onlyOwner {
-        IERC20(saleToken).transferFrom(msg.sender, address(this), amount);
-    }
-
-    function withdrawLeftOverTokens() public onlyOwner {
-        //Should add requirement to avoid owner able to withdraw tokens before participants claimed
-        //adding a claim Phase with duration could do it
-        require(salePhase == Phases.SaleCompleted, "Sale not completed");
-        uint256 bal = IERC20(saleToken).balanceOf(address(this));
-        IERC20(saleToken).transfer(msg.sender, bal);
-    }
-
     function withdrawRaisedAssets() public onlyOwner {
         uint256 bal = IERC20(investToken).balanceOf(address(this));
-        IERC20(saleToken).transfer(msg.sender, bal);
+        IERC20(investToken).transfer(msg.sender, bal);
+    }
+
+    function recoverAssets(address _token) public onlyOwner {
+        uint256 bal = IERC20(_token).balanceOf(address(this));
+        IERC20(_token).transfer(msg.sender, bal);
     }
 }
