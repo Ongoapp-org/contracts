@@ -74,13 +74,15 @@ contract FTGSale is Ownable {
     uint256 public n;
     // nb of participants
     uint256 public np;
+    // TODO max number purchaseable
+    uint256 public n2;
     // tokens to sell during public sale
     uint256 publicSaleTokens;
 
     // list of participants to the sale
     mapping(address => Participant) public participants;
-    // total allocated tokens per tier
-    mapping(Tiers => uint32) public tiersTotalTokenAllocation;
+    //TODO
+    mapping(Tiers => uint32) public tiersTokensAllocationFactor;
     // number of participants per tier
     mapping(Tiers => uint32) public tiersNbOFParticipants;
     // ticket allocated for each tier, initialized at maximum and dynamically updated
@@ -195,8 +197,8 @@ contract FTGSale is Ownable {
         require(tier != Tiers.NONE, "Not enough locked Staking");
         // add participant
         participants[msg.sender] = Participant(0, true, tier);
-        // add participant to tiersNbOfParticipants
-        tiersNbOfParticipants[tier]++;
+        // add participant to tiersNbOFParticipants
+        tiersNbOFParticipants[tier]++;        
     }
 
     function checkTierEligibility(address account) public view returns (Tiers) {
@@ -247,12 +249,12 @@ contract FTGSale is Ownable {
             "registration not finished"
         );
         uint256 sumFNP = tiersTokensAllocationFactor[Tiers.SAPPHIRE] *
-            tiersNbOfParticipants[Tiers.SAPPHIRE] +
+            tiersNbOFParticipants[Tiers.SAPPHIRE] +
             tiersTokensAllocationFactor[Tiers.EMERALD] *
-            tiersNbOfParticipants[Tiers.EMERALD] +
+            tiersNbOFParticipants[Tiers.EMERALD] +
             tiersTokensAllocationFactor[Tiers.DIAMOND] *
-            tiersNbOfParticipants[Tiers.DIAMOND] +
-            tiersNbOfParticipants[Tiers.RUBY];
+            tiersNbOFParticipants[Tiers.DIAMOND] +
+            tiersNbOFParticipants[Tiers.RUBY];
         n = PRBMath.mulDiv(
             precisionFactor, // multiplier for calculation precision
             totalTokensToSell,
@@ -270,10 +272,10 @@ contract FTGSale is Ownable {
         );
         //np = number of participants calculated
         np =
-            tiersNbOfParticipants[Tiers.RUBY] +
-            tiersNbOfParticipants[Tiers.SAPPHIRE] +
-            tiersNbOfParticipants[Tiers.EMERALD] +
-            tiersNbOfParticipants[Tiers.DIAMOND];
+            tiersNbOFParticipants[Tiers.RUBY] +
+            tiersNbOFParticipants[Tiers.SAPPHIRE] +
+            tiersNbOFParticipants[Tiers.EMERALD] +
+            tiersNbOFParticipants[Tiers.DIAMOND];
         publicSaleTokens = totalTokensToSell - tokensSold;
         n2 = PRBMath.mulDiv(
             precisionFactor, // multiplier for calculation precision
@@ -286,8 +288,8 @@ contract FTGSale is Ownable {
     function buytoken(uint256 tokensAmount) external {
         //verifies that participants has been KYCed
         require(participants[msg.sender].whitelisted, "not in whitelist");
-        Tier tier = participants[msg.sender].tier;
-        if (phase == Phases.GuaranteedPool) {
+        Tiers tier = participants[msg.sender].tier;
+        if (salePhase == Phases.GuaranteedPool) {
             //Verifies that phase is not over
             require(
                 block.timestamp <
@@ -313,9 +315,9 @@ contract FTGSale is Ownable {
             participants[msg.sender].tokensBalance += tokensAmount;
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
-                phase = Phases.SaleCompleted;
+                salePhase = Phases.SaleCompleted;
             }
-        } else if (phase == Phases.PublicPool) {
+        } else if (salePhase == Phases.PublicPool) {
             //verifies that phase is not over
             require(
                 block.timestamp <
@@ -329,6 +331,7 @@ contract FTGSale is Ownable {
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
             uint256 tokensAmountPrice = tokenPrice * tokensAmount;
+            //TODO issue
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
@@ -340,7 +343,7 @@ contract FTGSale is Ownable {
             participants[msg.sender].tokensBalance += tokensAmount;
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
-                phase = Phases.SaleCompleted;
+                salePhase = Phases.SaleCompleted;
             }
         } else {
             revert("sales not open");
@@ -349,7 +352,7 @@ contract FTGSale is Ownable {
 
     function claimTokens() public {
         //require that saleCompleted Phase started
-        require(phase == Phases.SaleCompleted, "sale not completed yet");
+        require(salePhase == Phases.SaleCompleted, "sale not completed yet");
         require(participants[msg.sender].tokensBalance > 0, "Nothing to claim");
         IERC20(saleToken).transfer(
             msg.sender,
@@ -366,7 +369,7 @@ contract FTGSale is Ownable {
     function withdrawLeftOverTokens() public onlyOwner {
         //Should add requirement to avoid owner able to withdraw tokens before participants claimed
         //adding a claim Phase with duration could do it
-        require(phase == Phases.SaleCompleted, "Sale not completed");
+        require(salePhase == Phases.SaleCompleted, "Sale not completed");
         uint256 bal = IERC20(saleToken).balanceOf(address(this));
         IERC20(saleToken).transfer(msg.sender, bal);
     }
