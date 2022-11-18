@@ -14,10 +14,14 @@ import "./FTGStaking.sol";
 //Guaranteed Pool
 //Public Pool
 contract FTGSale is Ownable {
-    struct Participant {
-        uint256 tokensBalance;
-        bool whitelisted;
-        tier participantTier;
+
+    //tiers Memberships
+    enum Tiers {
+        NONE,
+        RUBY,
+        EMERALD,
+        SAPPHIRE,
+        DIAMOND
     }
 
     //Sale Phases
@@ -28,16 +32,14 @@ contract FTGSale is Ownable {
         PublicPool,
         SaleCompleted
     }
-    Phases salePhase;
 
-    //tiers Memberships
-    enum Tiers {
-        NONE,
-        RUBY,
-        EMERALD,
-        SAPPHIRE,
-        DIAMOND
+    struct Participant {
+        uint256 tokensBalance;
+        bool whitelisted;
+        Tiers participantTier;
     }
+
+    Phases salePhase;
 
     // tokens sale's name
     string public saleName;
@@ -196,7 +198,7 @@ contract FTGSale is Ownable {
         tiersNbOfParticipants[tier]++;
     }
 
-    function checkTierEligibility(address account) public view returns (Tier) {
+    function checkTierEligibility(address account) public view returns (Tiers) {
         // check active locked staking for account
         uint256 activeStakingLocked = uint256(
             IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(
