@@ -5,15 +5,10 @@ from scripts.deploy_FTGStaking import deploy_FTGStaking
 
 
 def test_basicsale(accounts, pm, ftgtoken, investtoken):
-    # for i in range(1, 3):
-    #     assert ftgtoken.balanceOf(accounts[i]) == 10000
-    # deploy the contract
 
     ftgstaking = deploy_FTGStaking(ftgtoken.address)
     ftgtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
     ftgtoken.transfer(accounts[2], 500_000 * 10**18, {"from": accounts[0]})
-    # investtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
-    # assert investtoken.balanceOf(accounts[1]) == 100_000_000
 
     assert investtoken.balanceOf(accounts[0]) == 30_000_000 * 10**18    
 
@@ -27,8 +22,8 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     _totalToRaise = 100_000 * 10**18
     # 0.01
     _tokenPriceInUSD = 1 * 10**16
-    # assert _totalTokensToSell * _tokenPriceInUSD/10**18 == _totalToRaise
     # TODO
+    # assert _totalTokensToSell * _tokenPriceInUSD/10**18 == _totalToRaise
     # assert int(_totalTokensToSell/100) == int(_totalToRaise)
 
     nrt = NRT.deploy("NRT", 18, {"from": accounts[0]})
@@ -42,15 +37,12 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
         _totalToRaise,
         {"from": accounts[0]},
     )
-    day1 = 60 * 60 * 24
-    salectr.setPhasesDurations(day1, day1, day1)
-    RUBY_MIN = 100_000
-    EMERALD_MIN = 250_000
-    SAPPHIRE_MIN = 500_000
-    DIAMOND_MIN = 1_000_000
-    salectr.setTiersMinFTGStakings(RUBY_MIN, EMERALD_MIN, SAPPHIRE_MIN, DIAMOND_MIN)
-
+    
     nrt.addOwner(salectr, {"from": accounts[0]})
+
+    assert salectr.salePhase() == 0
+
+    # setup sale
 
     NONE = 0
     RUBY = 1
@@ -58,9 +50,13 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     SAPPHIRE = 3
     DIAMOND = 4
 
-    assert salectr.salePhase() == 0
-
-    # setup sale
+    day1 = 60 * 60 * 24
+    salectr.setPhasesDurations(day1, day1, day1)
+    RUBY_MIN = 100_000
+    EMERALD_MIN = 250_000
+    SAPPHIRE_MIN = 500_000
+    DIAMOND_MIN = 1_000_000
+    salectr.setTiersMinFTGStakings(RUBY_MIN, EMERALD_MIN, SAPPHIRE_MIN, DIAMOND_MIN)
 
     assert salectr.tiersMinFTGStaking(NONE) == 0
     assert salectr.tiersMinFTGStaking(RUBY) == 100_000
@@ -122,8 +118,6 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
 
     # how much can buy?
     assert salectr.n() == 1111111111111111111111111111111111
-    #TODO
-    #assert salectr.n() == _totalTokensToSell/(1+8)
 
     #TODO test cant buy more than diamond
 
@@ -133,7 +127,16 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     investtoken.approve(salectr, bamount, {"from": accounts[2]})
     salectr.buytoken(bamount, {"from": accounts[2]})
 
-    ##### public phase    
+    # investAmount = 10_000
+    # buyTokenamount = investAmount/ (_tokenPriceInUSD/10**18)
+
+    # investtoken.approve(salectr, investAmount*10, {"from": accounts[2]})
+    # assert investtoken.allowance(accounts[2], salectr) == investAmount*10
+    # #TODO should fail
+    # with brownie.reverts():
+    #     salectr.buytoken(buyTokenamount, {"from": accounts[2]})
+
+    ##### public phase
 
     timeTravel = day1 + 60*60
     chain.sleep(timeTravel)
@@ -146,14 +149,22 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
 
     assert buyTokenamount == 100_000
 
-    investtoken.approve(salectr, investAmount*10, {"from": accounts[2]})
-    assert investtoken.allowance(accounts[2], salectr) == investAmount*10
+    investtoken.approve(salectr, investAmount, {"from": accounts[2]})
+    assert investtoken.allowance(accounts[2], salectr) == investAmount
     salectr.buytoken(buyTokenamount, {"from": accounts[2]})
 
+    ##### completed phase
+
+    salectr.launchNextPhase({"from": accounts[0]})
+    assert salectr.salePhase() == 4
+
+    investtoken.approve(salectr, investAmount, {"from": accounts[2]})
+    with brownie.reverts():
+        salectr.buytoken(buyTokenamount, {"from": accounts[2]})
+        #assert investtoken.allowance(accounts[2], salectr) == investAmount
+    
+
     #salectr.launchNextPhase({"from": accounts[0]})
-
-
-    #assert salectr.salePhase() == 3
 
     #investtoken.approve(salectr, bamount, {"from": accounts[1]})
     #alectr.buytoken(bamount, {"from": accounts[1]})

@@ -75,7 +75,7 @@ contract FTGSale is Ownable {
     uint256 public n;
     // nb of participants
     uint256 public np;
-    // TODO max number purchaseable
+    // max number purchaseable
     uint256 public n2;
     // tokens to sell during public sale, remaining
     uint256 publicSaleTokens;
@@ -300,6 +300,7 @@ contract FTGSale is Ownable {
         //verifies that participants has been KYCed
         require(participants[msg.sender].whitelisted, "not in whitelist");
         Tiers tier = participants[msg.sender].participantTier;
+        require(salePhase == Phases.GuaranteedPool || salePhase == Phases.PublicPool, "not open for buying");
         if (salePhase == Phases.GuaranteedPool) {
             //Verifies that phase is not over
             require(
@@ -361,8 +362,6 @@ contract FTGSale is Ownable {
                 // Sale is completed and participants can claim their tokens
                 salePhase = Phases.SaleCompleted;
             }
-        } else {
-            revert("sales not open");
         }
     }
 
