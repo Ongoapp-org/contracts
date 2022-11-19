@@ -44,7 +44,11 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     )
     day1 = 60 * 60 * 24
     salectr.setPhasesDurations(day1, day1, day1)
-    salectr.setTiersMinFTGStakings(100_000, 250_000, 500_000, 1_000_000)
+    RUBY_MIN = 100_000
+    EMERALD_MIN = 250_000
+    SAPPHIRE_MIN = 500_000
+    DIAMOND_MIN = 1_000_000
+    salectr.setTiersMinFTGStakings(RUBY_MIN, EMERALD_MIN, SAPPHIRE_MIN, DIAMOND_MIN)
 
     nrt.addOwner(salectr, {"from": accounts[0]})
 
@@ -129,10 +133,22 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     investtoken.approve(salectr, bamount, {"from": accounts[2]})
     salectr.buytoken(bamount, {"from": accounts[2]})
 
-    ##### public phase
+    ##### public phase    
 
     timeTravel = day1 + 60*60
     chain.sleep(timeTravel)
+
+    salectr.launchNextPhase({"from": accounts[0]})
+    assert salectr.salePhase() == 3
+
+    investAmount = 1_000
+    buyTokenamount = investAmount/ (_tokenPriceInUSD/10**18)
+
+    assert buyTokenamount == 100_000
+
+    investtoken.approve(salectr, investAmount*10, {"from": accounts[2]})
+    assert investtoken.allowance(accounts[2], salectr) == investAmount*10
+    salectr.buytoken(buyTokenamount, {"from": accounts[2]})
 
     #salectr.launchNextPhase({"from": accounts[0]})
 

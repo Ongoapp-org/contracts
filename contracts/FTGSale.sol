@@ -54,13 +54,13 @@ contract FTGSale is Ownable {
     address immutable investToken;
     // staking contract
     address immutable stakingContractAddress;
-    // price of the token quoted in investToken
-    uint256 immutable tokenPrice;
+    // price of the token quoted in investToken (wei)
+    uint256 immutable tokenPriceWei;
     // amount of tokens to sell
     uint256 immutable totalTokensToSell;
-    // amount to raise in total ?? Should we end the sale when it is reached?
+    // amount to raise in total
     uint256 immutable totalToRaise;
-    // sale starts with registration ...
+    // sale starts with registration
     uint256 public registrationPhaseStart;
     uint256 public guaranteedPoolPhaseStart;
     uint256 public publicPoolPhaseStart;
@@ -100,7 +100,7 @@ contract FTGSale is Ownable {
         address _nrt,
         address _investToken,
         address _stakingContractAddress,
-        uint256 _tokenPrice, // fix price for entire sale ?
+        uint256 _tokenPriceWei, // fix price for entire sale ?
         uint256 _totalTokensToSell,
         uint256 _totalToRaise
     ) {
@@ -108,7 +108,7 @@ contract FTGSale is Ownable {
         //saleToken = _saleToken;
         nrt = NRT(_nrt);
         stakingContractAddress = _stakingContractAddress;
-        tokenPrice = _tokenPrice;
+        tokenPriceWei = _tokenPriceWei;
         totalTokensToSell = _totalTokensToSell;
         totalToRaise = _totalToRaise;
         tokensSold = 0;
@@ -314,7 +314,7 @@ contract FTGSale is Ownable {
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
             //TODO double check precision
-            uint256 investedAmount = (tokenPrice * buyTokenAmount)/10**18;
+            uint256 investedAmount = (buyTokenAmount * tokenPriceWei)/10**18;
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
@@ -345,7 +345,7 @@ contract FTGSale is Ownable {
                     n2,
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
-            uint256 investedAmount = tokenPrice * buyTokenAmount;
+            uint256 investedAmount = buyTokenAmount * tokenPriceWei/10**18;
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
