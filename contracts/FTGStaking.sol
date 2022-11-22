@@ -181,6 +181,10 @@ contract FTGStaking is Ownable {
 
     // public function to update Rewards
     function updateReward() public {
+        require(
+            stakeholders[msg.sender].stakings.length != 0,
+            "Not a stakeholder!"
+        );
         _updateStakeholderReward(msg.sender);
     }
 
@@ -305,7 +309,7 @@ contract FTGStaking is Ownable {
         if (_amount <= stakeholders[msg.sender].freeToUnstakeBalance) {
             // no fee to unstake
             // stakeholder is only partly withdrawing his staking balance
-            stakeholders[msg.sender].totalStaked -= _amount;            
+            stakeholders[msg.sender].totalStaked -= _amount;
             stakeholders[msg.sender].stakings.push(
                 Staking(
                     stakeholders[msg.sender].totalStaked,
@@ -337,7 +341,7 @@ contract FTGStaking is Ownable {
             uint256 amountCharged = _amount -
                 stakeholders[msg.sender].freeToUnstakeBalance;
             uint256 fee = PRBMath.mulDiv(UNSTAKING_FEE, amountCharged, 100);
-            _addNewReward(fee);            
+            _addNewReward(fee);
             // transfer to stakeholder
             ftgToken.transfer(msg.sender, _amount - fee);
             emit NewUnstake(msg.sender, _amount, block.timestamp);
@@ -453,13 +457,12 @@ contract FTGStaking is Ownable {
         ftgToken.transferFrom(msg.sender, address(this), _amount);
     }
 
-    function depositRewardTokensNoUpdate(uint256 _amount) external onlyOwner {                
+    function depositRewardTokensNoUpdate(uint256 _amount) external onlyOwner {
         ftgToken.transferFrom(msg.sender, address(this), _amount);
     }
 
     // emergency withdraw
-    function withdrawRewardTokens(uint256 _amount) external onlyOwner {                
+    function withdrawRewardTokens(uint256 _amount) external onlyOwner {
         ftgToken.transfer(msg.sender, _amount);
     }
-
 }
