@@ -6,7 +6,7 @@ from scripts.deploy_FTGStaking import deploy_FTGStaking
 
 def test_basicsale(accounts, pm, ftgtoken, investtoken):
 
-    ftgstaking = deploy_FTGStaking(ftgtoken.address)
+    ftgstaking = deploy_FTGStaking(ftgtoken.address, accounts[0])
     ftgtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
     ftgtoken.transfer(accounts[2], 500_000 * 10**18, {"from": accounts[0]})
 

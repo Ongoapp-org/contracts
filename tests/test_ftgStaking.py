@@ -11,7 +11,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print("accounts[0] in test_FTGToken = ", accounts[0])
     print("balance accounts[0] in test_FTGToken = ", accounts[0].balance())
     print("chain in test_FTGToken = ", network.chain)
-    ftgstaking = deploy_FTGStaking(ftgtoken.address)
+    ftgstaking = deploy_FTGStaking(ftgtoken.address, accounts[0])
     print("1) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     # first staking 600000 ftg by accounts[0] locked for a month
     print("**************first staking 600000 ftg by accounts[0] locked for a month \n")
@@ -61,7 +61,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
         "**************first deposit of 100 ftg reward to be distributed to stakers \n"
     )
     ftgtoken.approve(ftgstaking, 100, {"from": accounts[0]})
-    tx = ftgstaking.depositReward(100)
+    tx = ftgstaking.depositRewardTokens(100)
     print("4) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     print(tx.events)
     # Check rewardsList
@@ -87,7 +87,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print("totalActiveLocked1 = ", totalActiveLocked1)
     # second deposits 200 ftg reward to be distributed to stakers
     ftgtoken.approve(ftgstaking, 200, {"from": accounts[0]})
-    ftgstaking.depositReward(200)
+    ftgstaking.depositRewardTokens(200)
     print("6) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     # Check rewardsList
     rewardsList = ftgstaking.viewRewardsList()
@@ -97,7 +97,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     chain.sleep(timeTravel)
     # third deposits 300 ftg reward to be distributed to stakers
     ftgtoken.approve(ftgstaking, 300, {"from": accounts[0]})
-    ftgstaking.depositReward(300)
+    ftgstaking.depositRewardTokens(300)
     print("7) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     # Check rewardsList
     rewardsList = ftgstaking.viewRewardsList()
@@ -217,3 +217,42 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print(
         "after withdrawing: stakeholder ftg balance = ", ftgtoken.balanceOf(accounts[0])
     )
+
+
+def test_ftgStaking_scenario(accounts, pm, ftgtoken):
+    for i in range(1, 3):
+        assert ftgtoken.balanceOf(accounts[i]) == 10000
+    # deploy the contract
+    ftgstaking = deploy_FTGStaking(ftgtoken.address, accounts[0])
+
+    ftgtoken.approve(ftgstaking, 1000, {"from": accounts[0]})
+    ftgstaking.depositRewardTokens(1_000,  {"from": accounts[0]})
+
+    ftgtoken.approve(ftgstaking, 600000, {"from": accounts[1]})
+    ftgstaking.stake(
+        1_000, 2592000, {"from": accounts[1]}
+    )  # 30 days locked = 2592000 secs
+    
+    ftgtoken.balanceOf(accounts[1])
+    timeTravel = 2592000
+    chain.sleep(timeTravel)
+
+    #sk = ftgstaking.stakeholders.call(accounts[1])
+
+    rewardsList = ftgstaking.viewRewardsList()
+    assert rewardsList[0][:2] == (1000, 0)
+    assert rewardsList[1][:2] == (50, 0)
+    print("rewardsList=", rewardsList)
+
+    assert len(rewardsList) == 2
+    #FAILS revert: Index out of range
+    ftgstaking.updateReward()
+
+    #assert sk["totalReward"] == 1
+    #()["totalReward"] == 100
+
+    #ftgstaking.stakeReward(200, 0)
+    #fails
+    #ftgstaking.withdrawReward()
+
+    #assert ftgtoken.balanceOf(accounts[1]) == x + 100

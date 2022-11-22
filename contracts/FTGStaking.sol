@@ -179,13 +179,6 @@ contract FTGStaking is Ownable {
         stakeholders[_stakeholderAddress].lastRewardUpdate = block.timestamp;
     }
 
-    // function to deposit reward
-    function depositReward(uint256 _amount) external onlyOwner {
-        _addNewReward(_amount);
-        // Transfer of ftg token to the staking Contract (contract need to be approved first)
-        ftgToken.transferFrom(msg.sender, address(this), _amount);
-    }
-
     // public function to update Rewards
     function updateReward() public {
         _updateStakeholderReward(msg.sender);
@@ -308,12 +301,11 @@ contract FTGStaking is Ownable {
         // verifies that staking can be unstaked
         require(totalNotLocked > 0, "nothing to unstake");
         require(_amount <= totalNotLocked, "withdrawable amount exceeded");
-        // if amount exceeds totalStaked, we withdraw everything?
+        // unstake less than whats free to unstake
         if (_amount <= stakeholders[msg.sender].freeToUnstakeBalance) {
             // no fee to unstake
             // stakeholder is only partly withdrawing his staking balance
-            stakeholders[msg.sender].totalStaked -= _amount;
-            stakeholders[msg.sender].freeToUnstakeBalance -= _amount;
+            stakeholders[msg.sender].totalStaked -= _amount;            
             stakeholders[msg.sender].stakings.push(
                 Staking(
                     stakeholders[msg.sender].totalStaked,
@@ -322,12 +314,13 @@ contract FTGStaking is Ownable {
                     0
                 )
             );
+            stakeholders[msg.sender].freeToUnstakeBalance -= _amount;
             totalFTGStaked -= _amount;
             // transfer to stakeholder
             ftgToken.transfer(msg.sender, _amount);
             emit NewUnstake(msg.sender, _amount, block.timestamp);
         } else {
-            //TODO comment
+            // if amount exceeds totalStaked, we withdraw everything and apply fee
             stakeholders[msg.sender].totalStaked -= _amount;
             stakeholders[msg.sender].stakings.push(
                 Staking(
@@ -337,14 +330,14 @@ contract FTGStaking is Ownable {
                     0
                 )
             );
+            // reset freeToUnstakeBalance to zero
+            stakeholders[msg.sender].freeToUnstakeBalance = 0;
             totalFTGStaked -= _amount;
             // unstaking fee
             uint256 amountCharged = _amount -
                 stakeholders[msg.sender].freeToUnstakeBalance;
             uint256 fee = PRBMath.mulDiv(UNSTAKING_FEE, amountCharged, 100);
-            _addNewReward(fee);
-            // reset freeToUnstakeBalance to zero
-            stakeholders[msg.sender].freeToUnstakeBalance = 0;
+            _addNewReward(fee);            
             // transfer to stakeholder
             ftgToken.transfer(msg.sender, _amount - fee);
             emit NewUnstake(msg.sender, _amount, block.timestamp);
@@ -452,4 +445,21 @@ contract FTGStaking is Ownable {
         }
         return lockedStakingTotal;
     }
+
+    // function to deposit reward
+    function depositRewardTokens(uint256 _amount) external onlyOwner {
+        _addNewReward(_amount);
+        // Transfer of ftg token to the staking Contract (contract need to be approved first)
+        ftgToken.transferFrom(msg.sender, address(this), _amount);
+    }
+
+    function depositRewardTokensNoUpdate(uint256 _amount) external onlyOwner {                
+        ftgToken.transferFrom(msg.sender, address(this), _amount);
+    }
+
+    // emergency withdraw
+    function withdrawRewardTokens(uint256 _amount) external onlyOwner {                
+        ftgToken.transfer(msg.sender, _amount);
+    }
+
 }
