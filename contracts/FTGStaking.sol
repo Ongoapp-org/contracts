@@ -32,12 +32,12 @@ contract FTGStaking is Ownable {
 
     // Staking Tiers
     // StakeType not used, replaced by stakingDuration
-    enum StakeType {
-        FLEX,
-        LOCK30DAYS,
-        LOCK60DAYS,
-        LOCK90DAYS
-    }
+    // enum StakeType {
+    //     FLEX,
+    //     LOCK30DAYS,
+    //     LOCK60DAYS,
+    //     LOCK90DAYS
+    // }
 
     struct Stakeholder {
         uint256 totalStaked; // current total ftg staking of the stakeholder
@@ -193,6 +193,7 @@ contract FTGStaking is Ownable {
 
     // stake ftg token
     function stake(uint256 _amount, uint256 _lockDuration) public {
+        require(_lockDuration <= 90 days, "can not stake longer than 90 days");
         // Check that user does not stake 0
         require(_amount > 0, "Cannot stake nothing");
         // Check staker's balance is enough
@@ -217,6 +218,7 @@ contract FTGStaking is Ownable {
         totalFTGStaked += amountStaked;
         emit Log("totalFTGStaked", totalFTGStaked);
 
+        // TODO comment
         if (_lockDuration == 0) {
             // Add the new Stake to the stakeholder's stakes List
             stakeholders[msg.sender].stakings.push(
@@ -230,9 +232,6 @@ contract FTGStaking is Ownable {
             // Emit a NewStake event
             emit NewStake(msg.sender, amountStaked, 0, block.timestamp);
         } else if (
-            /*  _lockDuration == 30 days ||
-            _lockDuration == 60 days ||
-            _lockDuration == 90 days || */
             _lockDuration >= 30 days
         ) {
             // Add the new Stake to the stakeholder's stakes List
@@ -296,7 +295,7 @@ contract FTGStaking is Ownable {
         stakeholders[_stakeholderAddress].lastBalancesUpdate = block.timestamp;
     }
 
-    // function called by stakeholder to unstake ftg
+    // unstake ftg
     function unstake(uint256 _amount) public {
         // verify that stakeholder has staking
         require(stakeholders[msg.sender].totalStaked != 0, "No FTG staked");
@@ -327,6 +326,7 @@ contract FTGStaking is Ownable {
             ftgToken.transfer(msg.sender, _amount);
             emit NewUnstake(msg.sender, _amount, block.timestamp);
         } else {
+            //TODO comment
             stakeholders[msg.sender].totalStaked -= _amount;
             stakeholders[msg.sender].stakings.push(
                 Staking(
@@ -363,6 +363,7 @@ contract FTGStaking is Ownable {
     }
 
     // function for the stakeholder to stake his accumulated rewards
+    //TODO more explain how this is used
     function stakeReward(uint256 _amount, uint256 _lockDuration) public {
         require(
             _amount <= stakeholders[msg.sender].totalReward,
