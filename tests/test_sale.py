@@ -10,7 +10,7 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     ftgtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
     ftgtoken.transfer(accounts[2], 500_000 * 10**18, {"from": accounts[0]})
 
-    assert investtoken.balanceOf(accounts[0]) == 30_000_000 * 10**18    
+    assert investtoken.balanceOf(accounts[0]) == 30_000_000 * 10**18
 
     investtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
     investtoken.transfer(accounts[2], 1_000_000 * 10**18, {"from": accounts[0]})
@@ -37,7 +37,7 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
         _totalToRaise,
         {"from": accounts[0]},
     )
-    
+
     nrt.addOwner(salectr, {"from": accounts[0]})
 
     assert salectr.salePhase() == 0
@@ -99,7 +99,7 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     assert salectr.checkTierEligibility(accounts[1]) == DIAMOND
     assert salectr.checkTierEligibility(accounts[2]) == RUBY
 
-    timeTravel = day1 + 60*60
+    timeTravel = day1 + 60 * 60
     chain.sleep(timeTravel)
 
     salectr.launchNextPhase({"from": accounts[0]})
@@ -119,9 +119,9 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     # how much can buy?
     assert salectr.n() == 1111111111111111111111111111111111
 
-    #TODO test cant buy more than diamond
+    # TODO test cant buy more than diamond
 
-    #ruby cant buy?
+    # ruby cant buy?
     bamount = 100 * 10**18
 
     investtoken.approve(salectr, bamount, {"from": accounts[2]})
@@ -138,14 +138,14 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
 
     ##### public phase
 
-    timeTravel = day1 + 60*60
+    timeTravel = day1 + 60 * 60
     chain.sleep(timeTravel)
 
     salectr.launchNextPhase({"from": accounts[0]})
     assert salectr.salePhase() == 3
 
     investAmount = 1_000
-    buyTokenamount = investAmount/ (_tokenPriceInUSD/10**18)
+    buyTokenamount = investAmount / (_tokenPriceInUSD / 10**18)
 
     assert buyTokenamount == 100_000
 
@@ -161,18 +161,15 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     investtoken.approve(salectr, investAmount, {"from": accounts[2]})
     with brownie.reverts():
         salectr.buytoken(buyTokenamount, {"from": accounts[2]})
-        #assert investtoken.allowance(accounts[2], salectr) == investAmount
-    
+        # assert investtoken.allowance(accounts[2], salectr) == investAmount
 
-    #salectr.launchNextPhase({"from": accounts[0]})
+    # salectr.launchNextPhase({"from": accounts[0]})
 
-    #investtoken.approve(salectr, bamount, {"from": accounts[1]})
-    #alectr.buytoken(bamount, {"from": accounts[1]})
+    # investtoken.approve(salectr, bamount, {"from": accounts[1]})
+    # alectr.buytoken(bamount, {"from": accounts[1]})
 
-
-    #investtoken.approve(salectr, bamount, {"from": accounts[2]})
-    #salectr.buytoken(bamount, {"from": accounts[1]})
-
+    # investtoken.approve(salectr, bamount, {"from": accounts[2]})
+    # salectr.buytoken(bamount, {"from": accounts[1]})
 
     # saletoken = MockFTGToken.deploy(30_000_000 * 10**18, {"from": accounts[0]})
     # saletoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
@@ -180,7 +177,6 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     # assert saletoken.balanceOf(accounts[0]) == 19_000_000 * 10**18
     # assert saletoken.balanceOf(accounts[1]) == 10_000_000 * 10**18
     # assert saletoken.balanceOf(accounts[2]) == 1_000_000 * 10**18
-
 
     ############ old
 

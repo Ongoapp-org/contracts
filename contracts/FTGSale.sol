@@ -253,7 +253,7 @@ contract FTGSale is Ownable {
                 registrationPhaseStart + registrationPhaseDuration,
             "registration not finished"
         );
-        //NP = number of participants 
+        //NP = number of participants
         //Factor * NP
         uint256 sumFNP = tiersTokensAllocationFactor[Tiers.SAPPHIRE] *
             tiersNbOFParticipants[Tiers.SAPPHIRE] +
@@ -301,7 +301,11 @@ contract FTGSale is Ownable {
         //verifies that participants has been KYCed
         require(participants[msg.sender].whitelisted, "not in whitelist");
         Tiers tier = participants[msg.sender].participantTier;
-        require(salePhase == Phases.GuaranteedPool || salePhase == Phases.PublicPool, "not open for buying");
+        require(
+            salePhase == Phases.GuaranteedPool ||
+                salePhase == Phases.PublicPool,
+            "not open for buying"
+        );
         if (salePhase == Phases.GuaranteedPool) {
             //Verifies that phase is not over
             require(
@@ -316,7 +320,7 @@ contract FTGSale is Ownable {
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
             //TODO double check precision
-            uint256 investedAmount = (buyTokenAmount * tokenPriceWei)/10**18;
+            uint256 investedAmount = (buyTokenAmount * tokenPriceWei) / 10**18;
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
@@ -343,11 +347,10 @@ contract FTGSale is Ownable {
 
             //TODO double check
             require(
-                participants[msg.sender].tokensBalancePP + buyTokenAmount <
-                    n2,
+                participants[msg.sender].tokensBalancePP + buyTokenAmount < n2,
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
-            uint256 investedAmount = buyTokenAmount * tokenPriceWei/10**18;
+            uint256 investedAmount = (buyTokenAmount * tokenPriceWei) / 10**18;
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,

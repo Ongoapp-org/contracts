@@ -5,7 +5,6 @@ import "./OwnableBase.sol";
 import "./NRT.sol";
 
 contract Redeemer is OwnableBase {
-    
     NRT public nrt;
     address public saleToken;
 

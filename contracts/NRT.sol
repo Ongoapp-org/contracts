@@ -7,11 +7,10 @@ import "./OwnableMulti.sol";
 //can only be traded with the issuer who remains in control of the market
 //until he opens the redemption window
 contract NRT is OwnableMulti {
-    
     uint256 private _issuedSupply;
     uint256 private _outstandingSupply;
     uint256 private _decimals;
-    string private _symbol;    
+    string private _symbol;
 
     mapping(address => uint256) private _balances;
 
@@ -31,7 +30,7 @@ contract NRT is OwnableMulti {
 
         _issuedSupply += amount;
         _outstandingSupply += amount;
-        _balances[account]+= amount;
+        _balances[account] += amount;
 
         emit Issued(account, amount);
     }
