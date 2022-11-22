@@ -198,7 +198,7 @@ contract FTGSale is Ownable {
         // requirement that caller is eligible
         Tiers tier = checkTierEligibility(msg.sender);
         require(tier != Tiers.NONE, "Not enough locked Staking");
-        // add participant
+        // add participant and set whitelist to true
         participants[msg.sender] = Participant(0, 0, true, tier);
         // add participant to tiersNbOFParticipants
         tiersNbOFParticipants[tier]++;
@@ -296,6 +296,7 @@ contract FTGSale is Ownable {
     }
 
     //function to buy tokens during Pool Phases
+    //TODO change to investToken
     function buytoken(uint256 buyTokenAmount) public {
         //verifies that participants has been KYCed
         require(participants[msg.sender].whitelisted, "not in whitelist");
