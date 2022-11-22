@@ -246,7 +246,7 @@ def test_ftgStaking_scenario(accounts, pm, ftgtoken):
 
     assert len(rewardsList) == 2
     #FAILS revert: Index out of range
-    ftgstaking.updateReward()
+    ftgstaking.updateReward({"from": accounts[1]})
 
     #assert sk["totalReward"] == 1
     #()["totalReward"] == 100
