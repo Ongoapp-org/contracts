@@ -296,6 +296,10 @@ contract FTGStaking is Ownable {
     }
 
     function unstakeAll() public {
+        require(
+            stakeholders[msg.sender].stakings.length != 0,
+            "Not a stakeholder!"
+        );
         _updateStakeholderBalances(msg.sender);
         uint256 amount = stakeholders[msg.sender].freeToUnstakeBalance;
         unstake(amount);
@@ -360,6 +364,10 @@ contract FTGStaking is Ownable {
 
     // function for the stakeholder to withdraw his accumulated rewards
     function withdrawReward() public {
+        require(
+            stakeholders[msg.sender].stakings.length != 0,
+            "Not a stakeholder!"
+        );
         // firstly update reward balance
         _updateStakeholderReward(msg.sender);
         // transfer rewards to stakeholder's account
@@ -440,6 +448,10 @@ contract FTGStaking is Ownable {
         address _participantAddress,
         uint256 lockDurationChecked
     ) external view returns (int256 lockedStakingTotal) {
+        require(
+            stakeholders[_participantAddress].stakings.length != 0,
+            "Not a stakeholder!"
+        );
         Staking[] memory participantStakings = stakeholders[_participantAddress]
             .stakings;
         for (uint256 i = 0; i < participantStakings.length; i++) {
