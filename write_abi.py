@@ -17,6 +17,8 @@ def write(fn, fo):
 l = os.listdir("./build/contracts")
 for x in l:
     print("write ", x)
+    if not ".json" in x:
+        continue
     fn = "./build/contracts/%s"%x
     fo = "./abi/%s"%x
     write(fn, fo)
