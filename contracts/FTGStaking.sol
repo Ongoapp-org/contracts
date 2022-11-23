@@ -30,6 +30,8 @@ contract FTGStaking is Ownable {
     uint256 constant INITIAL_STAKING_FEE = 5; // %
     uint256 constant UNSTAKING_FEE = 15; // %
 
+    uint256 minDays = 30 days;
+
     // Staking Tiers
     // StakeType not used, replaced by stakingDuration
     // enum StakeType {
@@ -231,7 +233,7 @@ contract FTGStaking is Ownable {
             );
             // Emit a NewStake event
             emit NewStake(msg.sender, amountStaked, 0, block.timestamp);
-        } else if (_lockDuration >= 30 days) {
+        } else if (_lockDuration >= minDays) {
             // Add the new Stake to the stakeholder's stakes List
             stakeholders[msg.sender].stakings.push(
                 Staking(
@@ -272,7 +274,7 @@ contract FTGStaking is Ownable {
                 .stakings[i];
             if (_staking.lockDuration == 0) {
                 // in case we deal with flex staking
-                if (block.timestamp - _staking.timestamp > 30 days) {
+                if (block.timestamp - _staking.timestamp > minDays) {
                     stakeholders[_stakeholderAddress]
                         .freeToUnstakeBalance += uint256(_staking.amount); //staking._amount should be >0
                 }

@@ -19,21 +19,31 @@ def deploy_FTGStaking(tokenAddr, mainaccount):
 
 
 def main():
-    # Fetch the account
-    # account = accounts[0]
-    # pk1 = "b5f58344a9513b68d2f20435107de17d865b01d603f4558fef27c1fed071d8e2"
-    pk2 = "c43766a57a118e09e3b4dcda38685d2b1bc6e0872af1f9e51dd4bd704d77abde"
-    mainaccount = accounts.add(pk2)
-    ftgmockAddress = "0xC54Aee27538ae906034e9f2f1A784778ab55d861"
-    ftgmock = MockFTGToken.at(ftgmockAddress)
-    print("mainaccount ", mainaccount)
-    print("main FTG balance ", ftgmock.balanceOf(mainaccount) / 10**18)
-    print("main ETH balance ", mainaccount.balance())
-    # token = MockFTGToken.deploy(10 ** 9, {"from": mainaccount})
+    print(network.chain.id)
+    if network.chain.id == 1337:
+        ftgmockAddress = MockFTGToken.deploy(10 ** 9 * 10**18, {"from": accounts[0]})
+        print("ftgmock ", ftgmockAddress)
 
-    # Deploy contract
-    #staking = deploy_FTGStaking(ftgmockAddress, mainaccount)
-    #print("FTGStaking deployed at ", staking.address)
+        staking = deploy_FTGStaking(ftgmockAddress, accounts[0])
+        print("FTGStaking deployed at ", staking.address)
+
+
+    # token = MockFTGToken.deploy(10 ** 9, {"from": mainaccount})
+    elif network.chain.id == 999:
+        # Fetch the account
+        # account = accounts[0]
+        # pk1 = "b5f58344a9513b68d2f20435107de17d865b01d603f4558fef27c1fed071d8e2"
+        pk2 = "c43766a57a118e09e3b4dcda38685d2b1bc6e0872af1f9e51dd4bd704d77abde"
+        mainaccount = accounts.add(pk2)
+        ftgmockAddress = "0xC54Aee27538ae906034e9f2f1A784778ab55d861"
+        ftgmock = MockFTGToken.at(ftgmockAddress)
+        print("mainaccount ", mainaccount)
+        print("main FTG balance ", ftgmock.balanceOf(mainaccount) / 10**18)
+        print("main ETH balance ", mainaccount.balance())
+
+        # Deploy contract
+        #staking = deploy_FTGStaking(ftgmockAddress, mainaccount)
+        #print("FTGStaking deployed at ", staking.address)
 
 
 """ 
