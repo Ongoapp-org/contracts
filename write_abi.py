@@ -5,12 +5,13 @@ def write(fn, fo):
     with open(fn, "r") as f:
         x =f.read()
         z = json.loads(x)["abi"]
-        zd = {"abi": z}
+        #zd = {"abi": z}
         
         if len(z)==0: return
 
         with open(fo, "w") as o:
-            o.write(json.dumps(zd))
+            #o.write(json.dumps(zd))
+            o.write(json.dumps(z))
 
 
 
