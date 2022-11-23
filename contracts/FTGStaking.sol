@@ -342,14 +342,14 @@ contract FTGStaking is Ownable {
                     0
                 )
             );
-            // reset freeToUnstakeBalance to zero
-            stakeholders[msg.sender].freeToUnstakeBalance = 0;
             totalFTGStaked -= _amount;
             // unstaking fee
             uint256 amountCharged = _amount -
                 stakeholders[msg.sender].freeToUnstakeBalance;
             uint256 fee = PRBMath.mulDiv(UNSTAKING_FEE, amountCharged, 100);
             _addNewReward(fee);
+            // reset freeToUnstakeBalance to zero
+            stakeholders[msg.sender].freeToUnstakeBalance = 0;
             // transfer to stakeholder
             ftgToken.transfer(msg.sender, _amount - fee);
             emit NewUnstake(msg.sender, _amount, block.timestamp);

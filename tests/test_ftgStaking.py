@@ -138,6 +138,45 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     # onchain rewards for every stakeholder every time a reward is deposited.
     # Also is precision set to 9 digits enough? ... and is integer rounding acceptable?
 
+    # test if stakeholder partly unstakes
+    print("partly unstaking test \n")
+    print(
+        "before unstaking 1000 accounts[0] stakeholder Balances Info (not up to date since update is performed at unstaking):",
+        ftgstaking.getBalances(accounts[0]),
+    )
+    #totalStaked (correct)
+    assert ftgstaking.getBalances(accounts[0])[0] == 970100
+    tx = ftgstaking.unstake(1000, {"from": accounts[0]})
+    print(
+        "9) after unstaking 1000 accounts[0] ftg balance = \n",
+        ftgtoken.balanceOf(accounts[0]),
+    )
+    assert ftgstaking.getBalances(accounts[0])[0] == 969100
+    #totelLockedBalance
+    assert ftgstaking.getBalances(accounts[0])[1] == 400000
+    #freeToUnstakeBalance(pay no fee up to this amount ... Right cause we withdrew 1000 and 570000 were freeToUnstake before)
+    assert ftgstaking.getBalances(accounts[0])[2] == 569000
+    print(
+        "after unstaking accounts[0] stakeholder Balances Info :",
+        ftgstaking.getBalances(accounts[0]),
+    )
+    print(tx.events)
+    # test if stakeholder unstakes completely
+    print("completely unstaking test \n")
+    tx = ftgstaking.unstake(569100, {"from": accounts[0]})
+    print("10) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
+    print(tx.events)
+    # check if stakeholder pays fee 15% for unstaking 100 ftg not yet staked for 30 days 
+    rewardsList = ftgstaking.viewRewardsList()
+    assert rewardsList[-1][0]==15
+    print("rewardsList = \n", rewardsList)
+    print(
+        "stakeholders[accounts[0]].stakings = \n", ftgstaking.getStakings(accounts[0])
+    )
+
+
+
+
     # wait 6 months
     timeTravel = 15552000
     chain.sleep(timeTravel)
@@ -162,33 +201,6 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     # assert totalActiveLocked0 == 0
     assert totalActiveLocked0 == 400000
     print("after 6 months  ... totalActiveLocked0 = \n", totalActiveLocked0)
-
-    # test if stakeholder partly unstakes
-    print("partly unstaking test \n")
-    print(
-        "before unstaking 1000 accounts[0] stakeholder Balances Info :",
-        ftgstaking.getBalances(accounts[0]),
-    )
-    tx = ftgstaking.unstake(1000, {"from": accounts[0]})
-    print(
-        "9) after unstaking 1000 accounts[0] ftg balance = \n",
-        ftgtoken.balanceOf(accounts[0]),
-    )
-    print(
-        "after unstaking accounts[0] stakeholder Balances Info :",
-        ftgstaking.getBalances(accounts[0]),
-    )
-    print(tx.events)
-    # test if stakeholder unstakes completely
-    print("completely unstaking test \n")
-    tx = ftgstaking.unstake(4050, {"from": accounts[0]})
-    print("10) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
-    print(tx.events)
-    rewardsList = ftgstaking.viewRewardsList()
-    print("rewardsList = \n", rewardsList)
-    print(
-        "stakeholders[accounts[0]].stakings = \n", ftgstaking.getStakings(accounts[0])
-    )
 
     # test of staking some reward
     ftgstaking.updateReward()
