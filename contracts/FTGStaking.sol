@@ -293,6 +293,12 @@ contract FTGStaking is Ownable {
         stakeholders[_stakeholderAddress].lastBalancesUpdate = block.timestamp;
     }
 
+    function unstakeAll() public {
+        _updateStakeholderBalances(msg.sender);
+        uint256 amount = stakeholders[msg.sender].freeToUnstakeBalance;
+        unstake(amount);
+    }
+
     // unstake ftg
     function unstake(uint256 _amount) public {
         // verify that stakeholder has staking
