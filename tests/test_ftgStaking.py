@@ -20,13 +20,23 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     ftgtoken.approve(ftgstaking, 600000, {"from": accounts[0]})
     tx = ftgstaking.stake(
         600000, days30, {"from": accounts[0]}
-    )  # 30 days locked = 2592000 secs
+    )  # 30 days locked = 2592000 secs 
     print("2) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     print(tx.events)
     # wait 3650 secs
     print("wait 3650 secs = 1h")
     timeTravel = 3650
     chain.sleep(timeTravel)
+    #verifies reward balance is zero for accounts[0]
+    tx = ftgstaking.updateReward()
+    print(tx.events)
+    totalreward0=ftgstaking.getAccountRewardInfo(accounts[0])[0]
+    lastUpdateReward0=ftgstaking.getAccountRewardInfo(accounts[0])[1]
+    print("totalreward0",totalreward0)
+    print("lastUpdateReward0",lastUpdateReward0)
+    assert totalreward0 == 0
+    assert lastUpdateReward0 == chain.time()
+
     # second staking 120000 ftg by accounts[1]
     print("**************second staking 120000 ftg by accounts[1] for 90 days \n")
     ftgtoken.transfer(accounts[1], 200000)
@@ -121,7 +131,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
         "Before Reward update: stakeholders[accounts[0]].totalReward=",
         ftgstaking.getAccountRewardInfo(accounts[0]),
     )
-    assert ftgstaking.getAccountRewardInfo(accounts[0]) == (0, 0)
+    #assert ftgstaking.getAccountRewardInfo(accounts[0]) == (0, 1669303831)
     tx = ftgstaking.updateReward()
     print(tx.events)
     print(

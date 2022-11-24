@@ -41,6 +41,7 @@ contract FTGStaking is Ownable {
     //     LOCK90DAYS
     // }
 
+    //StakeHolder are registered in stakeholders when they stake for the first time
     struct Stakeholder {
         uint256 totalStaked; // current total ftg staking of the stakeholder
         uint256 totalLockedBalance; // current total ftg locked (for 30,60 or 90 days)
@@ -112,41 +113,64 @@ contract FTGStaking is Ownable {
         view
         returns (uint256)
     {
-        uint256 i = rewardsList.length > 0 ? rewardsList.length - 1 : 0;
+        //rewardsList.length>0 when this function is called
+        uint256 i = rewardsList.length - 1;
         /* emit Log("i0=",i);
-        emit Log("rewardsList[i].timestam",rewardsList[i].timestamp); */
+        emit Log("rewardsList[i].timestamp",rewardsList[i].timestamp); */
+        //We can use a strict inequality in order to avoid taking into account the initial staking fee?
         while (rewardsList[i].timestamp >= lastUpdateTime && i != 0) {
             unchecked {
                 --i;
             }
             // emit Log("i=",i);
         }
-        return i > 0 ? i + 1 : 1;
+        return i + 1;
     }
 
     // to retrieve the stakeholder's stake at a certain reward time
+    // the staking just before the reward time counts not the staking at the same time
     function _getStakeHolderStakeIndexBeforeTime(
         address _stakeholderAddress,
         uint256 _time
     ) private view returns (uint256) {
-        uint256 len = stakeholders[_stakeholderAddress].stakings.length;
-        uint256 i = len > 0 ? len - 1 : 0;
-        while (
-            stakeholders[_stakeholderAddress].stakings[i].timestamp > _time &&
-            i != 0
-        ) {
-            unchecked {
-                --i;
+        // for first balance update _time = 0, otherwise not
+        if (_time == 0) {
+            return 0;
+        } else {
+            //len min = 1
+            uint256 len = stakeholders[_stakeholderAddress].stakings.length;
+            uint256 i = len - 1;
+            while (
+                stakeholders[_stakeholderAddress].stakings[i].timestamp >
+                _time &&
+                i != 0
+            ) {
+                unchecked {
+                    --i;
+                }
             }
+            return i;
         }
-        return i > 0 ? i : 0;
     }
 
     // to update the reward balance of a stakeholder
     function _updateStakeholderReward(address _stakeholderAddress) private {
-        uint256 startIndex = _getfirstRewardsIndexToAdd(
-            stakeholders[_stakeholderAddress].lastRewardUpdate
+        // We verify first that the address corresponds to an actual stakeholder
+        require(
+            stakeholders[_stakeholderAddress].stakings.length != 0,
+            "Not a stakeholder!"
         );
+        require(rewardsList.length > 0, "No rewards yet");
+        //Looking for rewards since the last reward update
+        uint256 lastRewardUpdate = stakeholders[_stakeholderAddress]
+            .lastRewardUpdate;
+        //if the reward balance was never updated lastRewardUpdate = 0, we use the stakeholder's first staking time
+        if (lastRewardUpdate == 0) {
+            lastRewardUpdate = stakeholders[_stakeholderAddress]
+                .stakings[0]
+                .timestamp;
+        }
+        uint256 startIndex = _getfirstRewardsIndexToAdd(lastRewardUpdate);
         emit Log("startIndex=", startIndex);
         uint256 rewardsSum = 0;
         for (uint256 i = startIndex; i < rewardsList.length; i++) {
@@ -158,9 +182,27 @@ contract FTGStaking is Ownable {
                 "stakeholderStakeIndexAtRewardTime=",
                 stakeholderStakeIndexAtRewardTime
             );
+            // if the stakeholderStakeIndexAtRewardTime == 0, it may be that it is the right staking to use or simply
+            // that the reward was before the first staking. Can it the latter be? I dont think so cause that would mean that we
+            // would have updated before the stakeholder's first staking ... which cannot be
+            /* uint256 stakeholderStakeAtRewardtime;
+
+            if (
+                stakeholderStakeIndexAtRewardTime == 0 &&
+                stakeholders[_stakeholderAddress].stakings[0].timestamp >=
+                rewardsList[i].timestamp
+            ) {
+                stakeholderStakeAtRewardtime = 0;
+            } else {
+                stakeholderStakeAtRewardtime = stakeholders[_stakeholderAddress]
+                    .stakings[stakeholderStakeIndexAtRewardTime]
+                    .totalStaked;
+            } */
+
             uint256 stakeholderStakeAtRewardtime = stakeholders[
                 _stakeholderAddress
             ].stakings[stakeholderStakeIndexAtRewardTime].totalStaked;
+
             emit Log(
                 "stakeholderStakeAtRewardtime=",
                 stakeholderStakeAtRewardtime
@@ -258,6 +300,11 @@ contract FTGStaking is Ownable {
 
     // function to update the freeToUnstakeBalance and totalLockedBalance
     function _updateStakeholderBalances(address _stakeholderAddress) private {
+        // We verify first that the address corresponds to an actual stakeholder
+        require(
+            stakeholders[_stakeholderAddress].stakings.length != 0,
+            "Not a stakeholder!"
+        );
         // We get staking index just after last freeToUnstakeBalance update
         uint256 StakingIndexBeforeTime = _getStakeHolderStakeIndexBeforeTime(
             _stakeholderAddress,
@@ -268,15 +315,21 @@ contract FTGStaking is Ownable {
             : 0;
         emit Log("indexToStartUpdate = ", indexToStartUpdate);
         uint256 stakingslen = stakeholders[_stakeholderAddress].stakings.length;
+        uint256 freeToUnstakeBalTemp = stakeholders[_stakeholderAddress]
+            .freeToUnstakeBalance;
+        uint256 totalLockedBalTemp = stakeholders[_stakeholderAddress]
+            .totalLockedBalance;
         // check if stakings after last update time are free to unstake
         for (uint256 i = indexToStartUpdate; i < stakingslen; i++) {
+            //staking._amount should be >0 since we update balances when stakeholder unstake
+            //so that last update time will be updated and next balance update will start from staking
+            //record after unstaking, so no negative amount should be encountered here
             Staking memory _staking = stakeholders[_stakeholderAddress]
                 .stakings[i];
             if (_staking.lockDuration == 0) {
                 // in case we deal with flex staking
                 if (block.timestamp - _staking.timestamp > minDays) {
-                    stakeholders[_stakeholderAddress]
-                        .freeToUnstakeBalance += uint256(_staking.amount); //staking._amount should be >0
+                    freeToUnstakeBalTemp += uint256(_staking.amount); //staking._amount should be >0
                 }
             } else {
                 // in case we deal with locked Staking
@@ -284,13 +337,15 @@ contract FTGStaking is Ownable {
                     block.timestamp - _staking.timestamp > _staking.lockDuration
                 ) {
                     // lockTime finished, update totalLockedBalance
-                    stakeholders[_stakeholderAddress]
-                        .totalLockedBalance -= uint256(_staking.amount);
-                    stakeholders[_stakeholderAddress]
-                        .freeToUnstakeBalance += uint256(_staking.amount);
+                    totalLockedBalTemp -= uint256(_staking.amount);
+                    freeToUnstakeBalTemp += uint256(_staking.amount);
                 }
             }
         }
+        stakeholders[_stakeholderAddress]
+            .freeToUnstakeBalance = freeToUnstakeBalTemp;
+        stakeholders[_stakeholderAddress]
+            .totalLockedBalance = totalLockedBalTemp;
         // update lastBalancesUpdate
         stakeholders[_stakeholderAddress].lastBalancesUpdate = block.timestamp;
     }
