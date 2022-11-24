@@ -312,7 +312,7 @@ contract FTGStaking is Ownable {
             "freeToUnstakeBalance=",
             stakeholders[msg.sender].freeToUnstakeBalance
         ); */
-        unstake(amount);
+        // unstake(amount);
     }
 
     // unstake ftg
@@ -324,6 +324,7 @@ contract FTGStaking is Ownable {
         // calculate not locked stacking balance
         uint256 totalNotLocked = stakeholders[msg.sender].totalStaked -
             stakeholders[msg.sender].totalLockedBalance;
+        emit Log("totalNotLocked=", totalNotLocked);
         //emit Log("totalNotLocked = ", totalNotLocked);
         // verifies that staking can be unstaked
         require(totalNotLocked > 0, "nothing to unstake");

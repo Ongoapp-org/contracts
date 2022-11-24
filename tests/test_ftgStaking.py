@@ -304,8 +304,9 @@ def test_ftgStaking_scenario(accounts, pm, ftgtoken):
 
     assert ftgstaking.stakeholders(accounts[1])[:-1] == (950, 950, 0, 0, 0)
 
-    tx=ftgstaking.unstakeFreeAll({"from": accounts[1]})
-    print(tx.info())
+    #ftgstaking.unstakeFreeAll({"from": accounts[1]})
+    tx = ftgstaking.unstake(950,{"from": accounts[1]})
+    print(tx.traceback)
     # assert sk["totalReward"] == 1
     # ()["totalReward"] == 100
 
