@@ -295,13 +295,23 @@ contract FTGStaking is Ownable {
         stakeholders[_stakeholderAddress].lastBalancesUpdate = block.timestamp;
     }
 
-    function unstakeAll() public {
+    function unstakeFreeAll() public {
         require(
             stakeholders[msg.sender].stakings.length != 0,
             "Not a stakeholder!"
         );
+        //emit Log("hello", stakeholders[msg.sender].stakings.length);
         _updateStakeholderBalances(msg.sender);
         uint256 amount = stakeholders[msg.sender].freeToUnstakeBalance;
+        /* emit Log("totalStaked=", stakeholders[msg.sender].totalStaked);
+        emit Log(
+            "totalLockedBalance=",
+            stakeholders[msg.sender].totalLockedBalance
+        );
+        emit Log(
+            "freeToUnstakeBalance=",
+            stakeholders[msg.sender].freeToUnstakeBalance
+        ); */
         unstake(amount);
     }
 
@@ -314,6 +324,7 @@ contract FTGStaking is Ownable {
         // calculate not locked stacking balance
         uint256 totalNotLocked = stakeholders[msg.sender].totalStaked -
             stakeholders[msg.sender].totalLockedBalance;
+        //emit Log("totalNotLocked = ", totalNotLocked);
         // verifies that staking can be unstaked
         require(totalNotLocked > 0, "nothing to unstake");
         require(_amount <= totalNotLocked, "withdrawable amount exceeded");

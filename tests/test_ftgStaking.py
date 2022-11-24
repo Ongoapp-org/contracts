@@ -274,6 +274,7 @@ def test_staking_basic(accounts, ftgtoken):
 
 
 def test_ftgStaking_scenario(accounts, pm, ftgtoken):
+    print("test_ftgStaking_scenario \n")
     for i in range(1, 3):
         assert ftgtoken.balanceOf(accounts[i]) == 10000
     # deploy the contract
@@ -303,8 +304,8 @@ def test_ftgStaking_scenario(accounts, pm, ftgtoken):
 
     assert ftgstaking.stakeholders(accounts[1])[:-1] == (950, 950, 0, 0, 0)
 
-    # ftgstaking.unstakeAll({"from": accounts[1]})
-
+    tx=ftgstaking.unstakeFreeAll({"from": accounts[1]})
+    print(tx.info())
     # assert sk["totalReward"] == 1
     # ()["totalReward"] == 100
 
