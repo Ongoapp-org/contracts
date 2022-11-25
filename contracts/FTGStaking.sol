@@ -129,7 +129,7 @@ contract FTGStaking is Ownable {
 
     // to retrieve the stakeholder's stake at a certain reward time
     // the staking just before the reward time counts not the staking at the same time
-    function _getStakeHolderStakeIndexBeforeTime(
+    function _getStakeholderStakingIndexBeforeTime(
         address _stakeholderAddress,
         uint256 _time
     ) private view returns (uint256) {
@@ -174,7 +174,7 @@ contract FTGStaking is Ownable {
         emit Log("startIndex=", startIndex);
         uint256 rewardsSum = 0;
         for (uint256 i = startIndex; i < rewardsList.length; i++) {
-            uint256 stakeholderStakeIndexAtRewardTime = _getStakeHolderStakeIndexBeforeTime(
+            uint256 stakeholderStakeIndexAtRewardTime = _getStakeholderStakingIndexBeforeTime(
                     _stakeholderAddress,
                     rewardsList[i].timestamp
                 );
@@ -183,7 +183,7 @@ contract FTGStaking is Ownable {
                 stakeholderStakeIndexAtRewardTime
             );
             // if the stakeholderStakeIndexAtRewardTime == 0, it may be that it is the right staking to use or simply
-            // that the reward was before the first staking. Can it the latter be? I dont think so cause that would mean that we
+            // that the reward was before the first staking. Can the latter be? I dont think so cause that would mean that we
             // would have updated before the stakeholder's first staking ... which cannot be
             /* uint256 stakeholderStakeAtRewardtime;
 
@@ -306,7 +306,7 @@ contract FTGStaking is Ownable {
             "Not a stakeholder!"
         );
         // We get staking index just after last freeToUnstakeBalance update
-        uint256 StakingIndexBeforeTime = _getStakeHolderStakeIndexBeforeTime(
+        uint256 StakingIndexBeforeTime = _getStakeholderStakingIndexBeforeTime(
             _stakeholderAddress,
             stakeholders[_stakeholderAddress].lastBalancesUpdate
         );
