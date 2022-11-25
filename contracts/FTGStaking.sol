@@ -141,7 +141,7 @@ contract FTGStaking is Ownable {
             uint256 len = stakeholders[_stakeholderAddress].stakings.length;
             uint256 i = len - 1;
             while (
-                stakeholders[_stakeholderAddress].stakings[i].timestamp >
+                stakeholders[_stakeholderAddress].stakings[i].timestamp >=
                 _time &&
                 i != 0
             ) {

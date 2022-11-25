@@ -27,16 +27,21 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print("wait 3650 secs = 1h")
     timeTravel = 3650
     chain.sleep(timeTravel)
-    #verifies reward balance is zero for accounts[0]
+    #verifies accountRewardInfo before and after update reward for accounts[0]
+    totalreward0=ftgstaking.getAccountRewardInfo(accounts[0])[0]
+    lastUpdateReward0=ftgstaking.getAccountRewardInfo(accounts[0])[1]
+    print("before call updateReward(),totalreward0 = " ,totalreward0)
+    print("before call updateReward(),lastUpdateReward0 = ",lastUpdateReward0)
+    assert totalreward0 == 0
+    assert lastUpdateReward0 == 0
     tx = ftgstaking.updateReward()
     print(tx.events)
     totalreward0=ftgstaking.getAccountRewardInfo(accounts[0])[0]
     lastUpdateReward0=ftgstaking.getAccountRewardInfo(accounts[0])[1]
-    print("totalreward0",totalreward0)
-    print("lastUpdateReward0",lastUpdateReward0)
+    print("after call updateReward(),totalreward0 = " ,totalreward0)
+    print("after call updateReward(),lastUpdateReward0 = ",lastUpdateReward0)
     assert totalreward0 == 0
     assert lastUpdateReward0 == chain.time()
-
     # second staking 120000 ftg by accounts[1]
     print("**************second staking 120000 ftg by accounts[1] for 90 days \n")
     ftgtoken.transfer(accounts[1], 200000)
@@ -162,7 +167,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
         ftgtoken.balanceOf(accounts[0]),
     )
     assert ftgstaking.getBalances(accounts[0])[0] == 969100
-    #totelLockedBalance
+    #totalLockedBalance
     assert ftgstaking.getBalances(accounts[0])[1] == 400000
     #freeToUnstakeBalance(pay no fee up to this amount ... Right cause we withdrew 1000 and 570000 were freeToUnstake before)
     assert ftgstaking.getBalances(accounts[0])[2] == 569000
