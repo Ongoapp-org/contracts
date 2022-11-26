@@ -23,6 +23,9 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     )  # 30 days locked = 2592000 secs 
     print("2) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     print(tx.events)
+    # balance update
+    ftgstaking.updateBalances(accounts[0])
+    print("totalStaked,totalLockedBalance,freeToUnstakeBalance,updateTime)=",ftgstaking.getBalances(accounts[0]))
     # wait 3650 secs
     print("wait 3650 secs = 1h")
     timeTravel = 3650
@@ -71,7 +74,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print("Contracts totalFTGStaked=", ftgstaking.totalFTGStaked())
     # wait 150 secs
     print("**************wait 150 secs \n")
-    timeTravel = 150
+    timeTravel = 180
     chain.sleep(timeTravel)
     # first deposit of 100 ftg reward to be distributed to stakers
     print(
@@ -89,7 +92,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     chain.sleep(timeTravel)
     # third staking 400000 ftg by accounts[0]
     ftgtoken.approve(ftgstaking, 400000, {"from": accounts[0]})
-    ftgstaking.stake(400000, 10000000, {"from": accounts[0]})
+    ftgstaking.stake(400000, 7776000, {"from": accounts[0]})
     print("5) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     # verifies more than 30 days locked staking
     totalActiveLocked0 = ftgstaking.checkParticipantLockedStaking.call(
@@ -109,6 +112,12 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     # Check rewardsList
     rewardsList = ftgstaking.viewRewardsList()
     print("rewardsList=", rewardsList)
+     # wait 1min
+    timeTravel = 60
+    chain.sleep(timeTravel)
+    # balance update
+    ftgstaking.updateBalances(accounts[0])
+    print("totalStaked,totalLockedBalance,freeToUnstakeBalance,updateTime)=",ftgstaking.getBalances(accounts[0]))
     # wait 30 days
     timeTravel = days30
     chain.sleep(timeTravel)
@@ -120,7 +129,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     rewardsList = ftgstaking.viewRewardsList()
     print("rewardsList=", rewardsList)
     # wait 200 secs
-    timeTravel = 200
+    timeTravel = 240
     chain.sleep(timeTravel)
     # fourth staking 100 ftg by accounts[0]
     ftgtoken.approve(ftgstaking, 100, {"from": accounts[0]})
@@ -131,6 +140,9 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     print("rewardsList=", rewardsList)
     # Check Stakeholder's Stakings
     print("stakeholders[accounts[0]].stakings=", ftgstaking.getStakings(accounts[0]))
+    # balance update
+    ftgstaking.updateBalances(accounts[0])
+    print("totalStaked,totalLockedBalance,freeToUnstakeBalance,updateTime)=",ftgstaking.getBalances(accounts[0]))
     # Verify updateRewards() outcome after scenario for accounts[0]
     print(
         "Before Reward update: stakeholders[accounts[0]].totalReward=",
@@ -143,7 +155,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
         "After Reward update: stakeholders[accounts[0]].totalReward=",
         ftgstaking.getAccountRewardInfo(accounts[0]),
     )
-    assert ftgstaking.getAccountRewardInfo(accounts[0]) == (6528, chain.time())
+    assert ftgstaking.getAccountRewardInfo(accounts[0]) == (6455, chain.time())
     # updateRewards Outcome:
     # in this example, startindex=1, for loop goes from 1 to 3 (3 passes):
     # i=1, rewardsList[i].rewardPer1BFTG =9132420,  stakeholderStakeIndexAtRewardTime = 1,rewardsList[i].rewardPer1BFTG =10950,->rewardSum=99 (correct)
@@ -152,7 +164,9 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     # first testing okay, but there may be configurations/cases causing error, need to be checked further and compared gaswise with simpler methods calculating/updating
     # onchain rewards for every stakeholder every time a reward is deposited.
     # Also is precision set to 9 digits enough? ... and is integer rounding acceptable?
-
+    # wait 1h
+    timeTravel = 3600
+    chain.sleep(timeTravel)
     # test if stakeholder partly unstakes
     print("partly unstaking test \n")
     print(
@@ -176,6 +190,12 @@ def test_ftgStaking(accounts, pm, ftgtoken):
         ftgstaking.getBalances(accounts[0]),
     )
     print(tx.events)
+    # balance update
+    ftgstaking.updateBalances(accounts[0])
+    print("totalStaked,totalLockedBalance,freeToUnstakeBalance,updateTime)=",ftgstaking.getBalances(accounts[0]))
+    # wait 1h
+    timeTravel = 3600
+    chain.sleep(timeTravel)
     # test if stakeholder unstakes completely
     print("completely unstaking test \n")
     tx = ftgstaking.unstake(569100, {"from": accounts[0]})
@@ -319,8 +339,14 @@ def test_ftgStaking_scenario(accounts, pm, ftgtoken):
 
     assert ftgstaking.stakeholders(accounts[1])[:-1] == (950, 950, 0, 0, 0)
 
-    #ftgstaking.unstakeFreeAll({"from": accounts[1]})
-    ftgstaking.unstake(950,{"from": accounts[1]})
+    # balance update
+    ftgstaking.updateBalances(accounts[1])
+    print("Before unstakeFreeAll,totalStaked,totalLockedBalance,freeToUnstakeBalance,updateTime)=",ftgstaking.getBalances(accounts[1]))
+    ftgstaking.unstakeFreeAll({"from": accounts[1]})
+    # balance update
+    ftgstaking.updateBalances(accounts[1])
+    print("after unstakeFreeAll,totalStaked,totalLockedBalance,freeToUnstakeBalance,updateTime)=",ftgstaking.getBalances(accounts[1]))
+    #ftgstaking.unstake(950,{"from": accounts[1]})
     #print(tx.traceback)
     # assert sk["totalReward"] == 1
     # ()["totalReward"] == 100

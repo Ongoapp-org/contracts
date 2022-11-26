@@ -182,22 +182,6 @@ contract FTGStaking is Ownable {
                 "stakeholderStakeIndexAtRewardTime=",
                 stakeholderStakeIndexAtRewardTime
             );
-            // if the stakeholderStakeIndexAtRewardTime == 0, it may be that it is the right staking to use or simply
-            // that the reward was before the first staking. Can the latter be? I dont think so cause that would mean that we
-            // would have updated before the stakeholder's first staking ... which cannot be
-            /* uint256 stakeholderStakeAtRewardtime;
-
-            if (
-                stakeholderStakeIndexAtRewardTime == 0 &&
-                stakeholders[_stakeholderAddress].stakings[0].timestamp >=
-                rewardsList[i].timestamp
-            ) {
-                stakeholderStakeAtRewardtime = 0;
-            } else {
-                stakeholderStakeAtRewardtime = stakeholders[_stakeholderAddress]
-                    .stakings[stakeholderStakeIndexAtRewardTime]
-                    .totalStaked;
-            } */
 
             uint256 stakeholderStakeAtRewardtime = stakeholders[
                 _stakeholderAddress
@@ -305,40 +289,41 @@ contract FTGStaking is Ownable {
             stakeholders[_stakeholderAddress].stakings.length != 0,
             "Not a stakeholder!"
         );
-        // We get staking index just after last freeToUnstakeBalance update
-        uint256 StakingIndexBeforeTime = _getStakeholderStakingIndexBeforeTime(
-            _stakeholderAddress,
-            stakeholders[_stakeholderAddress].lastBalancesUpdate
-        );
-        uint256 indexToStartUpdate = StakingIndexBeforeTime > 0
-            ? StakingIndexBeforeTime + 1
-            : 0;
-        emit Log("indexToStartUpdate = ", indexToStartUpdate);
-        uint256 stakingslen = stakeholders[_stakeholderAddress].stakings.length;
-        uint256 freeToUnstakeBalTemp = stakeholders[_stakeholderAddress]
-            .freeToUnstakeBalance;
-        uint256 totalLockedBalTemp = stakeholders[_stakeholderAddress]
-            .totalLockedBalance;
-        // check if stakings after last update time are free to unstake
-        for (uint256 i = indexToStartUpdate; i < stakingslen; i++) {
-            //staking._amount should be >0 since we update balances when stakeholder unstake
-            //so that last update time will be updated and next balance update will start from staking
-            //record after unstaking, so no negative amount should be encountered here
+        //use Temp variable to avoid writing to storage multiple times
+        uint256 freeToUnstakeBalTemp;
+        uint256 totalLockedBalTemp;
+        for (
+            uint256 i = 0;
+            i < stakeholders[_stakeholderAddress].stakings.length;
+            i++
+        ) {
             Staking memory _staking = stakeholders[_stakeholderAddress]
                 .stakings[i];
+            int256 amount = _staking.amount;
             if (_staking.lockDuration == 0) {
                 // in case we deal with flex staking
-                if (block.timestamp - _staking.timestamp > minDays) {
-                    freeToUnstakeBalTemp += uint256(_staking.amount); //staking._amount should be >0
+                if (amount < 0) {
+                    uint256 amountpos = uint256(-amount);
+                    if (amountpos <= freeToUnstakeBalTemp) {
+                        freeToUnstakeBalTemp -= amountpos;
+                    } else {
+                        freeToUnstakeBalTemp = 0;
+                    }
+                } else {
+                    if (block.timestamp - _staking.timestamp > minDays) {
+                        freeToUnstakeBalTemp += uint256(amount);
+                    }
                 }
             } else {
                 // in case we deal with locked Staking
                 if (
                     block.timestamp - _staking.timestamp > _staking.lockDuration
                 ) {
-                    // lockTime finished, update totalLockedBalance
-                    totalLockedBalTemp -= uint256(_staking.amount);
-                    freeToUnstakeBalTemp += uint256(_staking.amount);
+                    //lockTime finished
+                    freeToUnstakeBalTemp += uint256(amount);
+                } else {
+                    //staking still locked
+                    totalLockedBalTemp += uint256(amount);
                 }
             }
         }
@@ -367,7 +352,7 @@ contract FTGStaking is Ownable {
             "freeToUnstakeBalance=",
             stakeholders[msg.sender].freeToUnstakeBalance
         ); */
-        // unstake(amount);
+        unstake(amount);
     }
 
     // unstake ftg
@@ -468,6 +453,10 @@ contract FTGStaking is Ownable {
     // returns the rewardsList array
     function viewRewardsList() public view returns (Reward[] memory) {
         return rewardsList;
+    }
+
+    function updateBalances(address _stakeholderAddress) public {
+        _updateStakeholderBalances(_stakeholderAddress);
     }
 
     // returns the stakeholder's stakings array
