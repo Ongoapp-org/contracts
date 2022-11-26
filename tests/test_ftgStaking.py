@@ -268,7 +268,8 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     )
 
     #calculateAPY
-    print("APY=",ftgstaking.calculateAPY())
+    apy=ftgstaking.calculateAPY.call({"from": accounts[0]})
+    print("APY=",apy)
 
 
 def test_staking_basic(accounts, ftgtoken):

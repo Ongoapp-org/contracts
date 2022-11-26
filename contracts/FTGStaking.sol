@@ -508,11 +508,13 @@ contract FTGStaking is Ownable {
             rewardPer1BFTGSum += rewardsList[i].rewardPer1BFTG;
         }
         //one year in secs = rewardsList.length
+        emit Log("rewardPer1BFTGSum", rewardPer1BFTGSum);
         uint256 apy = PRBMath.mulDiv(
             31536000,
             rewardPer1BFTGSum,
             time * rewardsList.length
         );
+        emit Log("APY ftg per 1 Billion ftg staked", rewardPer1BFTGSum);
         return apy;
     }
 
