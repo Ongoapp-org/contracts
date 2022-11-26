@@ -267,6 +267,9 @@ def test_ftgStaking(accounts, pm, ftgtoken):
         "after withdrawing: stakeholder ftg balance = ", ftgtoken.balanceOf(accounts[0])
     )
 
+    #calculateAPY
+    print("APY=",ftgstaking.calculateAPY())
+
 
 def test_staking_basic(accounts, ftgtoken):
     ftgstaking = deploy_FTGStaking(ftgtoken.address, accounts[0])

@@ -499,6 +499,23 @@ contract FTGStaking is Ownable {
         );
     }
 
+    //average rewardPer1BFTG over one year
+    function calculateAPY() public returns (uint256) {
+        uint256 time = rewardsList[rewardsList.length - 1].timestamp -
+            rewardsList[0].timestamp;
+        uint256 rewardPer1BFTGSum;
+        for (uint256 i = 0; i < rewardsList.length; i++) {
+            rewardPer1BFTGSum += rewardsList[i].rewardPer1BFTG;
+        }
+        //one year in secs = rewardsList.length
+        uint256 apy = PRBMath.mulDiv(
+            31536000,
+            rewardPer1BFTGSum,
+            time * rewardsList.length
+        );
+        return apy;
+    }
+
     // returns total active locked Staking of an sale participant
     function checkParticipantLockedStaking(
         address _participantAddress,
