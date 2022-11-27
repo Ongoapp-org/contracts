@@ -174,6 +174,7 @@ contract FTGStaking is Ownable {
         emit Log("startIndex=", startIndex);
         uint256 rewardsSum = 0;
         for (uint256 i = startIndex; i < rewardsList.length; i++) {
+            //retrieve the stakeholder's staking just before the reward
             uint256 stakeholderStakeIndexAtRewardTime = _getStakeholderStakingIndexBeforeTime(
                     _stakeholderAddress,
                     rewardsList[i].timestamp
@@ -340,18 +341,8 @@ contract FTGStaking is Ownable {
             stakeholders[msg.sender].stakings.length != 0,
             "Not a stakeholder!"
         );
-        //emit Log("hello", stakeholders[msg.sender].stakings.length);
         _updateStakeholderBalances(msg.sender);
         uint256 amount = stakeholders[msg.sender].freeToUnstakeBalance;
-        /* emit Log("totalStaked=", stakeholders[msg.sender].totalStaked);
-        emit Log(
-            "totalLockedBalance=",
-            stakeholders[msg.sender].totalLockedBalance
-        );
-        emit Log(
-            "freeToUnstakeBalance=",
-            stakeholders[msg.sender].freeToUnstakeBalance
-        ); */
         unstake(amount);
     }
 
@@ -508,11 +499,12 @@ contract FTGStaking is Ownable {
             rewardPer1BFTGSum += rewardsList[i].rewardPer1BFTG;
         }
         //one year in secs = rewardsList.length
+        //very first reward due to init Staking of first stakeholder not counted
         emit Log("rewardPer1BFTGSum", rewardPer1BFTGSum);
         uint256 apy = PRBMath.mulDiv(
             31536000,
             rewardPer1BFTGSum,
-            time * rewardsList.length
+            time * (rewardsList.length - 1)
         );
         emit Log("APY ftg per 1 Billion ftg staked", rewardPer1BFTGSum);
         return apy;

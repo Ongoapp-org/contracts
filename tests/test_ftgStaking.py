@@ -105,9 +105,9 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     )
     assert totalActiveLocked1 == 114000
     print("totalActiveLocked1 = ", totalActiveLocked1)
-    # second deposits 200 ftg reward to be distributed to stakers
-    ftgtoken.approve(ftgstaking, 200, {"from": accounts[0]})
-    ftgstaking.depositRewardTokens(200)
+    # second deposits 2000 ftg reward to be distributed to stakers
+    ftgtoken.approve(ftgstaking, 2000, {"from": accounts[0]})
+    ftgstaking.depositRewardTokens(2000)
     print("6) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     # Check rewardsList
     rewardsList = ftgstaking.viewRewardsList()
@@ -121,14 +121,14 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     # wait 30 days
     timeTravel = days30
     chain.sleep(timeTravel)
-    # third deposits 300 ftg reward to be distributed to stakers
-    ftgtoken.approve(ftgstaking, 300, {"from": accounts[0]})
-    ftgstaking.depositRewardTokens(300)
+    # third deposits 50000 ftg reward to be distributed to stakers
+    ftgtoken.approve(ftgstaking, 50000, {"from": accounts[0]})
+    ftgstaking.depositRewardTokens(50000)
     print("7) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     # Check rewardsList
     rewardsList = ftgstaking.viewRewardsList()
     print("rewardsList=", rewardsList)
-    # wait 200 secs
+    # wait 240 secs
     timeTravel = 240
     chain.sleep(timeTravel)
     # fourth staking 100 ftg by accounts[0]
@@ -155,7 +155,7 @@ def test_ftgStaking(accounts, pm, ftgtoken):
         "After Reward update: stakeholders[accounts[0]].totalReward=",
         ftgstaking.getAccountRewardInfo(accounts[0]),
     )
-    assert ftgstaking.getAccountRewardInfo(accounts[0]) == (6455, chain.time())
+    assert ftgstaking.getAccountRewardInfo(accounts[0]) == (51874, chain.time())
     # updateRewards Outcome:
     # in this example, startindex=1, for loop goes from 1 to 3 (3 passes):
     # i=1, rewardsList[i].rewardPer1BFTG =9132420,  stakeholderStakeIndexAtRewardTime = 1,rewardsList[i].rewardPer1BFTG =10950,->rewardSum=99 (correct)
@@ -268,8 +268,12 @@ def test_ftgStaking(accounts, pm, ftgtoken):
     )
 
     #calculateAPY
+    # Check rewardsList
+    rewardsList = ftgstaking.viewRewardsList()
+    print("rewardsList=", rewardsList)
     apy=ftgstaking.calculateAPY.call({"from": accounts[0]})
     print("APY=",apy)
+    assert apy==71228789
 
 
 def test_staking_basic(accounts, ftgtoken):
