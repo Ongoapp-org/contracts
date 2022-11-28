@@ -7,21 +7,21 @@ from scripts.deploy_FTGStaking import deploy_FTGStaking
 def test_basicsale(accounts, pm, ftgtoken, investtoken):
 
     ftgstaking = deploy_FTGStaking(ftgtoken.address, accounts[0])
-    ftgtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
-    ftgtoken.transfer(accounts[2], 500_000 * 10**18, {"from": accounts[0]})
+    ftgtoken.transfer(accounts[1], 10_000_000 * 10 ** 18, {"from": accounts[0]})
+    ftgtoken.transfer(accounts[2], 500_000 * 10 ** 18, {"from": accounts[0]})
 
-    assert investtoken.balanceOf(accounts[0]) == 30_000_000 * 10**18
+    assert investtoken.balanceOf(accounts[0]) == 30_000_000 * 10 ** 18
 
-    investtoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
-    investtoken.transfer(accounts[2], 1_000_000 * 10**18, {"from": accounts[0]})
+    investtoken.transfer(accounts[1], 10_000_000 * 10 ** 18, {"from": accounts[0]})
+    investtoken.transfer(accounts[2], 1_000_000 * 10 ** 18, {"from": accounts[0]})
 
-    assert investtoken.balanceOf(accounts[1]) == 10_000_000 * 10**18
-    assert investtoken.balanceOf(accounts[2]) == 1_000_000 * 10**18
+    assert investtoken.balanceOf(accounts[1]) == 10_000_000 * 10 ** 18
+    assert investtoken.balanceOf(accounts[2]) == 1_000_000 * 10 ** 18
 
-    _totalTokensToSell = 10_000_000 * 10**18
-    _totalToRaise = 100_000 * 10**18
+    _totalTokensToSell = 10_000_000 * 10 ** 18
+    _totalToRaise = 100_000 * 10 ** 18
     # 0.01
-    _tokenPriceInUSD = 1 * 10**16
+    _tokenPriceInUSD = 1 * 10 ** 16
     # TODO
     # assert _totalTokensToSell * _tokenPriceInUSD/10**18 == _totalToRaise
     # assert int(_totalTokensToSell/100) == int(_totalToRaise)
@@ -107,9 +107,9 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     # guaranteed phase
     assert salectr.salePhase() == 2
 
-    bamount = 100 * 10**18
+    bamount = 100 * 10 ** 18
 
-    assert investtoken.balanceOf(accounts[1]) == 10_000_000 * 10**18
+    assert investtoken.balanceOf(accounts[1]) == 10_000_000 * 10 ** 18
 
     investtoken.approve(salectr, bamount, {"from": accounts[1]})
     salectr.buytoken(bamount, {"from": accounts[1]})
@@ -122,7 +122,7 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     # TODO test cant buy more than diamond
 
     # ruby cant buy?
-    bamount = 100 * 10**18
+    bamount = 100 * 10 ** 18
 
     investtoken.approve(salectr, bamount, {"from": accounts[2]})
     salectr.buytoken(bamount, {"from": accounts[2]})
@@ -145,7 +145,7 @@ def test_basicsale(accounts, pm, ftgtoken, investtoken):
     assert salectr.salePhase() == 3
 
     investAmount = 1_000
-    buyTokenamount = investAmount / (_tokenPriceInUSD / 10**18)
+    buyTokenamount = investAmount / (_tokenPriceInUSD / 10 ** 18)
 
     assert buyTokenamount == 100_000
 

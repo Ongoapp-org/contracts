@@ -346,6 +346,17 @@ contract FTGStaking is Ownable {
         unstake(amount);
     }
 
+    function unstakeAll() public {
+        require(
+            stakeholders[msg.sender].stakings.length != 0,
+            "Not a stakeholder!"
+        );
+        _updateStakeholderBalances(msg.sender);
+        uint256 amount = stakeholders[msg.sender].totalStaked -
+            stakeholders[msg.sender].totalLockedBalance;
+        unstake(amount);
+    }
+
     // unstake ftg
     function unstake(uint256 _amount) public {
         // verify that stakeholder has staking
@@ -460,6 +471,7 @@ contract FTGStaking is Ownable {
     }
 
     // returns stakeholder's balances
+    // Need to call updateStakeholderBalances() first
     function getBalances(address _stakeholderAddress)
         public
         view

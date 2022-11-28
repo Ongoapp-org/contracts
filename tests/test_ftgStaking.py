@@ -1,14 +1,17 @@
 #!/usr/bin/python3
 import brownie
+import random
 from brownie import chain, network
 from scripts.deploy_FTGStaking import deploy_FTGStaking
 
 days30 = 2592000
 
 
-def test_ftgStaking(accounts, pm, ftgtoken):
-    for i in range(1, 3):
-        assert ftgtoken.balanceOf(accounts[i]) == 10000
+def test_ftgStaking(accounts, ftgtoken):
+    for i in range(1, 9):
+        assert ftgtoken.balanceOf(accounts[i]) == 10000000 * 10 ** 18
+        # print(random.gauss(10, 1))
+        # print(accounts[i])
     # deploy the contract
     print("accounts[0] in test_FTGToken = ", accounts[0])
     print("balance accounts[0] in test_FTGToken = ", accounts[0].balance())
@@ -329,8 +332,6 @@ def test_staking_basic(accounts, ftgtoken):
 
 def test_ftgStaking_scenario(accounts, pm, ftgtoken):
     print("test_ftgStaking_scenario \n")
-    for i in range(1, 3):
-        assert ftgtoken.balanceOf(accounts[i]) == 10000
     # deploy the contract
     ftgtoken.transfer(accounts[1], 1_000_000 * 10 ** 18, {"from": accounts[0]})
     ftgstaking = deploy_FTGStaking(ftgtoken.address, accounts[0])
