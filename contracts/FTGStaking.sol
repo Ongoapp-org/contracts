@@ -510,7 +510,7 @@ contract FTGStaking is Ownable {
         for (uint256 i = 0; i < rewardsList.length; i++) {
             rewardPer1BFTGSum += rewardsList[i].rewardPer1BFTG;
         }
-        //one year in secs = rewardsList.length
+        //one year in secs = 31536000
         //very first reward due to init Staking of first stakeholder not counted
         emit Log("rewardPer1BFTGSum", rewardPer1BFTGSum);
         uint256 apy = PRBMath.mulDiv(

@@ -285,7 +285,7 @@ def test_ftgStaking(accounts, ftgtoken):
     print("rewardsList=", rewardsList)
 
     apy = ftgstaking.calculateAPY.call({"from": accounts[0]})
-    print("APY=", apy)
+    print("APY=", 100 * apy / 10 ** 9, "%")
     assert apy == 71228775
 
 
