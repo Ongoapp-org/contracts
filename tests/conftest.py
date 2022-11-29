@@ -14,7 +14,7 @@ def isolate(fn_isolation):
 @pytest.fixture(scope="module", autouse=True)
 def ftgtoken(MockFTGToken, accounts):
     print("Reinitialize FTGToken by accounts[0]=", accounts[0])
-    return MockFTGToken.deploy(300_000_000 * 10 ** 18, {"from": accounts[0]})
+    return MockFTGToken.deploy(400_000_000 * 10 ** 18, {"from": accounts[0]})
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -25,5 +25,5 @@ def investtoken(MockFTGToken, accounts):
 
 @pytest.fixture(scope="module", autouse=True)
 def distribute_tokens(ftgtoken):
-    for i in range(1, 10):
-        ftgtoken.transfer(accounts[i], 10000000 * 10 ** 18, {"from": accounts[0]})
+    for i in range(1, 50):
+        ftgtoken.transfer(accounts[i], 5000000 * 10 ** 18, {"from": accounts[0]})

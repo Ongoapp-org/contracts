@@ -526,7 +526,7 @@ contract FTGStaking is Ownable {
     function checkParticipantLockedStaking(
         address _participantAddress,
         uint256 lockDurationChecked
-    ) external view returns (int256 lockedStakingTotal) {
+    ) external returns (int256 lockedStakingTotal) {
         require(
             stakeholders[_participantAddress].stakings.length != 0,
             "Not a stakeholder!"
@@ -534,7 +534,16 @@ contract FTGStaking is Ownable {
         Staking[] memory participantStakings = stakeholders[_participantAddress]
             .stakings;
         for (uint256 i = 0; i < participantStakings.length; i++) {
-            //emit Logint("lockedStakingtotal=", lockedStakingTotal);
+            emit Logint("lockedStakingtotal=", lockedStakingTotal);
+            emit Log("block.timestamp=", block.timestamp);
+            emit Log(
+                "participantStakings[i].timestamp=",
+                participantStakings[i].timestamp
+            );
+            emit Log(
+                "participantStakings[i].lockDuration=",
+                participantStakings[i].lockDuration
+            );
             if (
                 // check if staking is still active and was locked for more than lockDurationChecked
                 participantStakings[i].lockDuration >= lockDurationChecked &&

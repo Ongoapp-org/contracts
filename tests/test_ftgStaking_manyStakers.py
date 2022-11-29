@@ -9,16 +9,16 @@ def test_ftgStaking_manyStakers(accounts, ftgtoken):
     print("++++++++++++++++test_ftgStaking_manyStakers+++++++++++++++++ \n")
     print("\n")
     # initial ftg balances
-    assert ftgtoken.balanceOf(accounts[0]) == 210000000 * 10 ** 18
-    for i in range(1, 10):
-        assert ftgtoken.balanceOf(accounts[i]) == 10000000 * 10 ** 18
+    assert ftgtoken.balanceOf(accounts[0]) == 155000000 * 10 ** 18
+    for i in range(1, 50):
+        assert ftgtoken.balanceOf(accounts[i]) == 5000000 * 10 ** 18
     # deploy the contract
     ftgstaking = deploy_FTGStaking(ftgtoken.address, accounts[0])
     # approvals
-    ftgtoken.approve(ftgstaking, 210000000 * 10 ** 18, {"from": accounts[0]})
-    for i in range(1, 10):
+    ftgtoken.approve(ftgstaking, 150000000 * 10 ** 18, {"from": accounts[0]})
+    for i in range(1, 50):
         # approve contract to transfer ftg for accounts[i]
-        ftgtoken.approve(ftgstaking, 10000000 * 10 ** 18, {"from": accounts[i]})
+        ftgtoken.approve(ftgstaking, 5000000 * 10 ** 18, {"from": accounts[i]})
     # Scenario of events at random times (time laps between events
     #  normally distributed around some mean time laps). Probability of events
     # is decreasing with increasing label number of the event type.
@@ -28,12 +28,12 @@ def test_ftgStaking_manyStakers(accounts, ftgtoken):
     #  unstakingFreeAll when a random stakeholder unstake its staking without incuring any fee.
     # Thirdly most probable events are just a reward updates, mostly for testing the rewardUpdate()
     # method since it is the most delicate part of the contract for accurate reward calculation.
-    # Next most probable eventis the reward withdrawal by a random stakeholder. Then less probable events
+    # Next most probable event is the reward withdrawal by a random stakeholder. Then less probable events
     # of unstaking all ftg by a random stakeholder possibly incuring fee. Lastly, most unlikely events
     # are the staking of rewards by a random stakeholder.
     lastDepositTime = chain.time()
     for i in range(100):
-        # reward deposit of 1M ftg every week
+        # reward deposit of ftg every week
         if chain.time() - lastDepositTime > 7 * 86400:
             print("Admin Reward Deposit!")
             ftgstaking.depositRewardTokens(10 * 10 ** 18)
@@ -45,9 +45,9 @@ def test_ftgStaking_manyStakers(accounts, ftgtoken):
         # who is doing it or concerned?
         randacc = random.randint(0, 9)
         # time elapsed since last event
-        timetravel = int(86400 * random.gauss(0.5, 0.2))
+        timetravel = int(3600 * random.gauss(0.25, 0.1))
         chain.sleep(timetravel)
-        print("time lapse =", timetravel / 86400, "days")
+        print("time lapse =", timetravel / 3600, "hours")
         # staking
         if randevent == 0:
             amount = int(random.expovariate(1 / 200000)) * 10 ** 18
