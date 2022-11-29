@@ -16,7 +16,6 @@ def test_ftgStaking_manyStakers(accounts, ftgtoken):
     ftgstaking = deploy_FTGStaking(ftgtoken.address, accounts[0])
     # approvals
     ftgtoken.approve(ftgstaking, 210000000 * 10 ** 18, {"from": accounts[0]})
-    print("accounts[0] allowance=", ftgtoken.allowance(accounts[0], ftgstaking))
     for i in range(1, 10):
         # approve contract to transfer ftg for accounts[i]
         ftgtoken.approve(ftgstaking, 10000000 * 10 ** 18, {"from": accounts[i]})
@@ -29,16 +28,15 @@ def test_ftgStaking_manyStakers(accounts, ftgtoken):
     #  unstakingFreeAll when a random stakeholder unstake its staking without incuring any fee.
     # Thirdly most probable events are just a reward updates, mostly for testing the rewardUpdate()
     # method since it is the most delicate part of the contract for accurate reward calculation.
-    # Next most probable event is reward deposit from the admin for fixed amount of 1 M ftg.
     # Next most probable eventis the reward withdrawal by a random stakeholder. Then less probable events
     # of unstaking all ftg by a random stakeholder possibly incuring fee. Lastly, most unlikely events
     # are the staking of rewards by a random stakeholder.
     lastDepositTime = chain.time()
-    for i in range(30):
+    for i in range(100):
         # reward deposit of 1M ftg every week
         if chain.time() - lastDepositTime > 7 * 86400:
-            print("1M Reward Deposit!")
-            ftgstaking.depositRewardTokens(1000000 * 10 ** 18)
+            print("Admin Reward Deposit!")
+            ftgstaking.depositRewardTokens(10 * 10 ** 18)
             lastDepositTime = chain.time()
         # 0:staking,1:unstakingFreeAll,2:updateReward,
         # 3:withdrawReward,4:unstakingAll,5:stakeReward,>5:nothing
@@ -73,8 +71,10 @@ def test_ftgStaking_manyStakers(accounts, ftgtoken):
             )
         # unstakeFreeAll
         elif randevent == 1:
+            print("hello unstaking")
             if ftgstaking.getBalances(accounts[randacc])[0] > 0:
                 ftgstaking.updateBalances(accounts[randacc])
+                print("hello2 unstaking", ftgstaking.getBalances(accounts[randacc]))
                 if ftgstaking.getBalances(accounts[randacc])[2] > 0:
                     print("accounts[", randacc, "] unstakeFreeAll")
                     ftgstaking.unstakeFreeAll({"from": accounts[randacc]})
