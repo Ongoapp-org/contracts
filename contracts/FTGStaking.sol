@@ -117,8 +117,7 @@ contract FTGStaking is Ownable {
         uint256 i = rewardsList.length - 1;
         /* emit Log("i0=",i);
         emit Log("rewardsList[i].timestamp",rewardsList[i].timestamp); */
-        //We can use a strict inequality in order to avoid taking into account the initial staking fee?
-        while (rewardsList[i].timestamp >= lastUpdateTime && i != 0) {
+        while (rewardsList[i].timestamp > lastUpdateTime && i != 0) {
             unchecked {
                 --i;
             }
@@ -172,7 +171,7 @@ contract FTGStaking is Ownable {
         }
         uint256 startIndex = _getfirstRewardsIndexToAdd(lastRewardUpdate);
         emit Log("startIndex=", startIndex);
-        uint256 rewardsSum = 0;
+        uint256 rewardsSum;
         for (uint256 i = startIndex; i < rewardsList.length; i++) {
             //retrieve the stakeholder's staking just before the reward
             uint256 stakeholderStakeIndexAtRewardTime = _getStakeholderStakingIndexBeforeTime(

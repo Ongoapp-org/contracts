@@ -166,7 +166,8 @@ def test_ftgStaking_manyStakers_stakingPeriod(accounts, ftgtoken):
 
     startTime = chain.time()
     lastDepositTime = startTime
-    for i in range(300):
+    nbOfEvents = 100
+    for i in range(nbOfEvents):
         # reward deposit of ftg every week
         if chain.time() - lastDepositTime > 7 * 86400:
             print("Admin Reward Deposit!")
@@ -191,7 +192,7 @@ def test_ftgStaking_manyStakers_stakingPeriod(accounts, ftgtoken):
             # what event? we pick one at random (smaller number have higher proba of happening)
             randevent = int(random.expovariate(0.6))
             # who is doing it or concerned?
-            randacc = random.randint(0, 49)
+            randacc = random.randint(0, 9)
             # staking
             if randevent == 0:
                 amount = int(random.expovariate(1 / 200000)) * 10 ** 18
@@ -229,11 +230,43 @@ def test_ftgStaking_manyStakers_stakingPeriod(accounts, ftgtoken):
                 )
             # updateReward
             elif randevent == 2:
-                if ftgstaking.getBalances(accounts[0])[0] > 0:
-                    print("accounts[", randacc, "] update Reward")
-                    ftgstaking.updateReward({"from": accounts[0]})
+                if ftgstaking.getBalances(accounts[randacc])[0] > 0:
+                    print("accounts[", randacc, "] update Reward --->")
+                    accountReward = ftgstaking.getAccountRewardInfo(accounts[randacc])
+                    print("Before update, rewardBalance = ", accountReward)
+                    tx = ftgstaking.updateReward({"from": accounts[randacc]})
+                    print(tx.events)
+                    accountReward = ftgstaking.getAccountRewardInfo(accounts[randacc])
+                    print("After update, rewardBalance = ", accountReward)
                     rewardsList = ftgstaking.viewRewardsList()
                     print("rewardsList=", rewardsList)
+                    stakings = ftgstaking.getStakings(accounts[randacc])
+                    print("stakeholders[accounts[", randacc, "]].stakings=", stakings)
+                    sumRewardTimesStakings = 0
+                    for k in range(len(rewardsList)):
+                        rewardTime = rewardsList[k][2]
+                        print("k=", k)
+                        for l, staking in reversed(list(enumerate(stakings))):
+                            print("l=", l)
+                            stakingsTime = stakings[l][1]
+                            if rewardTime <= stakingsTime:
+                                continue
+                            else:
+                                print(
+                                    "rewardPer1BFTG=",
+                                    rewardsList[k][1],
+                                    ", totalStaked=",
+                                    stakings[l][0],
+                                )
+                                sumRewardTimesStakings += (
+                                    rewardsList[k][1] * stakings[l][0] / 10 ** 9
+                                )
+                                print(
+                                    "sumRewardTimesStakings = ", sumRewardTimesStakings
+                                )
+                                break
+                    print("final sumRewardTimesStakings = ", sumRewardTimesStakings)
+                    assert sumRewardTimesStakings == accountReward[0]
             # unstakeAll (some people decide to withdraw their ftg)
             elif randevent == 4:
                 if ftgstaking.getBalances(accounts[randacc])[0] > 0:
