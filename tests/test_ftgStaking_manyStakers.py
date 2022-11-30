@@ -266,7 +266,9 @@ def test_ftgStaking_manyStakers_stakingPeriod(accounts, ftgtoken):
                                 )
                                 break
                     print("final sumRewardTimesStakings = ", sumRewardTimesStakings)
-                    assert sumRewardTimesStakings == accountReward[0]
+                    assert "{:e}".format(sumRewardTimesStakings) == "{:e}".format(
+                        accountReward[0]
+                    )
             # unstakeAll (some people decide to withdraw their ftg)
             elif randevent == 4:
                 if ftgstaking.getBalances(accounts[randacc])[0] > 0:
