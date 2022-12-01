@@ -222,6 +222,7 @@ contract FTGStaking is Ownable {
             _lockDuration <= 365 days,
             "can not stake longer than 365 days"
         );
+        require(_lockDuration >= 30 days, "can not stake shorter than 30 days");
         // Check that user does not stake 0
         require(_amount > 0, "Cannot stake nothing");
         // Check staker's balance is enough
@@ -355,6 +356,12 @@ contract FTGStaking is Ownable {
             stakeholders[msg.sender].totalLockedBalance;
         unstake(amount);
     }
+
+    // function withdrawableAmount() public returns (uint256) {
+    //     return
+    //         stakeholders[msg.sender].totalStaked -
+    //         stakeholders[msg.sender].totalLockedBalance;
+    // }
 
     // unstake ftg
     function unstake(uint256 _amount) public {
