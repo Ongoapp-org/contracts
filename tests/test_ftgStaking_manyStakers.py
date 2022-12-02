@@ -4,7 +4,7 @@ from brownie import chain, network
 from scripts.deploy_FTGStaking import deploy_FTGStaking
 
 # We want to perform more systematic tests using many stakers taking random actions
-def test_ftgStaking_manyStakers(accounts, ftgtoken):
+def test_ftgStaking_manyStakers_generalCase(accounts, ftgtoken):
     print("\n")
     print("++++++++++++++++test_ftgStaking_manyStakers+++++++++++++++++ \n")
     print("\n")
@@ -125,12 +125,15 @@ def test_ftgStaking_manyStakers(accounts, ftgtoken):
     rewardsList = ftgstaking.viewRewardsList()
     print("rewardsList=", rewardsList)
     # calculateAPY
-    apy = ftgstaking.calculateAPY.call({"from": accounts[0]})
-    print("APY=", 100 * apy / 10 ** 9, "%")
+    avgRewardPer1BFTG = ftgstaking.calculateAvgRewardPer1BFTG.call(
+        {"from": accounts[0]}
+    )
+    apy = round(100 * avgRewardPer1BFTG / 10 ** 9, 2)
+    print("APY=", apy, "%")
 
 
 # this tests to simulate a staking period when many stakers prepare to participate to an IDO
-def test_ftgStaking_manyStakers_stakingPeriod(accounts, ftgtoken):
+""" def test_ftgStaking_manyStakers_stakingPeriod(accounts, ftgtoken):
     print("\n")
     print(
         "++++++++++++++++test_ftgStaking_manyStakers_stakingPeriod+++++++++++++++++ \n"
@@ -161,18 +164,30 @@ def test_ftgStaking_manyStakers_stakingPeriod(accounts, ftgtoken):
     # are the staking of rewards by a random stakeholder.
     # We allow simultaneous events for more realistic scenario and testing updateReward().
 
+    # Gaussian function to simulate gaussian peak of events during staking phase
     def gaussian(x, sigma, mu):
         return math.exp(-(((x - mu) / (math.sqrt(2) * sigma)) ** 2))
 
     startTime = chain.time()
     lastDepositTime = startTime
-    nbOfEvents = 100
-    for i in range(nbOfEvents):
+    nbOfEventsStakingPeriod = 100
+    # First Staking Period
+    for i in range(nbOfEventsStakingPeriod):
         # reward deposit of ftg every week
+        # almost switch off during staking period since fees are quite high
+        rewardDeposit = 1000000 * 10 ** 18
         if chain.time() - lastDepositTime > 7 * 86400:
             print("Admin Reward Deposit!")
-            ftgstaking.depositRewardTokens(10 * 10 ** 18)
+            ftgstaking.depositRewardTokens(rewardDeposit)
             lastDepositTime = chain.time()
+        # calculateAPY
+        if i % 10 == 0:
+            if len(ftgstaking.viewRewardsList()) > 1:
+                avgRewardPer1BFTG = ftgstaking.calculateAvgRewardPer1BFTG.call(
+                    {"from": accounts[0]}
+                )
+                apy = round(100 * avgRewardPer1BFTG / 10 ** 9, 2)
+                print("APY=", apy, "%")
         # timestep
         regTimeStep = 3600
         halfPeakSpread = 86400
@@ -192,7 +207,7 @@ def test_ftgStaking_manyStakers_stakingPeriod(accounts, ftgtoken):
             # what event? we pick one at random (smaller number have higher proba of happening)
             randevent = int(random.expovariate(0.6))
             # who is doing it or concerned?
-            randacc = random.randint(0, 9)
+            randacc = random.randint(0, 49)
             # staking
             if randevent == 0:
                 amount = int(random.expovariate(1 / 200000)) * 10 ** 18
@@ -283,6 +298,135 @@ def test_ftgStaking_manyStakers_stakingPeriod(accounts, ftgtoken):
             # no action
             elif randevent > 5:
                 continue
+
+    nbOfEventsQuietPeriod = 100
+    # IDO Period, more quiet period
+    for i in range(nbOfEventsQuietPeriod):
+        # reward deposit of ftg every week
+        # must be higher during quiet period
+        rewardDeposit = 1000000 * 10 ** 18
+        if chain.time() - lastDepositTime > 7 * 86400:
+            print("Admin Reward Deposit!")
+            ftgstaking.depositRewardTokens(rewardDeposit)
+            lastDepositTime = chain.time()
+        # calculateAPY
+        if i % 10 == 0:
+            if len(ftgstaking.viewRewardsList()) > 1:
+                avgRewardPer1BFTG = ftgstaking.calculateAvgRewardPer1BFTG.call(
+                    {"from": accounts[0]}
+                )
+                apy = round(100 * avgRewardPer1BFTG / 10 ** 9, 2)
+                print("APY=", apy, "%")
+
+        # timestep
+        # gaussian distributed time step around one event every hours
+        avgTimeStep = 3600
+        timeStep = int(avgTimeStep * random.gauss(0.25, 0.1))
+        chain.sleep(timeStep)
+        print("time=", chain.time(), ", timelaps =", timeStep / 3600, "hours")
+        # simultaneous events allowed once in a while
+        # keep it for testing purpose
+        simulTimeRand = int(random.expovariate(0.98))
+        for j in range(simulTimeRand + 1):
+            if j == 1:
+                print("HEHOOOO SIMULTANEOUS EVENTS")
+            # 0:staking,1:unstakingFreeAll,2:updateReward,
+            # 3:withdrawReward,4:unstakingAll,5:stakeReward,>5:nothing
+            # what event? we pick one at random (smaller number have higher proba of happening)
+            randevent = int(random.expovariate(0.6))
+            # who is doing it or concerned?
+            randacc = random.randint(0, 49)
+            # staking
+            if randevent == 0:
+                amount = int(random.expovariate(1 / 200000)) * 10 ** 18
+                if ftgstaking.getBalances(accounts[randacc])[0] > 0:
+                    ftgstaking.updateBalances(accounts[randacc])
+                    if (
+                        ftgstaking.getBalances(accounts[randacc])[0]
+                        > 3000000 * 10 ** 18
+                    ):
+                        print(
+                            "totalStaked=", ftgstaking.getBalances(accounts[randacc])[0]
+                        )
+                        print("We limit staking to 3M for accounts[", randacc, "]!")
+                        continue
+                # we limit to 3 stakings per stakeholder (included unstaking event) for the simulation
+                if len(ftgstaking.getStakings(accounts[randacc])) > 2:
+                    continue
+                # stakers staking more than 150000 will probably want
+                #  to lock the staking to access higher tiers
+                if amount > 150000 * 10 ** 18:
+                    lockduration = random.randint(1, 3) * 2592000
+                else:
+                    lockduration = random.randint(0, 2) * 2592000
+                print(
+                    "accounts[",
+                    randacc,
+                    "] stakes ",
+                    amount,
+                    "ftg for ",
+                    lockduration,
+                    "secs.",
+                )
+                ftgstaking.stake(
+                    amount, lockduration, {"from": accounts[randacc]},
+                )
+            # updateReward
+            elif randevent == 2:
+                if ftgstaking.getBalances(accounts[randacc])[0] > 0:
+                    print("accounts[", randacc, "] update Reward --->")
+                    accountReward = ftgstaking.getAccountRewardInfo(accounts[randacc])
+                    print("Before update, rewardBalance = ", accountReward)
+                    tx = ftgstaking.updateReward({"from": accounts[randacc]})
+                    print(tx.events)
+                    accountReward = ftgstaking.getAccountRewardInfo(accounts[randacc])
+                    print("After update, rewardBalance = ", accountReward)
+                    rewardsList = ftgstaking.viewRewardsList()
+                    print("rewardsList=", rewardsList)
+                    stakings = ftgstaking.getStakings(accounts[randacc])
+                    print("stakeholders[accounts[", randacc, "]].stakings=", stakings)
+                    sumRewardTimesStakings = 0
+                    for k in range(len(rewardsList)):
+                        rewardTime = rewardsList[k][2]
+                        print("k=", k)
+                        for l, staking in reversed(list(enumerate(stakings))):
+                            print("l=", l)
+                            stakingsTime = stakings[l][1]
+                            if rewardTime <= stakingsTime:
+                                continue
+                            else:
+                                print(
+                                    "rewardPer1BFTG=",
+                                    rewardsList[k][1],
+                                    ", totalStaked=",
+                                    stakings[l][0],
+                                )
+                                sumRewardTimesStakings += (
+                                    rewardsList[k][1] * stakings[l][0] / 10 ** 9
+                                )
+                                print(
+                                    "sumRewardTimesStakings = ", sumRewardTimesStakings
+                                )
+                                break
+                    print("final sumRewardTimesStakings = ", sumRewardTimesStakings)
+                    assert "{:e}".format(sumRewardTimesStakings) == "{:e}".format(
+                        accountReward[0]
+                    )
+            # unstakeAll (some people decide to withdraw their ftg)
+            elif randevent == 4:
+                if ftgstaking.getBalances(accounts[randacc])[0] > 0:
+                    ftgstaking.updateBalances(accounts[randacc])
+                    if (
+                        ftgstaking.getBalances(accounts[randacc])[0]
+                        - ftgstaking.getBalances(accounts[randacc])[1]
+                        > 0
+                    ):
+                        print("accounts[", randacc, "] unstakeAll")
+                        ftgstaking.unstakeAll({"from": accounts[randacc]})
+            # no action
+            elif randevent > 5:
+                continue
+
     # display stakings
     print("accounts stacking = (totalStaked, timestamp, amount, lockDuration)")
     for i in range(50):
@@ -291,7 +435,13 @@ def test_ftgStaking_manyStakers_stakingPeriod(accounts, ftgtoken):
     # Check rewardsList
     rewardsList = ftgstaking.viewRewardsList()
     print("rewardsList=", rewardsList)
+    # simulation time
+    totalTimeElapsed = chain.time() - startTime
+    print("simulation total time = ", totalTimeElapsed / 3600, " hours")
     # calculateAPY
-    apy = ftgstaking.calculateAPY.call({"from": accounts[0]})
-    print("APY=", 100 * apy / 10 ** 9, "%")
+    avgRewardPer1BFTG = ftgstaking.calculateAvgRewardPer1BFTG.call(
+        {"from": accounts[0]}
+    )
+    apy = round(100 * avgRewardPer1BFTG / 10 ** 9, 2)
+    print("APY=", apy, "%") """
 

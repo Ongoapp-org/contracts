@@ -502,7 +502,8 @@ contract FTGStaking is Ownable {
     }
 
     //average rewardPer1BFTG over one year
-    function calculateAPY() public returns (uint256) {
+    function calculateAvgRewardPer1BFTG() public returns (uint256) {
+        require(rewardsList.length > 1, "No Rewards yet");
         uint256 time = rewardsList[rewardsList.length - 1].timestamp -
             rewardsList[0].timestamp;
         uint256 rewardPer1BFTGSum;
@@ -512,13 +513,13 @@ contract FTGStaking is Ownable {
         //one year in secs = 31536000
         //very first reward due to init Staking of first stakeholder not counted
         emit Log("rewardPer1BFTGSum", rewardPer1BFTGSum);
-        uint256 apy = PRBMath.mulDiv(
-            31536000,
+        uint256 avgRewardPer1BFTG = PRBMath.mulDiv(
+            1,
             rewardPer1BFTGSum,
-            time * (rewardsList.length - 1)
+            rewardsList.length - 1
         );
-        emit Log("APY ftg per 1 Billion ftg staked", rewardPer1BFTGSum);
-        return apy;
+        emit Log("avgRewardPer1BFTG", avgRewardPer1BFTG);
+        return avgRewardPer1BFTG;
     }
 
     // returns total active locked Staking of an sale participant

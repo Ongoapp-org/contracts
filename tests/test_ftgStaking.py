@@ -95,6 +95,13 @@ def test_ftgStaking(accounts, ftgtoken):
     # Check rewardsList
     rewardsList = ftgstaking.viewRewardsList()
     print("rewardsList=", rewardsList)
+    # calculate APY
+    avgRewardPer1BFTG = ftgstaking.calculateAvgRewardPer1BFTG.call(
+        {"from": accounts[0]}
+    )
+    apy = round(100 * avgRewardPer1BFTG / 10 ** 9, 2)
+    print("APY=", apy, "%")
+    assert apy == 0.53
     # wait 30 days, first staking should be free to unstake
     timeTravel = days30
     chain.sleep(timeTravel)
@@ -280,10 +287,12 @@ def test_ftgStaking(accounts, ftgtoken):
     # Check rewardsList
     rewardsList = ftgstaking.viewRewardsList()
     print("rewardsList=", rewardsList)
-
-    apy = ftgstaking.calculateAPY.call({"from": accounts[0]})
-    print("APY=", 100 * apy / 10 ** 9, "%")
-    assert round(100 * apy / 10 ** 9, 2) == 8.91
+    avgRewardPer1BFTG = ftgstaking.calculateAvgRewardPer1BFTG.call(
+        {"from": accounts[0]}
+    )
+    apy = round(100 * avgRewardPer1BFTG / 10 ** 9, 2)
+    print("APY=", apy, "%")
+    assert apy == 1.47
 
 
 def test_staking_basic(accounts, ftgtoken):
