@@ -222,6 +222,7 @@ contract FTGStaking is Ownable {
             _lockDuration <= 365 days,
             "can not stake longer than 365 days"
         );
+
         // Check that user does not stake 0
         require(_amount > 0, "Cannot stake nothing");
         // Check staker's balance is enough
@@ -246,15 +247,14 @@ contract FTGStaking is Ownable {
         totalFTGStaked += amountStaked;
         emit Log("totalFTGStaked", totalFTGStaked);
 
-        // TODO comment
-        if (_lockDuration == 0) {
+        if (_lockDuration < minDays) {
             // Add the new Stake to the stakeholder's stakes List
             stakeholders[msg.sender].stakings.push(
                 Staking(
                     stakeholders[msg.sender].totalStaked,
                     block.timestamp,
                     int256(amountStaked),
-                    0
+                    _lockDuration
                 )
             );
             // Emit a NewStake event
