@@ -4,41 +4,18 @@ from brownie import accounts, network, chain
 from brownie import FTGStaking, MockFTGToken
 
 
-def deploy_local():
-    ftgmockAddress = MockFTGToken.deploy(10 ** 9 * 10**18, {"from": accounts[0]})
-    print("ftgmock ", ftgmockAddress)
+def deploy_FTGStaking(tokenAddr, mainaccount):
+    # account account "0x8E642F42f98A6bcD5E56afA845Eb7E21484DaE04" used for avax-test:
+    # if network.show_active() != "development":
+    #     pk = "50cc9e6c3d47a3b4c3cb3eb611ad7d8c6eb5f1b1b1e54f61ef4d4582bfa77742"  # account "0x8E642F42f98A6bcD5E56afA845Eb7E21484DaE04"
+    #     accounts.add(pk)
 
-    ftgstaking = FTGStaking.deploy(ftgmockAddress, {"from": accounts[0]})
-    print("FTGStaking deployed at ", ftgstaking.address)
+    print("account[0] in deploy_FTGStaking = ", mainaccount)
+    print("balance ETH accounts[0] in deploy_FTGStaking =", mainaccount.balance())
+    print("chain in deploy_FTGStaking=", network.chain)
 
-    ftgmock = MockFTGToken.at(ftgmockAddress)    
-    bal = ftgmock.balanceOf(accounts[0])
-    ftgmock.transfer(accounts[1], 1000 * 10**18, {"from": accounts[0]})
-
-    ftgstaking.depositRewardTokens(1000 * 10**18, {"from": accounts[0]})
-
-    return [ftgmock, ftgstaking]
-
-
-def run_staketest(ftgmock, ftgstaking):
-    ftgmock.approve(ftgstaking, 100*10**18,{"from": accounts[1]})
-    days30 = 60*60*24*30
-    #ftgstaking.stake(100*10**18, 10, {"from":accounts[0]})
-    ftgstaking.stake(100*10**18, days30, {"from":accounts[1]})
-    #ftgstaking.stakeholders(accounts[0])
-
-    print("time before ", chain.time())
-    chain.sleep(days30+1)
-    print("time after ", chain.time())
-    #chain.mine()
-    # print("time after ",chain.time())
-    #print(ftgstaking.getBalances(accounts[1])[0])
-    ftgstaking.updateBalances(accounts[1])
-    print(ftgstaking.stakeholders(accounts[1]))
-    #print(ftgstaking.withdrawableAmount({"from":accounts[1]}))
-    ftgstaking.unstake(95*10**18, {"from":accounts[1]}) 
-    print(ftgstaking.stakeholders(accounts[1]))
-    print(ftgmock.balanceOf(accounts[1]))
+    ftgstaking = FTGStaking.deploy(tokenAddr, {"from": mainaccount})
+    return ftgstaking
 
 
 def deploy_goerli():
@@ -51,25 +28,20 @@ def deploy_goerli():
     ftgmockAddress = "0xC54Aee27538ae906034e9f2f1A784778ab55d861"
     ftgmock = MockFTGToken.at(ftgmockAddress)
     print("mainaccount ", mainaccount)
-    print("main FTG balance ", ftgmock.balanceOf(mainaccount) / 10**18)
-    print("main ETH balance ", mainaccount.balance()/10**18)
+    print("main FTG balance ", ftgmock.balanceOf(mainaccount) / 10 ** 18)
+    print("main ETH balance ", mainaccount.balance() / 10 ** 18)
 
     ftgstaking = FTGStaking.deploy(ftgmockAddress, {"from": mainaccount})
     print("staking deployed at ", ftgstaking)
 
 
 def main():
-    
-    #testnet
+    print("chain_id =", network.chain.id)
     if network.chain.id == 1337:
-        [ftgmock, ftgstaking] = deploy_local()
-        print(ftgmock, ftgstaking)
-        run_staketest(ftgmock, ftgstaking)
+        ftgmockAddress = MockFTGToken.deploy(10 ** 9 * 10 ** 18, {"from": accounts[0]})
+        print("ftgmock ", ftgmockAddress)
 
-
-    # if network.chain.id == 5:
-    #     deploy_goerli()
-
-    #     #print("FTGStaking deployed at ", staking.address)
-
-
+        staking = deploy_FTGStaking(ftgmockAddress, accounts[0])
+        print("FTGStaking deployed at ", staking.address)
+    elif network.chain.id == 5:
+        deploy_goerli()
