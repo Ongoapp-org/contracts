@@ -359,12 +359,6 @@ contract FTGStaking is Ownable {
         unstake(amount);
     }
 
-    // function withdrawableAmount() public returns (uint256) {
-    //     return
-    //         stakeholders[msg.sender].totalStaked -
-    //         stakeholders[msg.sender].totalLockedBalance;
-    // }
-
     // unstake ftg
     function unstake(uint256 _amount) public {
         // verify that stakeholder has staking
@@ -382,7 +376,6 @@ contract FTGStaking is Ownable {
         // unstake less than whats free to unstake
         if (_amount <= stakeholders[msg.sender].freeToUnstakeBalance) {
             // no fee to unstake
-            // stakeholder is only partly withdrawing his staking balance
             stakeholders[msg.sender].totalStaked -= _amount;
             stakeholders[msg.sender].stakings.push(
                 Staking(
@@ -398,7 +391,7 @@ contract FTGStaking is Ownable {
             ftgToken.transfer(msg.sender, _amount);
             emit NewUnstake(msg.sender, _amount, block.timestamp);
         } else {
-            // if amount exceeds totalStaked, we withdraw everything and apply fee
+            // if amount exceeds FreeToUnstakeBalance, fee is applied
             stakeholders[msg.sender].totalStaked -= _amount;
             stakeholders[msg.sender].stakings.push(
                 Staking(
