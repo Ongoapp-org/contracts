@@ -1,4 +1,4 @@
-""" import brownie
+import brownie
 import random, math
 from brownie import chain, network
 from scripts.deploy_FTGStaking import deploy_FTGStaking
@@ -19,4 +19,4 @@ def test_ftgStaking_fixedAPY(accounts, ftgtoken):
     for i in range(1, 50):
         # approve contract to transfer ftg for accounts[i]
         ftgtoken.approve(ftgstaking, 5000000 * 10 ** 18, {"from": accounts[i]})
- """
+
