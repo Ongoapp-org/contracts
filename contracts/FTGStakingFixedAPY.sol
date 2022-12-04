@@ -399,7 +399,7 @@ contract FTGStakingFixedAPY is Ownable {
 
     //average rewardPer1BFTG over one year
     function calculateTotalRedeemableReward() public returns (uint256) {
-        require(rewardsList.length > 1, "No Rewards yet");
+        /* require(rewardsList.length > 1, "No Rewards yet");
         uint256 time = rewardsList[rewardsList.length - 1].timestamp -
             rewardsList[0].timestamp;
         uint256 rewardPer1BFTGSum;
@@ -415,7 +415,7 @@ contract FTGStakingFixedAPY is Ownable {
             rewardsList.length - 1
         );
         emit Log("avgRewardPer1BFTG", avgRewardPer1BFTG);
-        return avgRewardPer1BFTG;
+        return avgRewardPer1BFTG; */
     }
 
     // returns total active locked Staking of an sale participant
