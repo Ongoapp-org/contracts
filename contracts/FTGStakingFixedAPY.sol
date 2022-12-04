@@ -24,22 +24,14 @@ interface IFTGStaking {
     ) external view returns (int256 lockedStakingTotal);
 }
 
-contract FTGStaking is Ownable {
+contract FTGStakingFixedAPY is Ownable {
     IERC20 public immutable ftgToken;
 
     uint256 constant INITIAL_STAKING_FEE = 5; // %
     uint256 constant UNSTAKING_FEE = 15; // %
 
     uint256 minDays = 30 days;
-
-    // Staking Tiers
-    // StakeType not used, replaced by stakingDuration
-    // enum StakeType {
-    //     FLEX,
-    //     LOCK30DAYS,
-    //     LOCK60DAYS,
-    //     LOCK90DAYS
-    // }
+    uint256 rewardPer1BFTG = 10**8; // 10% Interest on staking (= fixed APY)
 
     //StakeHolder are registered in stakeholders when they stake for the first time
     struct Stakeholder {
@@ -61,15 +53,15 @@ contract FTGStaking is Ownable {
     }
 
     // New reward (deposit or fee)
-    struct Reward {
+    /*  struct Reward {
         uint256 rewards; // incoming reward distributed to stakeholders
         uint256 rewardPer1BFTG; // mean reward for 1 billion ftg
         uint256 timestamp; // time when reward was deposited
-    }
+    } */
 
     uint256 public totalFTGStaked; // contract's total amount of FTG staked
 
-    Reward[] public rewardsList; // list of reward events
+    /* Reward[] public rewardsList; // list of reward events */
 
     mapping(address => Stakeholder) public stakeholders; // list of stakeholders
 
@@ -80,7 +72,7 @@ contract FTGStaking is Ownable {
         uint256 timestamp
     );
     event NewUnstake(address indexed user, uint256 amount, uint256 timestamp);
-    event NewReward(uint256 indexed amount, uint256 timestamp);
+    /* event NewReward(uint256 indexed amount, uint256 timestamp); */
     //event For debugging
     event Log(string message, uint256 data);
     event Logint(string message, int256 data);
@@ -90,7 +82,7 @@ contract FTGStaking is Ownable {
     }
 
     // To register a new reward deposit or fee
-    function _addNewReward(uint256 _reward) private {
+    /* function _addNewReward(uint256 _reward) private {
         if (totalFTGStaked != 0) {
             emit Log("_reward", _reward);
             uint256 rewardPer1BFTG = PRBMath.mulDiv(
@@ -105,18 +97,18 @@ contract FTGStaking is Ownable {
             rewardsList.push(Reward(_reward, 0, block.timestamp));
             emit NewReward(_reward, block.timestamp);
         }
-    }
+    } */
 
     // to retrieve the first reward index to add from last updated time
-    function _getfirstRewardsIndexToAdd(uint256 lastUpdateTime)
+    /* function _getfirstRewardsIndexToAdd(uint256 lastUpdateTime)
         private
         view
         returns (uint256)
     {
         //rewardsList.length>0 when this function is called
         uint256 i = rewardsList.length - 1;
-        /* emit Log("i0=",i);
-        emit Log("rewardsList[i].timestamp",rewardsList[i].timestamp); */
+        emit Log("i0=",i);
+        emit Log("rewardsList[i].timestamp",rewardsList[i].timestamp);
         while (rewardsList[i].timestamp > lastUpdateTime && i != 0) {
             unchecked {
                 --i;
@@ -124,11 +116,11 @@ contract FTGStaking is Ownable {
             // emit Log("i=",i);
         }
         return i + 1;
-    }
+    } */
 
     // to retrieve the stakeholder's stake at a certain reward time
     // the staking just before the reward time counts not the staking at the same time
-    function _getStakeholderStakingIndexBeforeTime(
+    /* function _getStakeholderStakingIndexBeforeTime(
         address _stakeholderAddress,
         uint256 _time
     ) private view returns (uint256) {
@@ -150,7 +142,7 @@ contract FTGStaking is Ownable {
             }
             return i;
         }
-    }
+    } */
 
     // to update the reward balance of a stakeholder
     function _updateStakeholderReward(address _stakeholderAddress) private {
@@ -159,12 +151,19 @@ contract FTGStaking is Ownable {
             stakeholders[_stakeholderAddress].stakings.length != 0,
             "Not a stakeholder!"
         );
-        require(rewardsList.length > 0, "No rewards yet");
+        //require(rewardsList.length > 0, "No rewards yet");
         //Looking for rewards since the last reward update
         uint256 lastRewardUpdate = stakeholders[_stakeholderAddress]
             .lastRewardUpdate;
+        uint256 timeElapsed = block.timestamp - lastRewardUpdate;
+        uint256 staking = stakeholders[_stakeholderAddress].totalStaked;
+        uint256 newReward = PRBMath.mulDiv(
+            31536000, // = 1 year in secs
+            rewardPer1BFTG * staking,
+            timeElapsed * 1_000_000_000
+        );
         //if the reward balance was never updated lastRewardUpdate = 0, we use the stakeholder's first staking time
-        if (lastRewardUpdate == 0) {
+        /* if (lastRewardUpdate == 0) {
             lastRewardUpdate = stakeholders[_stakeholderAddress]
                 .stakings[0]
                 .timestamp;
@@ -202,7 +201,7 @@ contract FTGStaking is Ownable {
             );
             emit Log("rewardsSum=", rewardsSum);
         }
-        emit Log("final rewardsSum=", rewardsSum);
+        emit Log("final rewardsSum=", rewardsSum); */
         stakeholders[_stakeholderAddress].totalReward += rewardsSum;
         stakeholders[_stakeholderAddress].lastRewardUpdate = block.timestamp;
     }
@@ -504,7 +503,7 @@ contract FTGStaking is Ownable {
     }
 
     //average rewardPer1BFTG over one year
-    function calculateAPYPer1BFTG() public returns (uint256) {
+    function calculateAvgRewardPer1BFTG() public returns (uint256) {
         require(rewardsList.length > 1, "No Rewards yet");
         uint256 time = rewardsList[rewardsList.length - 1].timestamp -
             rewardsList[0].timestamp;
@@ -515,9 +514,13 @@ contract FTGStaking is Ownable {
         //one year in secs = 31536000
         //very first reward due to init Staking of first stakeholder not counted
         emit Log("rewardPer1BFTGSum", rewardPer1BFTGSum);
-        uint256 apyPer1BFTG = PRBMath.mulDiv(31536000, rewardPer1BFTGSum, time);
-        emit Log("apy", apyPer1BFTG);
-        return apyPer1BFTG;
+        uint256 avgRewardPer1BFTG = PRBMath.mulDiv(
+            1,
+            rewardPer1BFTGSum,
+            rewardsList.length - 1
+        );
+        emit Log("avgRewardPer1BFTG", avgRewardPer1BFTG);
+        return avgRewardPer1BFTG;
     }
 
     // returns total active locked Staking of an sale participant
