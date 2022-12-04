@@ -332,7 +332,7 @@ contract FTGStakingFixedAPY is Ownable {
         ftgToken.transfer(msg.sender, rewardToWithdraw);
     }
 
-    // function for the stakeholder to stake his accumulated rewards
+    // function for the stakeholder to stake his/her accumulated rewards
     function stakeReward(uint256 _amount, uint256 _lockDuration) public {
         require(
             _amount <= stakeholders[msg.sender].totalReward,
