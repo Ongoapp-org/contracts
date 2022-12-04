@@ -140,8 +140,9 @@ contract FTGStaking is Ownable {
 
         //We update stakeholder's Reward Balance before
         //necessary before any change in stakeholder's totalStaked
-        _updateStakeholderReward(msg.sender);
-
+        if (stakeholders[msg.sender].stakings.length == 0) {
+            _updateStakeholderReward(msg.sender);
+        }
         // first staking ?
         uint256 fee;
         if (stakeholders[msg.sender].stakings.length == 0) {
