@@ -30,7 +30,7 @@ contract FTGStakingFixedAPY is Ownable {
     uint256 constant INITIAL_STAKING_FEE = 15; // %
     uint256 constant UNSTAKING_FEE = 15; // %
 
-    uint256 rewardPer1BFTG = 10**8; // 10% Interest on staking (= fixed APY)
+    uint256 rewardRatePer1BFTG = 10**8; // 10% Interest on staking (= fixed APY)
 
     //StakeHolder are registered in stakeholders when they stake for the first time
     struct Stakeholder {
@@ -93,11 +93,19 @@ contract FTGStakingFixedAPY is Ownable {
         uint256 staking = stakeholders[_stakeholderAddress].totalStaked;
         uint256 newReward = PRBMath.mulDiv(
             31536000, // = 1 year in secs
-            rewardPer1BFTG * staking,
+            rewardRatePer1BFTG * staking,
             timeSinceLastUpdate * 1_000_000_000
         );
         stakeholders[_stakeholderAddress].totalReward += newReward;
         stakeholders[_stakeholderAddress].lastRewardUpdate = block.timestamp;
+    }
+
+    //function to adjust rewardRate
+    function adjustRewardRatePer1BFTG(uint256 _rewardRatePer1BFTG)
+        public
+        onlyOwner
+    {
+        rewardRatePer1BFTG = _rewardRatePer1BFTG;
     }
 
     // public function to update Rewards
