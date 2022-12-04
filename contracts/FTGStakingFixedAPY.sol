@@ -333,7 +333,6 @@ contract FTGStakingFixedAPY is Ownable {
     }
 
     // function for the stakeholder to stake his accumulated rewards
-    //TODO more explain how this is used
     function stakeReward(uint256 _amount, uint256 _lockDuration) public {
         require(
             _amount <= stakeholders[msg.sender].totalReward,
@@ -399,25 +398,15 @@ contract FTGStakingFixedAPY is Ownable {
         );
     }
 
-    //average rewardPer1BFTG over one year
-    function calculateTotalRedeemableReward() public returns (uint256) {
-        /* require(rewardsList.length > 1, "No Rewards yet");
-        uint256 time = rewardsList[rewardsList.length - 1].timestamp -
-            rewardsList[0].timestamp;
-        uint256 rewardPer1BFTGSum;
-        for (uint256 i = 0; i < rewardsList.length; i++) {
-            rewardPer1BFTGSum += rewardsList[i].rewardPer1BFTG;
+    //evaluate total rewards redeemable by stakeholders (onlyOwner or not for transparency?)
+    function evaluateTotalRedeemableReward() public view returns (uint256) {
+        uint256 rewardSum;
+        for (uint256 i = 0; i < stakeholdersAddresses.length; i++) {
+            //To update Reward Balance, can be commented out to save gas
+            //_updateStakeholderReward(stakeholdersAddresses[i]);
+            rewardSum += stakeholders[stakeholdersAddresses[i]].totalReward;
         }
-        //one year in secs = 31536000
-        //very first reward due to init Staking of first stakeholder not counted
-        emit Log("rewardPer1BFTGSum", rewardPer1BFTGSum);
-        uint256 avgRewardPer1BFTG = PRBMath.mulDiv(
-            1,
-            rewardPer1BFTGSum,
-            rewardsList.length - 1
-        );
-        emit Log("avgRewardPer1BFTG", avgRewardPer1BFTG);
-        return avgRewardPer1BFTG; */
+        return rewardSum;
     }
 
     // returns total active locked Staking of an sale participant
