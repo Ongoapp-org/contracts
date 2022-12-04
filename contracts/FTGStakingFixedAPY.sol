@@ -202,7 +202,7 @@ contract FTGStakingFixedAPY is Ownable {
             emit Log("rewardsSum=", rewardsSum);
         }
         emit Log("final rewardsSum=", rewardsSum); */
-        stakeholders[_stakeholderAddress].totalReward += rewardsSum;
+        stakeholders[_stakeholderAddress].totalReward += newReward;
         stakeholders[_stakeholderAddress].lastRewardUpdate = block.timestamp;
     }
 
