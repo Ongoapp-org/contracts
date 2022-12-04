@@ -57,6 +57,7 @@ contract FTGStakingFixedAPY is Ownable {
     /* Reward[] public rewardsList; // list of reward events */
 
     mapping(address => Stakeholder) public stakeholders; // list of stakeholders
+    address[] stakeholdersAddresses; // list of stakeholders addresses
 
     //prorocol's events
     event NewStake(
@@ -139,6 +140,7 @@ contract FTGStakingFixedAPY is Ownable {
             // calculate initial fee
             fee = PRBMath.mulDiv(INITIAL_STAKING_FEE, _amount, 100);
             totalFees += fee;
+            stakeholdersAddresses.push(msg.sender);
         }
         uint256 amountStaked = _amount - fee;
         // Add stake's amount to stakeholder's totalStaked
