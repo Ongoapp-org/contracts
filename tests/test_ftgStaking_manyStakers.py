@@ -298,123 +298,139 @@ def test_ftgStaking_manyStakers_stakingPeriod(accounts, ftgtoken):
             # no action
             elif randevent > 5:
                 continue
+    if False:  # True for running the "quiet period" after the "staking period"
+        nbOfEventsQuietPeriod = 300
+        # IDO Period, more quiet period
+        for i in range(nbOfEventsQuietPeriod):
+            # reward deposit of ftg every week
+            # must be higher during quiet period
+            rewardDeposit = 10000000 * 10 ** 18
+            if chain.time() - lastDepositTime > 7 * 86400:
+                print("Admin Reward Deposit!")
+                ftgstaking.depositRewardTokens(rewardDeposit)
+                lastDepositTime = chain.time()
+            # calculateAPY
+            if i % 10 == 0:
+                if len(ftgstaking.viewRewardsList()) > 1:
+                    avgRewardPer1BFTG = ftgstaking.calculateAvgRewardPer1BFTG.call(
+                        {"from": accounts[0]}
+                    )
+                    apy = round(100 * avgRewardPer1BFTG / 10 ** 9, 2)
+                    print("APY=", apy, "%")
 
-    nbOfEventsQuietPeriod = 300
-    # IDO Period, more quiet period
-    for i in range(nbOfEventsQuietPeriod):
-        # reward deposit of ftg every week
-        # must be higher during quiet period
-        rewardDeposit = 10000000 * 10 ** 18
-        if chain.time() - lastDepositTime > 7 * 86400:
-            print("Admin Reward Deposit!")
-            ftgstaking.depositRewardTokens(rewardDeposit)
-            lastDepositTime = chain.time()
-        # calculateAPY
-        if i % 10 == 0:
-            if len(ftgstaking.viewRewardsList()) > 1:
-                avgRewardPer1BFTG = ftgstaking.calculateAvgRewardPer1BFTG.call(
-                    {"from": accounts[0]}
-                )
-                apy = round(100 * avgRewardPer1BFTG / 10 ** 9, 2)
-                print("APY=", apy, "%")
-
-        # timestep
-        # gaussian distributed time step around one event every hours
-        avgTimeStep = 86400
-        timeStep = int(avgTimeStep * random.gauss(0.25, 0.1))
-        chain.sleep(timeStep)
-        print("time=", chain.time(), ", timelaps =", timeStep / 3600, "hours")
-        # simultaneous events allowed once in a while
-        # keep it for testing purpose
-        simulTimeRand = int(random.expovariate(0.98))
-        for j in range(simulTimeRand + 1):
-            if j == 1:
-                print("HEHOOOO SIMULTANEOUS EVENTS")
-            # 0:staking,1:unstakingFreeAll,2:updateReward,
-            # 3:withdrawReward,4:unstakingAll,5:stakeReward,>5:nothing
-            # what event? we pick one at random (uniformly distributed)
-            randevent = random.randint(0, 5)
-            # who is doing it or concerned?
-            randacc = random.randint(0, 49)
-            # staking
-            if randevent == 0:
-                amount = int(random.expovariate(1 / 200000)) * 10 ** 18
-                if ftgstaking.getBalances(accounts[randacc])[0] > 0:
-                    ftgstaking.updateBalances(accounts[randacc])
-                    if (
-                        ftgstaking.getBalances(accounts[randacc])[0]
-                        > 3000000 * 10 ** 18
-                    ):
+            # timestep
+            # gaussian distributed time step around one event every hours
+            avgTimeStep = 86400
+            timeStep = int(avgTimeStep * random.gauss(0.25, 0.1))
+            chain.sleep(timeStep)
+            print("time=", chain.time(), ", timelaps =", timeStep / 3600, "hours")
+            # simultaneous events allowed once in a while
+            # keep it for testing purpose
+            simulTimeRand = int(random.expovariate(0.98))
+            for j in range(simulTimeRand + 1):
+                if j == 1:
+                    print("HEHOOOO SIMULTANEOUS EVENTS")
+                # 0:staking,1:unstakingFreeAll,2:updateReward,
+                # 3:withdrawReward,4:unstakingAll,5:stakeReward,>5:nothing
+                # what event? we pick one at random (uniformly distributed)
+                randevent = random.randint(0, 5)
+                # who is doing it or concerned?
+                randacc = random.randint(0, 49)
+                # staking
+                if randevent == 0:
+                    amount = int(random.expovariate(1 / 200000)) * 10 ** 18
+                    if ftgstaking.getBalances(accounts[randacc])[0] > 0:
+                        ftgstaking.updateBalances(accounts[randacc])
+                        if (
+                            ftgstaking.getBalances(accounts[randacc])[0]
+                            > 3000000 * 10 ** 18
+                        ):
+                            print(
+                                "totalStaked=",
+                                ftgstaking.getBalances(accounts[randacc])[0],
+                            )
+                            print("We limit staking to 3M for accounts[", randacc, "]!")
+                            continue
+                    # stakers staking more than 150000 will probably want
+                    #  to lock the staking to access higher tiers
+                    if amount > 150000 * 10 ** 18:
+                        lockduration = random.randint(1, 3) * 2592000
+                    else:
+                        lockduration = random.randint(0, 2) * 2592000
+                    print(
+                        "accounts[",
+                        randacc,
+                        "] stakes ",
+                        amount,
+                        "ftg for ",
+                        lockduration,
+                        "secs.",
+                    )
+                    ftgstaking.stake(
+                        amount, lockduration, {"from": accounts[randacc]},
+                    )
+                # unstakeFreeAll
+                elif randevent == 1:
+                    print("hello unstaking")
+                    if ftgstaking.getBalances(accounts[randacc])[0] > 0:
+                        ftgstaking.updateBalances(accounts[randacc])
                         print(
-                            "totalStaked=", ftgstaking.getBalances(accounts[randacc])[0]
+                            "unstakingFreeAll accounts[",
+                            randacc,
+                            " Balances =",
+                            ftgstaking.getBalances(accounts[randacc]),
                         )
-                        print("We limit staking to 3M for accounts[", randacc, "]!")
-                        continue
-                # stakers staking more than 150000 will probably want
-                #  to lock the staking to access higher tiers
-                if amount > 150000 * 10 ** 18:
-                    lockduration = random.randint(1, 3) * 2592000
-                else:
-                    lockduration = random.randint(0, 2) * 2592000
-                print(
-                    "accounts[",
-                    randacc,
-                    "] stakes ",
-                    amount,
-                    "ftg for ",
-                    lockduration,
-                    "secs.",
-                )
-                ftgstaking.stake(
-                    amount, lockduration, {"from": accounts[randacc]},
-                )
-            # unstakeFreeAll
-            elif randevent == 1:
-                print("hello unstaking")
-                if ftgstaking.getBalances(accounts[randacc])[0] > 0:
-                    ftgstaking.updateBalances(accounts[randacc])
-                    print("hello2 unstaking", ftgstaking.getBalances(accounts[randacc]))
-                    if ftgstaking.getBalances(accounts[randacc])[2] > 0:
-                        print("accounts[", randacc, "] unstakeFreeAll")
-                        ftgstaking.unstakeFreeAll({"from": accounts[randacc]})
-            # updateReward
-            elif randevent == 2:
-                if ftgstaking.getBalances(accounts[randacc])[0] > 0:
-                    print("accounts[", randacc, "] update Reward")
-                    ftgstaking.updateReward({"from": accounts[randacc]})
-                    rewardsList = ftgstaking.viewRewardsList()
-                    print("rewardsList=", rewardsList)
-            # withdrawReward
-            elif randevent == 3:
-                if ftgstaking.getBalances(accounts[randacc])[0] > 0:
-                    print("accounts[", randacc, "] withdraw Reward ")
-                    ftgstaking.updateReward({"from": accounts[randacc]})
-                    reward = ftgstaking.getAccountRewardInfo(accounts[randacc])[0]
-                    if reward != 0:
-                        ftgstaking.withdrawReward({"from": accounts[randacc]})
-            # unstakeAll
-            elif randevent == 4:
-                if ftgstaking.getBalances(accounts[randacc])[0] > 0:
-                    ftgstaking.updateBalances(accounts[randacc])
-                    if (
-                        ftgstaking.getBalances(accounts[randacc])[0]
-                        - ftgstaking.getBalances(accounts[randacc])[1]
-                        > 0
-                    ):
-                        print("accounts[", randacc, "] unstakeAll")
-                        ftgstaking.unstakeAll({"from": accounts[randacc]})
-            # stakeReward
-            elif randevent == 5:
-                if ftgstaking.getBalances(accounts[randacc])[0] > 0:
-                    ftgstaking.updateReward({"from": accounts[randacc]})
-                    reward = ftgstaking.getAccountRewardInfo(accounts[randacc])[0]
-                    if reward != 0:
-                        amount = int(random.random() * reward)
-                        print("accounts[", randacc, "] stakes", amount, "ftg reward")
-                        ftgstaking.stakeReward(amount, 0, {"from": accounts[randacc]})
-            # no action
-            elif randevent > 5:
-                continue
+                        if ftgstaking.getBalances(accounts[randacc])[2] > 0:
+                            print("accounts[", randacc, "] unstakeFreeAll")
+                            ftgstaking.unstakeFreeAll({"from": accounts[randacc]})
+                # updateReward
+                elif randevent == 2:
+                    if ftgstaking.getBalances(accounts[randacc])[0] > 0:
+                        print("accounts[", randacc, "] update Reward")
+                        ftgstaking.updateReward({"from": accounts[randacc]})
+                        rewardsList = ftgstaking.viewRewardsList()
+                        print("rewardsList=", rewardsList)
+                # withdrawReward
+                elif randevent == 3:
+                    if ftgstaking.getBalances(accounts[randacc])[0] > 0:
+                        print("accounts[", randacc, "] withdraw Reward ")
+                        ftgstaking.updateReward({"from": accounts[randacc]})
+                        reward = ftgstaking.getAccountRewardInfo(accounts[randacc])[0]
+                        if reward != 0:
+                            ftgstaking.withdrawReward({"from": accounts[randacc]})
+                # unstakeAll
+                elif randevent == 4:
+                    if ftgstaking.getBalances(accounts[randacc])[0] > 0:
+                        ftgstaking.updateBalances(accounts[randacc])
+                        print(
+                            "unstakingAll accounts[",
+                            randacc,
+                            " Balances =",
+                            ftgstaking.getBalances(accounts[randacc]),
+                        )
+                        if (
+                            ftgstaking.getBalances(accounts[randacc])[0]
+                            - ftgstaking.getBalances(accounts[randacc])[1]
+                            > 0
+                        ):
+                            print("accounts[", randacc, "] unstakeAll")
+                            ftgstaking.unstakeAll({"from": accounts[randacc]})
+                # stakeReward
+                elif randevent == 5:
+                    if ftgstaking.getBalances(accounts[randacc])[0] > 0:
+                        ftgstaking.updateReward({"from": accounts[randacc]})
+                        reward = ftgstaking.getAccountRewardInfo(accounts[randacc])[0]
+                        if reward != 0:
+                            amount = int(random.random() * reward)
+                            print(
+                                "accounts[", randacc, "] stakes", amount, "ftg reward"
+                            )
+                            ftgstaking.stakeReward(
+                                amount, 0, {"from": accounts[randacc]}
+                            )
+                # no action
+                elif randevent > 5:
+                    continue
 
     # display stakings
     print("accounts stacking = (totalStaked, timestamp, amount, lockDuration)")
