@@ -30,7 +30,9 @@ contract FTGStaking is Ownable {
     uint256 constant INITIAL_STAKING_FEE = 15; // %
     uint256 constant UNSTAKING_FEE = 15; // %
 
-    uint256 rewardRatePer1BFTG = 10**8; // 10% Interest on staking (= fixed APY)
+    //reward rate per trillion FTG
+    uint256 public rewardRatePer1TFTG =
+        PRBMath.mulDiv(10, 10**12, 31536000 * 100); // 10% Interest on staking over a year
 
     //StakeHolder are registered in stakeholders when they stake for the first time
     struct Stakeholder {
@@ -89,23 +91,32 @@ contract FTGStaking is Ownable {
         //Looking for rewards since the last reward update
         uint256 lastRewardUpdate = stakeholders[_stakeholderAddress]
             .lastRewardUpdate;
+        //case reward has never been updated
+        if (lastRewardUpdate == 0) {
+            lastRewardUpdate = stakeholders[_stakeholderAddress]
+                .stakings[0]
+                .timestamp;
+        }
         uint256 timeSinceLastUpdate = block.timestamp - lastRewardUpdate;
         uint256 staking = stakeholders[_stakeholderAddress].totalStaked;
+        emit Log("staking = ", staking);
+        emit Log("timeSinceLastUpdate", timeSinceLastUpdate);
+        emit Log("rewardRatePer1TFTG", rewardRatePer1TFTG);
         uint256 newReward = PRBMath.mulDiv(
-            31536000, // = 1 year in secs
-            rewardRatePer1BFTG * staking,
-            timeSinceLastUpdate * 1_000_000_000
+            timeSinceLastUpdate,
+            rewardRatePer1TFTG * staking,
+            10**12
         );
         stakeholders[_stakeholderAddress].totalReward += newReward;
         stakeholders[_stakeholderAddress].lastRewardUpdate = block.timestamp;
     }
 
     //function to adjust rewardRate
-    function adjustRewardRatePer1BFTG(uint256 _rewardRatePer1BFTG)
+    function adjustRewardRatePer1TFTG(uint256 _rewardRatePer1TFTG)
         public
         onlyOwner
     {
-        rewardRatePer1BFTG = _rewardRatePer1BFTG;
+        rewardRatePer1TFTG = _rewardRatePer1TFTG;
     }
 
     // public function to update Rewards
