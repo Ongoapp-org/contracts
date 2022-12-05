@@ -117,11 +117,11 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
         totalActiveLocked02,
     )
     # assert totalActiveLocked02 == 0
-    #!this test is not working! I don't understand what is going on here. If I debug using event inside the
+    # !this test is not working! I don't understand what is going on here. If I debug using events inside the
     # the function code, there is no error, all temporary data and final result is correct. If I dont,
     # and switch off the events and the "view" keyword for the function then the result is wrong, giving the
     # last staking amount instead of 0. I tried to modify the conditional logic, and replace it by several if
-    # but result is the same. Next test, shows that if we make a new locked staking the amount becmes correct
+    # but result is the same. Next test, shows that if we make a new locked staking the amount becomes correct
     #  again... There may be something going on in the internals of brownie. We need to check if the error
     # happens on real test blockchain...
 
@@ -151,6 +151,7 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     assert bal0[1] == 200000 * 10 ** 18
     # freeToUnstakeBalance should be 510000*10*18
     assert bal0[2] == 510000 * 10 ** 18
+
     # verifies that staking of accounts[1] is still locked
     totalActiveLocked1 = ftgstaking.checkParticipantLockedStaking.call(
         accounts[1], 2592000, {"from": accounts[0]}
@@ -166,3 +167,129 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
         ftgstaking.totalFTGStaked()
         == 510000 * 10 ** 18 + 102000 * 10 ** 18 + 200000 * 10 ** 18
     )
+
+    # Unstaking Tests
+
+    # wait 1h
+    timeTravel = 3600
+    chain.sleep(timeTravel)
+
+    # test if stakeholder partly unstakes an amount less than FreeToUnstakeBalance
+    print("partly unstaking test \n")
+    # totalStaked (correct)
+    balancesb4 = ftgstaking.getBalances(accounts[0])
+    print("accounts[0] balances before unstaking = ", balancesb4)
+    # accounts[0] unstaking 10000 * 10 ** 18 ftg
+    tx = ftgstaking.unstake(10000 * 10 ** 18, {"from": accounts[0]})
+    print(tx.events)
+    balancesafter = ftgstaking.getBalances(accounts[0])
+    print("accounts[0] balances after unstaking = ", balancesafter)
+    # totalStaked
+    assert balancesb4[0] - 10000 * 10 ** 18 == balancesafter[0]
+    # totalLockedBalance
+    assert balancesb4[1] == balancesafter[1]
+    # freeToUnstakeBalance
+    assert balancesb4[2] - 10000 * 10 ** 18 == balancesafter[2]
+
+    # test if stakeholder unstakes all its freeToUnstake balance (just updated)
+    print("completely unstaking freeToUnstakeBalance test \n")
+    totalFeesb4 = ftgstaking.totalFees()
+    balancesb4 = ftgstaking.getBalances(accounts[0])
+    print("accounts[0] balances before unstakingFreeAll = ", balancesb4)
+    tx = ftgstaking.unstakeFreeAll({"from": accounts[0]})
+    print(tx.events)
+    totalFeesafter = ftgstaking.totalFees()
+    # verifies totalFees balance has not changed
+    assert totalFeesb4 == totalFeesafter
+    balancesafter = ftgstaking.getBalances(accounts[0])
+    print("accounts[0] balances after unstakingFreeAll = ", balancesafter)
+    # totalStaked
+    assert balancesb4[0] - balancesb4[2] == balancesafter[0]
+    # totalLockedBalance
+    assert balancesb4[1] == balancesafter[1]
+    # freeToUnstakeBalance
+    assert balancesafter[2] == 0
+
+    # test if stakeholder unstakes all its staking and incurring fees
+    print("completely unstaking with fee test \n")
+    # we wait a month so that locked staking is free to unstake
+    # wait one month
+    print("wait one month")
+    timetravel = 3600 * 24 * 30
+    chain.sleep(timetravel)
+    # new accounts[0] staking with no lockduration (flex)
+    print("stakeholder makes new flex 100000 ftg staking")
+    ftgstaking.stake(100000 * 10 ** 18, 0, {"from": accounts[0]})
+    # now if accounts[0] unstake everything, he should pay 15% fees on 1000000 ftg unstaked
+    ftgbal0b4 = ftgtoken.balanceOf(accounts[0])
+    print(
+        "before unstaking accounts[0] ftg balance =", ftgbal0b4,
+    )
+    # check totalFees before unstaking
+    totalFeesb4 = ftgstaking.totalFees()
+    print("totalFees before unstaking all with fees =", totalFeesb4)
+    # update then check balances
+    ftgstaking.updateBalances(accounts[0])
+    balancesb4 = ftgstaking.getBalances(accounts[0])
+    print("accounts[0] balances before unstakingFreeAll = ", balancesb4)
+    tx = ftgstaking.unstakeAll({"from": accounts[0]})
+    print(tx.events)
+    # check balances after unstake (just updated during unstake)
+    balancesafter = ftgstaking.getBalances(accounts[0])
+    print("accounts[0] balances after unstakingFreeAll = ", balancesafter)
+    # totalStaked
+    assert balancesafter[0] == 0
+    # totalLockedBalance
+    assert balancesafter[1] == 0
+    # freeToUnstakeBalance
+    assert balancesafter[2] == 0
+    # check totalFees after unstaking
+    totalFeesafter = ftgstaking.totalFees()
+    print("totalFees after unstaking all with fees =", totalFeesafter)
+    # verifies totalFees balance is correctly updated
+    assert totalFeesb4 + 0.15 * 100000 * 10 ** 18 == totalFeesafter
+    # verifies accounts[0] has correctly received the ftg
+    ftgbal0after = ftgtoken.balanceOf(accounts[0])
+    print(
+        "after unstaking accounts[0] ftg balance =", ftgbal0after,
+    )
+    assert (
+        ftgbal0after
+        == ftgbal0b4 + 200000 * 10 ** 18 + 100000 * 10 ** 18 - 15000 * 10 ** 18
+    )
+
+    # test of staking some reward
+    ftgstaking.updateReward({"from": accounts[0]})
+    rewardbalb4 = ftgstaking.getAccountRewardInfo(accounts[0])[0]
+    print(
+        "before staking 200ftg from reward balance: accounts[0] reward balance = ",
+        rewardbalb4,
+    )
+    rewardstaked = 1500 * 10 ** 18
+    ftgstaking.stakeReward(rewardstaked, 0)
+    rewardbalafter = ftgstaking.getAccountRewardInfo(accounts[0])[0]
+    print(
+        "after staking 200ftg from reward balance: accounts[0] reward balance = ",
+        rewardbalafter,
+    )
+    assert rewardbalafter == rewardbalb4 - rewardstaked
+    print("accounts[0] stakings =", ftgstaking.getStakings(accounts[0]))
+
+    # test of withdrawing the reward balance
+    ftgbal0b4 = ftgtoken.balanceOf(accounts[0])
+    rewardbalb4 = ftgstaking.getAccountRewardInfo(accounts[0])[0]
+    print(
+        "before withdrawing reward balance: accounts[0] reward balance = ", rewardbalb4,
+    )
+    print("before withdrawing: stakeholder ftg balance = ", ftgbal0b4)
+    ftgstaking.withdrawReward({"from": accounts[0]})
+    ftgbal0after = ftgtoken.balanceOf(accounts[0])
+    rewardbalafter = ftgstaking.getAccountRewardInfo(accounts[0])[0]
+    print(
+        "after withdrawing reward balance: accounts[0] reward balance = ",
+        rewardbalafter,
+    )
+    print("after withdrawing: stakeholder ftg balance = ", ftgbal0after)
+    assert ftgbal0b4 == ftgbal0after - rewardbalb4
+    assert rewardbalafter == 0
+
