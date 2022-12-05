@@ -27,14 +27,21 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     )  # 30 days locked = 2592000 secs
     print("2) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     print(tx.events)
+
+    # verifies totalFees correctly increased
+    print("totalFees = ", ftgstaking.totalFees())
+    assert ftgstaking.totalFees() == 0.15 * 600000 * 10 ** 18
+
     # balance update
     ftgstaking.updateBalances(accounts[0])
     bal0 = ftgstaking.getBalances(accounts[0])
     print("totalStaked,totalLockedBalance,freeToUnstakeBalance,updateTime)=", bal0)
+
     # wait 3600 secs
     print("wait 3600 secs = 1h")
     timeTravel0 = 3600
     chain.sleep(timeTravel0)
+
     # accounts[0] did his first staking one hour ago
     # stakeholder's reward balance has not been updated yet
     print(
@@ -42,10 +49,12 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
         ftgstaking.getAccountRewardInfo(accounts[0]),
     )
     assert ftgstaking.getAccountRewardInfo(accounts[0]) == (0, 0)
+
     # updateReward
     print("update reward!")
     tx = ftgstaking.updateReward({"from": accounts[0]})
     print(tx.events)
+
     # verifies reward calculation after update
     print("accounts[0]'s stakings = ", ftgstaking.getStakings(accounts[0]))
     assert bal0[0] == ftgstaking.getStakings(accounts[0])[-1][0]
@@ -63,3 +72,63 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     rewardCalc = int(timeTravel0 * bal0[0] * rewardRatePer1TFTG / 10 ** 12)
     print("reward calculation = ", rewardCalc)
     assert ftgstaking.getAccountRewardInfo(accounts[0]) == (rewardCalc, chain.time())
+
+    # second staking 120000 ftg by accounts[1]
+    print("**************second staking 120000 ftg by accounts[1] for 90 days \n")
+    ftgstaking.stake(
+        120000 * 10 ** 18, 7776000, {"from": accounts[1]}
+    )  # 90 days = 7776000 secs
+    print("3) accounts[1] ftg balance = \n", ftgtoken.balanceOf(accounts[1]))
+    # verifies Stakeholder's stakings, fee has been applied normally
+    stakings1 = ftgstaking.getStakings(accounts[1])
+    print("stakeholders[accounts[1]].stakings=", stakings1)
+    # assert int(120000 * 10 ** 18 - 0.15 * 120000 * 10 ** 18) == stakings1[0][0]
+    # precision should be improved?
+    # verifies totalFees correctly increased
+    print("totalFees = ", ftgstaking.totalFees())
+    # assert ftgstaking.totalFees() == 0.15 * 600000 * 10 ** 18 + 0.15 * 120000 * 10 ** 18
+    # works but again calculation precision not optimal
+
+    # verifies more than 30 days Locked Staking
+    # only one hour has passed since accounts[0] one month locked staking
+    # we verifies that it is still active
+    totalActiveLocked0 = ftgstaking.checkParticipantLockedStaking.call(
+        accounts[0], 2592000, {"from": accounts[0]}
+    )
+    print(
+        "accounts[0] 510000 staking should still be locked : checkParticipantLockedStaking amount =",
+        totalActiveLocked0,
+    )
+    assert totalActiveLocked0 == 510000 * 10 ** 18
+    # wait one month
+    print("wait one month")
+    chain.sleep(3600 * 24 * 30)
+    # verifies that accounts[0] has no locked staking anymore
+    totalActiveLocked02 = ftgstaking.checkParticipantLockedStaking.call(
+        accounts[0], 2592000, {"from": accounts[0]}
+    )
+    print(
+        "accounts[0] staking should not be locked anymore : checkParticipantLockedStaking amount =",
+        totalActiveLocked02,
+    )
+    assert totalActiveLocked02 == 0
+    # verifies balances
+    ftgstaking.updateBalances(accounts[0])
+    bal0 = ftgstaking.getBalances(accounts[0])
+    print("totalStaked,totalLockedBalance,freeToUnstakeBalance,updateTime)=", bal0)
+    # totalLockedBalance should be 0
+    assert bal0[1] == 0
+    # freeToUnstakeBalance should be 510000*10*18
+    assert bal0[2] == 510000 * 10 ** 18
+    # verifies that staking of accounts[1] is still locked
+    totalActiveLocked1 = ftgstaking.checkParticipantLockedStaking.call(
+        accounts[1], 2592000, {"from": accounts[0]}
+    )
+    print(
+        "accounts[1] 102000 staking should still be locked : checkParticipantLockedStaking amount =",
+        totalActiveLocked0,
+    )
+    assert totalActiveLocked1 == 102000 * 10 ** 18
+    # verifies totalFTGStaked correct
+    print("Contracts totalFTGStaked=", ftgstaking.totalFTGStaked())
+    assert ftgstaking.totalFTGStaked() == 510000 * 10 ** 18 + 102000 * 10 ** 18
