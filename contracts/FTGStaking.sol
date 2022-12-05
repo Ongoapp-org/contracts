@@ -118,6 +118,10 @@ contract FTGStaking is Ownable {
         public
         onlyOwner
     {
+        //need to updateRewards before modifying rewardRate (gas cost)
+        for (uint256 i = 0; i < stakeholdersAddresses.length; i++) {
+            _updateStakeholderReward(stakeholdersAddresses[i]);
+        }
         rewardRatePer1TFTG = _rewardRatePer1TFTG;
     }
 
