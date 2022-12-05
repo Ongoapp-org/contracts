@@ -74,6 +74,7 @@ contract FTGStaking is Ownable {
     //event For debugging
     event Log(string message, uint256 data);
     event Logint(string message, int256 data);
+    event Logbool(string message, bool data);
 
     //constructor
     constructor(address _stakingToken) {
@@ -433,7 +434,7 @@ contract FTGStaking is Ownable {
     function checkParticipantLockedStaking(
         address _participantAddress,
         uint256 lockDurationChecked
-    ) external view returns (int256 lockedStakingTotal) {
+    ) external returns (int256 lockedStakingTotal) {
         require(
             stakeholders[_participantAddress].stakings.length != 0,
             "Not a stakeholder!"
@@ -441,7 +442,7 @@ contract FTGStaking is Ownable {
         Staking[] memory participantStakings = stakeholders[_participantAddress]
             .stakings;
         for (uint256 i = 0; i < participantStakings.length; i++) {
-            /* emit Logint("lockedStakingtotal=", lockedStakingTotal);
+            emit Logint("lockedStakingtotal=", lockedStakingTotal);
             emit Log("block.timestamp=", block.timestamp);
             emit Log(
                 "participantStakings[i].timestamp=",
@@ -450,16 +451,49 @@ contract FTGStaking is Ownable {
             emit Log(
                 "participantStakings[i].lockDuration=",
                 participantStakings[i].lockDuration
-            ); */
-            if (
+            );
+            bool data0 = participantStakings[i].lockDuration >=
+                lockDurationChecked;
+            bool data1 = block.timestamp <
+                (participantStakings[i].timestamp +
+                    participantStakings[i].lockDuration);
+            bool data2 = (participantStakings[i].lockDuration >=
+                lockDurationChecked) &&
+                (block.timestamp <
+                    (participantStakings[i].timestamp +
+                        participantStakings[i].lockDuration));
+            emit Logbool(
+                "participantStakings[i].lockDuration >= lockDurationChecked : ",
+                data0
+            );
+            emit Logbool(
+                "block.timestamp <(participantStakings[i].timestamp +participantStakings[i].lockDuration):",
+                data1
+            );
+            emit Logbool("data0&&data1", data2);
+            /* if (
                 // check if staking is still active and was locked for more than lockDurationChecked
-                participantStakings[i].lockDuration >= lockDurationChecked &&
+                (participantStakings[i].lockDuration >= lockDurationChecked) &&
                 (block.timestamp <
                     participantStakings[i].timestamp +
                         participantStakings[i].lockDuration)
             ) {
                 // add this staking to checkedStakingTotal
                 lockedStakingTotal += participantStakings[i].amount;
+            } */
+            if (
+                // check if staking was locked for more than lockDurationChecked
+                (participantStakings[i].lockDuration >= lockDurationChecked)
+            ) {
+                if (
+                    //check if staking lock is still active
+                    (block.timestamp <
+                        participantStakings[i].timestamp +
+                            participantStakings[i].lockDuration)
+                ) {
+                    // add this staking to checkedStakingTotal
+                    lockedStakingTotal += participantStakings[i].amount;
+                }
             }
         }
         return lockedStakingTotal;
