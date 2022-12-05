@@ -298,7 +298,7 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     print("before modif by admin, rewardRatePer1TFTG = ", rewardRatePer1TFTGb4)
     ftgstaking.adjustRewardRatePer1TFTG(6000)
     rewardRatePer1TFTGafter = ftgstaking.rewardRatePer1TFTG()
-    print("after modif by rewardRatePer1TFTG = ", rewardRatePer1TFTGafter)
+    print("after modif by admin rewardRatePer1TFTG = ", rewardRatePer1TFTGafter)
     assert rewardRatePer1TFTGafter == 6000
     # verification another account cannot change the rewardRate
     with brownie.reverts("Ownable: caller is not the owner"):

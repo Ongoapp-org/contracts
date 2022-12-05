@@ -185,6 +185,10 @@ def test_ftgStaking_manyStakers_simul_stakingPeriod(accounts, ftgtoken):
 
     startTime = chain.time()
     nbOfEventsStakingPeriod = 100
+    # set new reward Rate ( 10% APY : rewardRatePer1TFTG ~ 3170)
+    ftgstaking.adjustRewardRatePer1TFTG(40000)
+    rewardRatePer1TFTGafter = ftgstaking.rewardRatePer1TFTG()
+    print("after modif by admin, rewardRatePer1TFTG = ", rewardRatePer1TFTGafter)
     # First Staking Period
     for i in range(nbOfEventsStakingPeriod):
         # timestep
