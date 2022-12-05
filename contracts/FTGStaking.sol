@@ -108,6 +108,7 @@ contract FTGStaking is Ownable {
             rewardRatePer1TFTG * staking,
             10**12
         );
+        emit Log("newReward", newReward);
         stakeholders[_stakeholderAddress].totalReward += newReward;
         stakeholders[_stakeholderAddress].lastRewardUpdate = block.timestamp;
     }
@@ -420,11 +421,16 @@ contract FTGStaking is Ownable {
     }
 
     //evaluate total rewards redeemable by stakeholders (onlyOwner or not for transparency?)
-    function evaluateTotalRedeemableReward() public view returns (uint256) {
+    function evaluateTotalRedeemableReward(bool _updateRewardsBefore)
+        public
+        returns (uint256)
+    {
         uint256 rewardSum;
         for (uint256 i = 0; i < stakeholdersAddresses.length; i++) {
-            //To update Reward Balance, can be commented out to save gas
-            //_updateStakeholderReward(stakeholdersAddresses[i]);
+            //To update Reward Balance, can be turned off to save gas
+            if (_updateRewardsBefore) {
+                _updateStakeholderReward(stakeholdersAddresses[i]);
+            }
             rewardSum += stakeholders[stakeholdersAddresses[i]].totalReward;
         }
         return rewardSum;

@@ -262,14 +262,14 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     ftgstaking.updateReward({"from": accounts[0]})
     rewardbalb4 = ftgstaking.getAccountRewardInfo(accounts[0])[0]
     print(
-        "before staking 200ftg from reward balance: accounts[0] reward balance = ",
+        "before staking 1500ftg from reward balance: accounts[0] reward balance = ",
         rewardbalb4,
     )
     rewardstaked = 1500 * 10 ** 18
     ftgstaking.stakeReward(rewardstaked, 0)
     rewardbalafter = ftgstaking.getAccountRewardInfo(accounts[0])[0]
     print(
-        "after staking 200ftg from reward balance: accounts[0] reward balance = ",
+        "after staking 1500ftg from reward balance: accounts[0] reward balance = ",
         rewardbalafter,
     )
     assert rewardbalafter == rewardbalb4 - rewardstaked
@@ -292,4 +292,49 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     print("after withdrawing: stakeholder ftg balance = ", ftgbal0after)
     assert ftgbal0b4 == ftgbal0after - rewardbalb4
     assert rewardbalafter == 0
+
+    # test modif of rewardRatePer1TFTG by admin
+    rewardRatePer1TFTGb4 = ftgstaking.rewardRatePer1TFTG()
+    print("before modif by admin, rewardRatePer1TFTG = ", rewardRatePer1TFTGb4)
+    ftgstaking.adjustRewardRatePer1TFTG(6000)
+    rewardRatePer1TFTGafter = ftgstaking.rewardRatePer1TFTG()
+    print("after modif by rewardRatePer1TFTG = ", rewardRatePer1TFTGafter)
+    assert rewardRatePer1TFTGafter == 6000
+    # verification another account cannot change the rewardRate
+    with brownie.reverts("Ownable: caller is not the owner"):
+        ftgstaking.adjustRewardRatePer1TFTG(100000, {"from": accounts[1]})
+    assert ftgstaking.rewardRatePer1TFTG() == 6000
+
+    # verify function to evaluate reward balances of stakeholder
+    print("test to evaluate total reward accumulated by stakeholders")
+    rewardbal0b4 = ftgstaking.getAccountRewardInfo(accounts[0])[0]
+    print("accounts[0]'s reward balance = ", rewardbal0b4)
+    # reward have just been withdrawn and no time elapsed since then and no pdate of reward either
+    assert rewardbal0b4 == 0
+    rewardbal1b4 = ftgstaking.getAccountRewardInfo(accounts[1])[0]
+    print("accounts[1]'s reward balance = ", rewardbal1b4)
+    assert rewardbal1b4 == 0
+    # when we dont update the reward Balance before
+    eval0 = ftgstaking.evaluateTotalRedeemableReward.call(False, {"from": accounts[0]})
+    print("evaluation without updates of reward = ", eval0)
+    rewardbal0after = ftgstaking.getAccountRewardInfo(accounts[0])[0]
+    rewardbal1after = ftgstaking.getAccountRewardInfo(accounts[1])[0]
+    # no change in rewards since no update performed during evaluateTotalRedeemableReward
+    assert rewardbal0after == 0
+    assert rewardbal1after == 0
+    # when we dont update the reward Balance before
+    eval1 = ftgstaking.evaluateTotalRedeemableReward(True, {"from": accounts[0]})
+    print("evaluation without updates of reward = ", eval1.return_value)
+    print(eval1.events)
+    # update performed during evaluateTotalRedeemableReward (should evaluate gas cost diff)
+    # no change in rewards for accounts[0] since no staking, however accounts[1] alance should not be 0
+    print("accounts[1]'s stakings = ", ftgstaking.getStakings(accounts[1]))
+    """ tx = ftgstaking.updateReward({"from": accounts[1]})
+    print(tx.events) """
+    rewardbal0after2 = ftgstaking.getAccountRewardInfo(accounts[0])[0]
+    print("accounts[0]'s reward balance = ", rewardbal0after2)
+    rewardbal1after2 = ftgstaking.getAccountRewardInfo(accounts[1])[0]
+    print("accounts[1]'s reward balance = ", rewardbal1after2)
+    assert rewardbal0after2 == 0
+    assert rewardbal1after2 != 0
 
