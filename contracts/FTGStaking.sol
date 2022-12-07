@@ -26,7 +26,8 @@ interface IFTGStaking {
 contract FTGStaking is Ownable {
     IERC20 public immutable ftgToken;
 
-    uint256 public constant STAKING_FEE = 2; // %
+    //fees constants
+    uint256 public constant STAKING_FEE = 5; // %
     uint256 public constant UNSTAKING_FEE = 15; // %
 
     //reward rate per trillion FTG
@@ -54,8 +55,6 @@ contract FTGStaking is Ownable {
 
     uint256 public totalFTGStaked; // contract's total amount of FTG staked
     uint256 public totalFees; //protocol's fees (initial staking, before 30 days unstaking)
-
-    /* Reward[] public rewardsList; // list of reward events */
 
     mapping(address => Stakeholder) public stakeholders; // list of stakeholders
     address[] public stakeholdersAddresses; // list of stakeholders addresses
