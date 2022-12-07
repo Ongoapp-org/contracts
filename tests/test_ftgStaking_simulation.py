@@ -186,8 +186,8 @@ def test_ftgStaking_manyStakers_simul_stakingPeriod(accounts, ftgtoken):
     # ******************* IDO Period, more quiet period ****************************
 
     # Set to True for running the "quiet period" after the "staking period"
-    if True:
-        nbOfEventsQuietPeriod = 300
+    if False:
+        nbOfEventsQuietPeriod = 100
         for i in range(nbOfEventsQuietPeriod):
             # timestep
             # gaussian distributed time step around one event every hours

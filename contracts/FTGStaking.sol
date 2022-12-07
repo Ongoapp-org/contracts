@@ -1,7 +1,6 @@
-//!COPIED FRMO last change
-
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
+//pragma abicoder v2;
 
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/IERC20.sol";
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/access/Ownable.sol";
@@ -59,7 +58,7 @@ contract FTGStaking is Ownable {
     /* Reward[] public rewardsList; // list of reward events */
 
     mapping(address => Stakeholder) public stakeholders; // list of stakeholders
-    address[] stakeholdersAddresses; // list of stakeholders addresses
+    address[] public stakeholdersAddresses; // list of stakeholders addresses
 
     //prorocol's events
     event NewStake(
@@ -424,6 +423,11 @@ contract FTGStaking is Ownable {
             stakeholders[_stakeholderAddress].totalReward,
             stakeholders[_stakeholderAddress].lastRewardUpdate
         );
+    }
+
+    //function to get stakeholders addresses
+    function getStakeholdersAddresses() public view returns (address[] memory) {
+        return stakeholdersAddresses;
     }
 
     //evaluate total rewards redeemable by stakeholders (onlyOwner or not for transparency?)

@@ -346,6 +346,7 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
 
     # verify function to evaluate reward balances of stakeholder
     print("test to evaluate total reward accumulated by stakeholders")
+    print("stakeholdersAddresses[]=", ftgstaking.getStakeholdersAddresses())
     rewardbal0b4 = ftgstaking.getAccountRewardInfo(accounts[0])[0]
     print("accounts[0]'s reward balance = ", rewardbal0b4)
     assert rewardbal0b4 == rewardbal0aftermodif
