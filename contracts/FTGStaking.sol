@@ -50,7 +50,7 @@ contract FTGStaking is Ownable {
         uint256 totalStaked; // totalStaked after this staking
         uint256 timestamp; // time of staking
         int256 amount; // amount of staking (>0 staking, <0 unstaking)
-        uint256 lockDuration; // duration of locked time in secs (flex = 0, LOCK30DAYS = 2592000, LOCK60DAYS = 5184000, LOCK90DAYS = 7776000)
+        uint256 lockDuration; // duration of locked time in secs (flex = 0, locked > 30 days)
     }
 
     uint256 public totalFTGStaked; // contract's total amount of FTG staked
