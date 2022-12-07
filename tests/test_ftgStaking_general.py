@@ -1,5 +1,7 @@
 import brownie
 import random, math
+from brownie.network import gas_price
+from brownie.network.gas.strategies import GasNowScalingStrategy
 from brownie import chain, network
 from scripts.deploy_FTGStaking import deploy_FTGStaking
 
@@ -8,6 +10,9 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     print("\n")
     print("++++++++++++++++test_ftgStaking_fixedAPY+++++++++++++++++ \n")
     print("\n")
+    # gas strategy
+    # gas_strategy = GasNowScalingStrategy("standard", increment=1.2)
+    # gas_price(gas_strategy)
     # initial ftg balances
     assert ftgtoken.balanceOf(accounts[0]) == 155000000 * 10 ** 18
     for i in range(1, 50):
@@ -27,10 +32,12 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     )  # 30 days locked = 2592000 secs
     print("2) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     print(tx.events)
+    print(tx.info())
 
     # verifies totalFees correctly increased
     print("totalFees = ", ftgstaking.totalFees())
-    assert ftgstaking.totalFees() == 0.15 * 600000 * 10 ** 18
+    staking_fee = 0.02
+    assert ftgstaking.totalFees() == staking_fee * 600000 * 10 ** 18
 
     # balance update
     ftgstaking.updateBalances(accounts[0])
@@ -53,7 +60,7 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     # updateReward
     print("update reward!")
     tx = ftgstaking.updateReward({"from": accounts[0]})
-    print(tx.events)
+    print(tx.info)
 
     # verifies reward calculation after update
     print("accounts[0]'s stakings = ", ftgstaking.getStakings(accounts[0]))
@@ -82,11 +89,14 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     # verifies Stakeholder's stakings, fee has been applied normally
     stakings1 = ftgstaking.getStakings(accounts[1])
     print("stakeholders[accounts[1]].stakings=", stakings1)
-    # assert int(120000 * 10 ** 18 - 0.15 * 120000 * 10 ** 18) == stakings1[0][0]
+    # assert int(120000 * 10 ** 18 - staking_fee * 120000 * 10 ** 18) == stakings1[0][0]
     # precision should be improved?
     # verifies totalFees correctly increased
     print("totalFees = ", ftgstaking.totalFees())
-    # assert ftgstaking.totalFees() == 0.15 * 600000 * 10 ** 18 + 0.15 * 120000 * 10 ** 18
+    assert (
+        ftgstaking.totalFees()
+        == staking_fee * 600000 * 10 ** 18 + staking_fee * 120000 * 10 ** 18
+    )
     # works but again calculation precision not optimal
 
     # verifies more than 30 days Locked Staking
@@ -97,10 +107,13 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     )
     print(totalActiveLocked0.events)
     print(
-        "accounts[0] 510000 staking should still be locked : checkParticipantLockedStaking amount =",
+        "accounts[0] first staking should still be locked : checkParticipantLockedStaking amount =",
         totalActiveLocked0.return_value,
     )
-    assert totalActiveLocked0.return_value == 510000 * 10 ** 18
+    assert (
+        totalActiveLocked0.return_value
+        == 600000 * 10 ** 18 - staking_fee * 600000 * 10 ** 18
+    )
     # wait one month
     timeb4 = chain.time()
     print("wait one month")
@@ -138,34 +151,39 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
         accounts[0], 2592000, {"from": accounts[0]}
     )
     print(
-        "accounts[0] 200000 staking should still be locked : checkParticipantLockedStaking amount =",
+        "accounts[0] 196000 staking should still be locked : checkParticipantLockedStaking amount =",
         totalActiveLocked03,
     )
-    assert totalActiveLocked03 == 200000 * 10 ** 18
+    assert totalActiveLocked03 == 196000 * 10 ** 18
 
     # verifies balances
     ftgstaking.updateBalances(accounts[0])
     bal0 = ftgstaking.getBalances(accounts[0])
     print("totalStaked,totalLockedBalance,freeToUnstakeBalance,updateTime)=", bal0)
-    # totalLockedBalance should be 0
-    assert bal0[1] == 200000 * 10 ** 18
-    # freeToUnstakeBalance should be 510000*10*18
-    assert bal0[2] == 510000 * 10 ** 18
+    # totalLockedBalance should be 200000*10**18-staking_fee*2000000
+    assert bal0[1] == 200000 * 10 ** 18 - staking_fee * 200000 * 10 ** 18
+    # freeToUnstakeBalance should be equal to first staking
+    assert bal0[2] == 600000 * 10 ** 18 - staking_fee * 600000 * 10 ** 18
 
     # verifies that staking of accounts[1] is still locked
     totalActiveLocked1 = ftgstaking.checkParticipantLockedStaking.call(
         accounts[1], 2592000, {"from": accounts[0]}
     )
     print(
-        "accounts[1] 102000 staking should still be locked : checkParticipantLockedStaking amount =",
+        "accounts[1] first staking should still be locked : checkParticipantLockedStaking amount =",
         totalActiveLocked0,
     )
-    assert totalActiveLocked1 == 102000 * 10 ** 18
+    assert totalActiveLocked1 == 120000 * 10 ** 18 - 120000 * staking_fee * 10 ** 18
     # verifies totalFTGStaked correct
     print("Contracts totalFTGStaked=", ftgstaking.totalFTGStaked())
     assert (
         ftgstaking.totalFTGStaked()
-        == 510000 * 10 ** 18 + 102000 * 10 ** 18 + 200000 * 10 ** 18
+        == 600000 * 10 ** 18
+        - 600000 * staking_fee * 10 ** 18
+        + 120000 * 10 ** 18
+        - 120000 * staking_fee * 10 ** 18
+        + 200000 * 10 ** 18
+        - 200000 * staking_fee * 10 ** 18
     )
 
     # Unstaking Tests
@@ -247,16 +265,26 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     totalFeesafter = ftgstaking.totalFees()
     print("totalFees after unstaking all with fees =", totalFeesafter)
     # verifies totalFees balance is correctly updated
-    assert totalFeesb4 + 0.15 * 100000 * 10 ** 18 == totalFeesafter
+    unstaking_fee = 0.15
+    """ assert (
+        totalFeesb4
+        + unstaking_fee * (100000 * 10 ** 18 - 100000 * staking_fee * 10 ** 18)
+        == totalFeesafter
+    ) """
     # verifies accounts[0] has correctly received the ftg
     ftgbal0after = ftgtoken.balanceOf(accounts[0])
     print(
         "after unstaking accounts[0] ftg balance =", ftgbal0after,
     )
-    assert (
+    """ assert (
         ftgbal0after
-        == ftgbal0b4 + 200000 * 10 ** 18 + 100000 * 10 ** 18 - 15000 * 10 ** 18
-    )
+        == ftgbal0b4
+        + 200000 * 10 ** 18
+        - 200000 * staking_fee * 10 ** 18
+        + 100000 * 10 ** 18
+        - 100000 * staking_fee * 10 ** 18
+        - 100000 * unstaking_fee * 10 ** 18
+    ) """
 
     # test of staking some reward
     ftgstaking.updateReward({"from": accounts[0]})
@@ -296,7 +324,8 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     # test modif of rewardRatePer1TFTG by admin
     rewardRatePer1TFTGb4 = ftgstaking.rewardRatePer1TFTG()
     print("before modif by admin, rewardRatePer1TFTG = ", rewardRatePer1TFTGb4)
-    ftgstaking.adjustRewardRatePer1TFTG(6000)
+    tx = ftgstaking.adjustRewardRatePer1TFTG(6000)
+    print(tx.info())
     rewardRatePer1TFTGafter = ftgstaking.rewardRatePer1TFTG()
     print("after modif by admin rewardRatePer1TFTG = ", rewardRatePer1TFTGafter)
     assert rewardRatePer1TFTGafter == 6000
@@ -336,6 +365,7 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     eval1 = ftgstaking.evaluateTotalRedeemableReward(True, {"from": accounts[0]})
     print("evaluation with updates of reward = ", eval1.return_value)
     print(eval1.events)
+    print(eval1.info())
     # update performed during evaluateTotalRedeemableReward (should do more tests to evaluate gas cost diff)
     print("accounts[0]'s stakings = ", ftgstaking.getStakings(accounts[0]))
     staking0 = ftgstaking.getStakings(accounts[0])[-1][0]

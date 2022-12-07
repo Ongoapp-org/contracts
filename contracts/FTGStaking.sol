@@ -9,11 +9,11 @@ import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 
 /**
  * @title FTGStaking
- * @notice Rewards for Stakeholders come from fees (initial staking fee, before 30 days unstaking fee)
+ * @notice Rewards for Stakeholders come from fees (staking fee, before 30 days unstaking fee)
  * or rewards deposited by admin. Rewards are gained depending on the amount staked by stakeholder.
  * Reward is not compounded, it is accumulated in a separate balance, but can be moved to staking using stakeReward().
- * Stakeholders incur a fee of 15% for unstaking before 30 days. Staking can be locked for 30, 60 or 90 days
- * and stakeholder receive special privileges during allocation for this. Rewards and Balances are updated
+ * Stakeholders incur a fee of 15% for unstaking before 30 days. Staking can be locked for more than 30 days
+ * and stakeholder receive special privileges during IDO for this. Rewards and Balances are updated
  * only when needed and last update times recorded.
  */
 
@@ -27,8 +27,8 @@ interface IFTGStaking {
 contract FTGStaking is Ownable {
     IERC20 public immutable ftgToken;
 
-    uint256 constant INITIAL_STAKING_FEE = 15; // %
-    uint256 constant UNSTAKING_FEE = 15; // %
+    uint256 public constant STAKING_FEE = 2; // %
+    uint256 public constant UNSTAKING_FEE = 15; // %
 
     //reward rate per trillion FTG
     uint256 public rewardRatePer1TFTG =
@@ -118,7 +118,7 @@ contract FTGStaking is Ownable {
         public
         onlyOwner
     {
-        //need to updateRewards before modifying rewardRate (gas cost)
+        //need to update Rewards balances before modifying rewardRate
         for (uint256 i = 0; i < stakeholdersAddresses.length; i++) {
             _updateStakeholderReward(stakeholdersAddresses[i]);
         }
@@ -136,10 +136,10 @@ contract FTGStaking is Ownable {
 
     // stake ftg token
     function stake(uint256 _amount, uint256 _lockDuration) public {
-        require(
+        /* require(
             _lockDuration <= 365 days,
             "can not stake longer than 365 days"
-        );
+        ); */
         require(
             _lockDuration == 0 || _lockDuration >= 30 days,
             "LockDuration is 0 or at least one month"
@@ -160,14 +160,14 @@ contract FTGStaking is Ownable {
         if (stakeholders[msg.sender].stakings.length != 0) {
             _updateStakeholderReward(msg.sender);
         }
-        // first staking ?
-        uint256 fee;
+        // first staking?
         if (stakeholders[msg.sender].stakings.length == 0) {
-            // calculate initial fee
-            fee = PRBMath.mulDiv(INITIAL_STAKING_FEE, _amount, 100);
-            totalFees += fee;
             stakeholdersAddresses.push(msg.sender);
         }
+        // calculate staking fee
+        uint256 fee;
+        fee = PRBMath.mulDiv(STAKING_FEE, _amount, 100);
+        totalFees += fee;
         uint256 amountStaked = _amount - fee;
         // Add stake's amount to stakeholder's totalStaked
         stakeholders[msg.sender].totalStaked += amountStaked;
@@ -263,27 +263,6 @@ contract FTGStaking is Ownable {
         stakeholders[_stakeholderAddress].lastBalancesUpdate = block.timestamp;
     }
 
-    function unstakeFreeAll() public {
-        require(
-            stakeholders[msg.sender].stakings.length != 0,
-            "Not a stakeholder!"
-        );
-        _updateStakeholderBalances(msg.sender);
-        uint256 amount = stakeholders[msg.sender].freeToUnstakeBalance;
-        unstake(amount);
-    }
-
-    function unstakeAll() public {
-        require(
-            stakeholders[msg.sender].stakings.length != 0,
-            "Not a stakeholder!"
-        );
-        _updateStakeholderBalances(msg.sender);
-        uint256 amount = stakeholders[msg.sender].totalStaked -
-            stakeholders[msg.sender].totalLockedBalance;
-        unstake(amount);
-    }
-
     // unstake ftg
     function unstake(uint256 _amount) public {
         // verify that stakeholder has staking
@@ -342,6 +321,29 @@ contract FTGStaking is Ownable {
         }
         // update LastBalancesUpdate since balances have just been updated
         stakeholders[msg.sender].lastBalancesUpdate = block.timestamp;
+    }
+
+    //function for stakeholder to unstake his/her staking which is free to unstake and not locked (no incuring fee)
+    function unstakeFreeAll() public {
+        require(
+            stakeholders[msg.sender].stakings.length != 0,
+            "Not a stakeholder!"
+        );
+        _updateStakeholderBalances(msg.sender);
+        uint256 amount = stakeholders[msg.sender].freeToUnstakeBalance;
+        unstake(amount);
+    }
+
+    //function for stakeholder to unstake all his/her staking which is not locked (incuring fee)
+    function unstakeAll() public {
+        require(
+            stakeholders[msg.sender].stakings.length != 0,
+            "Not a stakeholder!"
+        );
+        _updateStakeholderBalances(msg.sender);
+        uint256 amount = stakeholders[msg.sender].totalStaked -
+            stakeholders[msg.sender].totalLockedBalance;
+        unstake(amount);
     }
 
     // function for the stakeholder to withdraw his/her accumulated rewards
