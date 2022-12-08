@@ -6,6 +6,13 @@ from scripts.deploy_FTGStaking import deploy_FTGStaking
 
 
 @pytest.fixture(scope="module", autouse=True)
+def ftgstaking(accounts, ftgtoken):
+    # ftgstaking deployment
+    ftgstaking = deploy_FTGStaking(ftgtoken.address, accounts[0])
+    return ftgstaking
+
+
+@pytest.fixture(scope="module", autouse=True)
 def nrt(accounts, NRT):
     # accounts[0] deploys NRT contract
     nrt = NRT.deploy("NRT", 18, {"from": accounts[0]})
@@ -13,11 +20,7 @@ def nrt(accounts, NRT):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def ftgsale(accounts, nrt, ftgtoken, investtoken):
-
-    # ftgstaking deployment
-    ftgstaking = deploy_FTGStaking(ftgtoken.address, accounts[0])
-
+def ftgsale(accounts, nrt, ftgstaking, ftgtoken, investtoken):
     # FTGSale deployment
     _totalTokensToSell = 10_000_000
     _totalToRaise = 100_000 * 10 ** 18
@@ -111,6 +114,7 @@ def test_registration_phase(
     setup_tiersmin,
     setup_factors,
     ftgsale,
+    ftgstaking,
     nrt,
     accounts,
     ftgtoken,
@@ -121,49 +125,46 @@ def test_registration_phase(
     ftgsale.launchNextPhase({"from": accounts[0]})
     # verifies that we are in registration phase of the sale
     assert ftgsale.salePhase() == 1
-    # stakeholder prepare to participate
-    staking1 = 1_100_000
+    # stakeholders prepare to participate
+    staking1 = 1_100_000 * 10 ** 18
     ftgtoken.approve(ftgstaking, staking1, {"from": accounts[1]})
     ftgstaking.stake(staking1, 2592000, {"from": accounts[1]})
-
-    """ 
-
-    
-
-
-    ftgsale.launchNextPhase({"from": accounts[0]})
-
-    # register phase
-    assert ftgsale.salePhase() == 1
-
-    days30 = 2592000
-    stakeAmount = 1_100_000
-    ftgtoken.approve(ftgstaking, stakeAmount, {"from": accounts[1]})
-    ftgstaking.stake(stakeAmount, days30, {"from": accounts[1]})
-
-    ftgsale.registerForSale({"from": accounts[1]})
-
+    staking2 = 110_000 * 10 ** 18
+    ftgtoken.approve(ftgstaking, staking2, {"from": accounts[2]})
+    ftgstaking.stake(staking2, 3000000, {"from": accounts[2]})
+    staking3 = 60_000 * 10 ** 18
+    ftgtoken.approve(ftgstaking, staking3, {"from": accounts[3]})
+    ftgstaking.stake(staking3, 6000000, {"from": accounts[3]})
+    staking4 = 260_000 * 10 ** 18
+    ftgtoken.approve(ftgstaking, staking4, {"from": accounts[4]})
+    ftgstaking.stake(staking4, 2592000, {"from": accounts[4]})
+    # registration
+    # ftgsale.registerForSale({"from": accounts[1]})
+    # ftgsale.registerForSale({"from": accounts[2]})
+    """  # verification of their registration
     assert ftgsale.participants(accounts[1]) == (0, 0, True, DIAMOND)
-
-    days30 = 2592000
-    stakeAmount = 110_000
-    ftgtoken.approve(ftgstaking, stakeAmount, {"from": accounts[2]})
-    ftgstaking.stake(stakeAmount, days30, {"from": accounts[2]})
-
-    ftgsale.registerForSale({"from": accounts[2]})
-
     assert ftgsale.participants(accounts[2]) == (0, 0, True, RUBY)
-
+    # verification that the nb of participants per Tier was correctly incremented
     assert ftgsale.tiersNbOFParticipants(RUBY) == 1
     assert ftgsale.tiersNbOFParticipants(DIAMOND) == 1
-
+    # verification that their Tier Eligibility are correct
     assert ftgsale.checkTierEligibility(accounts[1]) == DIAMOND
     assert ftgsale.checkTierEligibility(accounts[2]) == RUBY
-
-    timeTravel = day1 + 60 * 60
+    # verifies that a participant cannot register a second time
+    with brownie.reverts("already registered"):
+        ftgsale.registerForSale({"from": accounts[2]})
+    # verifies that a participant of NONE Tier cannot register
+    with brownie.reverts("Not enough locked Staking"):
+        ftgsale.registerForSale({"from": accounts[3]})
+    # time travel 86500 secs = 1 day and 100 secs
+    timeTravel = 86500
     chain.sleep(timeTravel)
+    # registration should be over
+    # any registration attempts should be reverted
+    with brownie.reverts("Registration Phase ended"):
+        ftgsale.registerForSale({"from": accounts[4]}) """
 
-    ftgsale.launchNextPhase({"from": accounts[0]})
+    """ 
 
     # guaranteed phase
     assert ftgsale.salePhase() == 2

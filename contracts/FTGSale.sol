@@ -91,6 +91,10 @@ contract FTGSale is Ownable {
     // is tier active to participate ??? Probably not needed
     mapping(Tiers => bool) public tiersActiveSale;
 
+    //events
+    event newParticipant(address _participantAddress, Tiers _participantTier);
+    event newPhase(Phases _newPhase);
+
     //Owner deploy contract and launches sale at the same time
     constructor(
         address _nrt,
@@ -118,19 +122,23 @@ contract FTGSale is Ownable {
             //requirement setTokenAllocation is valid ?
             registrationPhaseStart = block.timestamp;
             salePhase = Phases.Registration;
+            emit newPhase(Phases.Registration);
         } else if (salePhase == Phases.Registration) {
             //once the registration time is finished
             //calculate the max number of tokens for sale by participants
             _guaranteedSalePreliminaryCalculation();
             guaranteedPoolPhaseStart = block.timestamp;
             salePhase = Phases.GuaranteedPool;
+            emit newPhase(Phases.GuaranteedPool);
         } else if (salePhase == Phases.GuaranteedPool) {
             _publicSalePreliminaryCalculation();
             publicPoolPhaseStart = block.timestamp;
             salePhase = Phases.PublicPool;
+            emit newPhase(Phases.PublicPool);
         } else if (salePhase == Phases.PublicPool) {
             //owner launch this phase to open tokens claim by participants
             salePhase = Phases.SaleCompleted;
+            emit newPhase(Phases.SaleCompleted);
         } else {
             revert();
         }
@@ -192,14 +200,19 @@ contract FTGSale is Ownable {
                 registrationPhaseStart + registrationPhaseDuration,
             "Registration Phase ended"
         );
+        require(
+            participants[msg.sender].whitelisted == false,
+            "already registered"
+        );
         // requirement that KYC has been done in the frontend
         // requirement that caller is eligible
         Tiers tier = checkTierEligibility(msg.sender);
         require(tier != Tiers.NONE, "Not enough locked Staking");
-        // add participant and set whitelist to true
-        participants[msg.sender] = Participant(0, 0, true, tier);
         // add participant to tiersNbOFParticipants
         tiersNbOFParticipants[tier]++;
+        // add participant and set whitelisted to true
+        participants[msg.sender] = Participant(0, 0, true, tier);
+        emit newParticipant(msg.sender, tier);
     }
 
     function checkTierEligibility(address account) public view returns (Tiers) {
