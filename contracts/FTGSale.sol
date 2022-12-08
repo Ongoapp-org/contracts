@@ -10,10 +10,6 @@ import "./NRT.sol";
  * @notice This contract is deployed for every sale and specific to a given sale
  */
 
-//TODO double check decimals
-//TODO price precision factor
-// TODO double check decimals
-//TODO handle 2 pools
 //Guaranteed Pool
 //Public Pool
 contract FTGSale is Ownable {
