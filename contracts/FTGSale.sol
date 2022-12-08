@@ -10,10 +10,6 @@ import "./NRT.sol";
  * @notice This contract is deployed for every sale and specific to a given sale
  */
 
-//TODO double check decimals
-//TODO price precision factor
-// TODO double check decimals
-//TODO handle 2 pools
 //Guaranteed Pool
 //Public Pool
 contract FTGSale is Ownable {
@@ -35,14 +31,14 @@ contract FTGSale is Ownable {
         SaleCompleted
     }
 
+    Phases public salePhase;
+
     struct Participant {
         uint256 tokensBalanceGP;
         uint256 tokensBalancePP;
         bool whitelisted;
         Tiers participantTier;
     }
-
-    Phases public salePhase;
 
     // Phases durations
     uint256 registrationPhaseDuration;
@@ -54,8 +50,8 @@ contract FTGSale is Ownable {
     address immutable investToken;
     // staking contract
     address immutable stakingContractAddress;
-    // price of the token quoted in investToken (wei)
-    uint256 immutable tokenPriceWei;
+    // price of the token quoted in investToken
+    uint256 immutable tokenPrice;
     // amount of tokens to sell
     uint256 immutable totalTokensToSell;
     // amount to raise in total
@@ -84,14 +80,14 @@ contract FTGSale is Ownable {
 
     // list of participants to the sale
     mapping(address => Participant) public participants;
-    //TODO
-    mapping(Tiers => uint32) public tiersTokensAllocationFactor;
+    // factors determining Tiers relative tokens allocation in gauaranteed sale
+    mapping(Tiers => uint256) public tiersTokensAllocationFactor;
     // number of participants per tier
-    mapping(Tiers => uint32) public tiersNbOFParticipants;
+    mapping(Tiers => uint256) public tiersNbOFParticipants;
     // ticket allocated for each tier, initialized at maximum and dynamically updated
-    mapping(Tiers => uint32) public tiersMaxTokensForSalePerParticipant;
+    mapping(Tiers => uint256) public tiersMaxTokensForSalePerParticipant;
     // ftg staking threshold  for tiers
-    mapping(Tiers => uint32) public tiersMinFTGStaking;
+    mapping(Tiers => uint256) public tiersMinFTGStaking;
     // is tier active to participate ??? Probably not needed
     mapping(Tiers => bool) public tiersActiveSale;
 
@@ -100,15 +96,14 @@ contract FTGSale is Ownable {
         address _nrt,
         address _investToken,
         address _stakingContractAddress,
-        uint256 _tokenPriceWei, // fix price for entire sale ?
+        uint256 _tokenPrice, // fix price for entire sale ?
         uint256 _totalTokensToSell,
         uint256 _totalToRaise
     ) {
         investToken = _investToken;
-        //saleToken = _saleToken;
         nrt = NRT(_nrt);
         stakingContractAddress = _stakingContractAddress;
-        tokenPriceWei = _tokenPriceWei;
+        tokenPrice = _tokenPrice;
         totalTokensToSell = _totalTokensToSell;
         totalToRaise = _totalToRaise;
         tokensSold = 0;
@@ -149,6 +144,7 @@ contract FTGSale is Ownable {
         uint256 _guaranteedPoolPhaseDuration,
         uint256 _publicPoolPhaseDuration
     ) public onlyOwner {
+        require(salePhase == Phases.Setup, "not setup phase");
         registrationPhaseDuration = _registrationPhaseDuration;
         guaranteedPoolPhaseDuration = _guaranteedPoolPhaseDuration;
         publicPoolPhaseDuration = _publicPoolPhaseDuration;
@@ -157,11 +153,12 @@ contract FTGSale is Ownable {
     // function allows owner to set tiers min ftg staking threshold
     // should it really be setup here? does it vary between sales?
     function setTiersMinFTGStakings(
-        uint32 _rubyMin,
-        uint32 _emeraldMin,
-        uint32 _sapphireMin,
-        uint32 _diamondMin
+        uint256 _rubyMin,
+        uint256 _emeraldMin,
+        uint256 _sapphireMin,
+        uint256 _diamondMin
     ) public onlyOwner {
+        require(salePhase == Phases.Setup, "not setup phase");
         tiersMinFTGStaking[Tiers.RUBY] = _rubyMin;
         tiersMinFTGStaking[Tiers.EMERALD] = _emeraldMin;
         tiersMinFTGStaking[Tiers.SAPPHIRE] = _sapphireMin;
@@ -170,10 +167,11 @@ contract FTGSale is Ownable {
 
     // set tiers tokens allocation
     function setTiersTokensAllocationFactors(
-        uint32 _sapphireAllocationFactor,
-        uint32 _emeraldAllocationFactor,
-        uint32 _diamondAllocationFactor
+        uint256 _sapphireAllocationFactor,
+        uint256 _emeraldAllocationFactor,
+        uint256 _diamondAllocationFactor
     ) public onlyOwner {
+        require(salePhase == Phases.Setup, "not setup phase");
         require(
             _sapphireAllocationFactor < _emeraldAllocationFactor &&
                 _emeraldAllocationFactor < _diamondAllocationFactor,
@@ -320,7 +318,7 @@ contract FTGSale is Ownable {
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
             //TODO double check precision
-            uint256 investedAmount = (buyTokenAmount * tokenPriceWei) / 10**18;
+            uint256 investedAmount = (buyTokenAmount * tokenPrice) / 10**18;
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
@@ -350,7 +348,7 @@ contract FTGSale is Ownable {
                 participants[msg.sender].tokensBalancePP + buyTokenAmount < n2,
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
-            uint256 investedAmount = (buyTokenAmount * tokenPriceWei) / 10**18;
+            uint256 investedAmount = (buyTokenAmount * tokenPrice) / 10**18;
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,

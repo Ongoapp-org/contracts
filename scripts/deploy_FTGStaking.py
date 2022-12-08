@@ -5,13 +5,9 @@ from brownie import FTGStaking, MockFTGToken
 
 
 def deploy_FTGStaking(tokenAddr, mainaccount):
-    # account account "0x8E642F42f98A6bcD5E56afA845Eb7E21484DaE04" used for avax-test:
-    # if network.show_active() != "development":
-    #     pk = "50cc9e6c3d47a3b4c3cb3eb611ad7d8c6eb5f1b1b1e54f61ef4d4582bfa77742"  # account "0x8E642F42f98A6bcD5E56afA845Eb7E21484DaE04"
-    #     accounts.add(pk)
 
-    print("account[0] in deploy_FTGStaking = ", mainaccount)
-    print("balance ETH accounts[0] in deploy_FTGStaking =", mainaccount.balance())
+    print("mainaccount in deploy_FTGStaking = ", mainaccount)
+    print("balance ETH of mainaccount in deploy_FTGStaking =", mainaccount.balance())
     print("chain in deploy_FTGStaking=", network.chain)
 
     ftgstaking = FTGStaking.deploy(tokenAddr, {"from": mainaccount})
