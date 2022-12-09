@@ -41,6 +41,7 @@ def ftgsale(accounts, nrt, ftgstaking, ftgtoken, investtoken):
 
 
 def test_setup_phase(ftgsale, nrt, accounts, ftgtoken, investtoken):
+    print("********************Setup Phase Tests********************")
     # verifies that we are in setup phase of the sale
     assert ftgsale.salePhase() == 0
     # Tiers enum codes
@@ -120,7 +121,14 @@ def test_registration_phase(
     ftgtoken,
     investtoken,
 ):
+    print("********************Registration Phase Tests********************")
     # setup fixtures applied
+    # Tiers enum codes
+    NONE = 0
+    RUBY = 1
+    EMERALD = 2
+    SAPPHIRE = 3
+    DIAMOND = 4
     # we launch next phase
     ftgsale.launchNextPhase({"from": accounts[0]})
     # verifies that we are in registration phase of the sale
@@ -139,9 +147,10 @@ def test_registration_phase(
     ftgtoken.approve(ftgstaking, staking4, {"from": accounts[4]})
     ftgstaking.stake(staking4, 2592000, {"from": accounts[4]})
     # registration
-    # ftgsale.registerForSale({"from": accounts[1]})
-    # ftgsale.registerForSale({"from": accounts[2]})
-    """  # verification of their registration
+    tx = ftgsale.registerForSale({"from": accounts[1]})
+    print(tx.events)
+    ftgsale.registerForSale({"from": accounts[2]})
+    # verification of their registration
     assert ftgsale.participants(accounts[1]) == (0, 0, True, DIAMOND)
     assert ftgsale.participants(accounts[2]) == (0, 0, True, RUBY)
     # verification that the nb of participants per Tier was correctly incremented
@@ -162,7 +171,7 @@ def test_registration_phase(
     # registration should be over
     # any registration attempts should be reverted
     with brownie.reverts("Registration Phase ended"):
-        ftgsale.registerForSale({"from": accounts[4]}) """
+        ftgsale.registerForSale({"from": accounts[4]})
 
     """ 
 

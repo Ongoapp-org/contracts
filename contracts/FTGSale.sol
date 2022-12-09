@@ -95,6 +95,11 @@ contract FTGSale is Ownable {
     event newParticipant(address _participantAddress, Tiers _participantTier);
     event newPhase(Phases _newPhase);
 
+    //event For debugging
+    event Log(string message, uint256 data);
+    event Logint(string message, int256 data);
+    event Logbool(string message, bool data);
+
     //Owner deploy contract and launches sale at the same time
     constructor(
         address _nrt,

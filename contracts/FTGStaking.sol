@@ -457,7 +457,7 @@ contract FTGStaking is Ownable {
         Staking[] memory participantStakings = stakeholders[_participantAddress]
             .stakings;
         for (uint256 i = 0; i < participantStakings.length; i++) {
-            emit Logint("lockedStakingtotal=", lockedStakingTotal);
+            /* emit Logint("lockedStakingtotal=", lockedStakingTotal);
             emit Log("block.timestamp=", block.timestamp);
             emit Log(
                 "participantStakings[i].timestamp=",
@@ -485,7 +485,7 @@ contract FTGStaking is Ownable {
                 "block.timestamp <(participantStakings[i].timestamp +participantStakings[i].lockDuration):",
                 data1
             );
-            emit Logbool("data0&&data1", data2);
+            emit Logbool("data0&&data1", data2); */
             /* if (
                 // check if staking is still active and was locked for more than lockDurationChecked
                 (participantStakings[i].lockDuration >= lockDurationChecked) &&
