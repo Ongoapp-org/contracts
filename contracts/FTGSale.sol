@@ -17,8 +17,8 @@ contract FTGSale is Ownable {
     enum Tiers {
         NONE,
         RUBY,
-        EMERALD,
         SAPPHIRE,
+        EMERALD,
         DIAMOND
     }
 
@@ -167,14 +167,14 @@ contract FTGSale is Ownable {
     // should it really be setup here? does it vary between sales?
     function setTiersMinFTGStakings(
         uint256 _rubyMin,
-        uint256 _emeraldMin,
         uint256 _sapphireMin,
+        uint256 _emeraldMin,
         uint256 _diamondMin
     ) public onlyOwner {
         require(salePhase == Phases.Setup, "not setup phase");
         tiersMinFTGStaking[Tiers.RUBY] = _rubyMin;
-        tiersMinFTGStaking[Tiers.EMERALD] = _emeraldMin;
         tiersMinFTGStaking[Tiers.SAPPHIRE] = _sapphireMin;
+        tiersMinFTGStaking[Tiers.EMERALD] = _emeraldMin;
         tiersMinFTGStaking[Tiers.DIAMOND] = _diamondMin;
     }
 
@@ -209,7 +209,7 @@ contract FTGSale is Ownable {
             participants[msg.sender].whitelisted == false,
             "already registered"
         );
-        // requirement that KYC has been done in the frontend
+        //TODO  requirement that KYC has been done in the frontend
         // requirement that caller is eligible
         Tiers tier = checkTierEligibility(msg.sender);
         require(tier != Tiers.NONE, "Not enough locked Staking");
@@ -252,7 +252,6 @@ contract FTGSale is Ownable {
             //emerald membership
             return Tiers.EMERALD;
         } else {
-            //TODO double check
             //diamond membership
             return Tiers.DIAMOND;
         }

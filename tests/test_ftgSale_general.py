@@ -47,25 +47,23 @@ def test_setup_phase(ftgsale, nrt, accounts, ftgtoken, investtoken):
     # Tiers enum codes
     NONE = 0
     RUBY = 1
-    EMERALD = 2
-    SAPPHIRE = 3
+    SAPPHIRE = 2
+    EMERALD = 3
     DIAMOND = 4
-    # TODO tests of right phase?
-    # TODO tests of revert if not owner
 
     # definition of Sale's Phases durations
     phaseDuration = 86400  # one day
     ftgsale.setPhasesDurations(phaseDuration, phaseDuration, phaseDuration)
     # definition of Tiers minimum ftg locked staking
     RUBY_MIN = 100_000 * 10 ** 18
-    EMERALD_MIN = 250_000 * 10 ** 18
-    SAPPHIRE_MIN = 500_000 * 10 ** 18
+    SAPPHIRE_MIN = 250_000 * 10 ** 18
+    EMERALD_MIN = 500_000 * 10 ** 18
     DIAMOND_MIN = 1_000_000 * 10 ** 18
-    ftgsale.setTiersMinFTGStakings(RUBY_MIN, EMERALD_MIN, SAPPHIRE_MIN, DIAMOND_MIN)
+    ftgsale.setTiersMinFTGStakings(RUBY_MIN, SAPPHIRE_MIN, EMERALD_MIN, DIAMOND_MIN)
     assert ftgsale.tiersMinFTGStaking(NONE) == 0
     assert ftgsale.tiersMinFTGStaking(RUBY) == 100_000 * 10 ** 18
-    assert ftgsale.tiersMinFTGStaking(EMERALD) == 250_000 * 10 ** 18
-    assert ftgsale.tiersMinFTGStaking(SAPPHIRE) == 500_000 * 10 ** 18
+    assert ftgsale.tiersMinFTGStaking(SAPPHIRE) == 250_000 * 10 ** 18
+    assert ftgsale.tiersMinFTGStaking(EMERALD) == 500_000 * 10 ** 18
     assert ftgsale.tiersMinFTGStaking(DIAMOND) == 1_000_000 * 10 ** 18
     # definition of tiers allocation factors
     ftgsale.setTiersTokensAllocationFactors(2, 4, 8, {"from": accounts[0]})
@@ -96,11 +94,11 @@ def setup_durations(accounts, ftgsale):
 def setup_tiersmin(accounts, ftgsale):
     # definition of Tiers minimum ftg locked staking
     RUBY_MIN = 100_000 * 10 ** 18
-    EMERALD_MIN = 250_000 * 10 ** 18
-    SAPPHIRE_MIN = 500_000 * 10 ** 18
+    SAPPHIRE_MIN = 250_000 * 10 ** 18
+    EMERALD_MIN = 500_000 * 10 ** 18
     DIAMOND_MIN = 1_000_000 * 10 ** 18
     return ftgsale.setTiersMinFTGStakings(
-        RUBY_MIN, EMERALD_MIN, SAPPHIRE_MIN, DIAMOND_MIN
+        RUBY_MIN, SAPPHIRE_MIN, EMERALD_MIN, DIAMOND_MIN
     )
 
 
@@ -126,14 +124,23 @@ def test_registration_phase(
     # Tiers enum codes
     NONE = 0
     RUBY = 1
-    EMERALD = 2
-    SAPPHIRE = 3
+    SAPPHIRE = 2
+    EMERALD = 3
     DIAMOND = 4
     # we launch next phase
     ftgsale.launchNextPhase({"from": accounts[0]})
     # verifies that we are in registration phase of the sale
     assert ftgsale.salePhase() == 1
     # stakeholders prepare to participate
+    # BEWARE OF 5% FEES APPLYING ON STAKINGS!
+    # staking must  be > tier_min_target/0.95
+    # for Ruby, min staking > 105_264 ftg
+    # for Sapphire, min staking > 263_158 ftg
+    # for Emerald, min staking > 526_316 ftg
+    # for Diamond, min staking > 1_052_631 ftg
+    staking0 = 530_000 * 10 ** 18
+    ftgtoken.approve(ftgstaking, staking0, {"from": accounts[0]})
+    ftgstaking.stake(staking0, 5184000, {"from": accounts[0]})
     staking1 = 1_100_000 * 10 ** 18
     ftgtoken.approve(ftgstaking, staking1, {"from": accounts[1]})
     ftgstaking.stake(staking1, 2592000, {"from": accounts[1]})
@@ -147,18 +154,21 @@ def test_registration_phase(
     ftgtoken.approve(ftgstaking, staking4, {"from": accounts[4]})
     ftgstaking.stake(staking4, 2592000, {"from": accounts[4]})
     # registration
+    ftgsale.registerForSale({"from": accounts[0]})
     tx = ftgsale.registerForSale({"from": accounts[1]})
     print(tx.events)
     ftgsale.registerForSale({"from": accounts[2]})
     # verification of their registration
+    print(
+        "checkParticipantLockedStaking(accounts[0], 2592000)=",
+        ftgstaking.checkParticipantLockedStaking(accounts[0], 2592000).return_value,
+    )
+    assert ftgsale.participants(accounts[0]) == (0, 0, True, EMERALD)
     assert ftgsale.participants(accounts[1]) == (0, 0, True, DIAMOND)
     assert ftgsale.participants(accounts[2]) == (0, 0, True, RUBY)
     # verification that the nb of participants per Tier was correctly incremented
     assert ftgsale.tiersNbOFParticipants(RUBY) == 1
     assert ftgsale.tiersNbOFParticipants(DIAMOND) == 1
-    # verification that their Tier Eligibility are correct
-    assert ftgsale.checkTierEligibility(accounts[1]) == DIAMOND
-    assert ftgsale.checkTierEligibility(accounts[2]) == RUBY
     # verifies that a participant cannot register a second time
     with brownie.reverts("already registered"):
         ftgsale.registerForSale({"from": accounts[2]})
