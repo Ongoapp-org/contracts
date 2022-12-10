@@ -187,6 +187,9 @@ def test_registration_phase(
         ftgsale.registerForSale({"from": accounts[4]})
 
 
+# registration_phase_fixtures
+
+
 def participants_stakings(ftgtoken, ftgstaking):
     staking0 = 530_000 * 10 ** 18
     ftgtoken.approve(ftgstaking, staking0, {"from": accounts[0]})
@@ -211,11 +214,6 @@ def participants_preparation(ftgtoken, ftgstaking):
     return participants_stakings(ftgtoken, ftgstaking)
 
 
-""" @pytest.fixture
-def launch_registration(ftgsale):
-    return ftgsale.launchNextPhase({"from": accounts[0]}) """
-
-
 def registration(ftgsale):
     # admin launch registration phase
     ftgsale.launchNextPhase({"from": accounts[0]})
@@ -230,7 +228,8 @@ def registration_phase(ftgsale):
     return registration(ftgsale)
 
 
-def test_guaranteed_phase(
+# guaranteed pool phase tests
+def test_guaranteed_pool_phase(
     setup_durations,
     setup_tiersmin,
     setup_factors,
@@ -335,4 +334,157 @@ def test_guaranteed_phase(
     investtoken.approve(ftgsale, investTokenAmount4, {"from": accounts[4]})
     with brownie.reverts("Guaranteed Pool Phase ended"):
         ftgsale.buytoken(tokenAmount4, {"from": accounts[4]})
+
+
+# public pool phase fixtures
+def guaranteed_pool(ftgsale, investtoken):
+    # time travel to end registration phase
+    chain.sleep(ftgsale.registrationPhaseDuration() + 60)
+    # admin launch guaranteed phase
+    ftgsale.launchNextPhase({"from": accounts[0]})
+    # participants buy tokens
+    print("tokenPrice =", ftgsale.tokenPrice())
+    tokenAmount0 = 2_000_000  # (in token)
+    investTokenAmount0 = tokenAmount0 * ftgsale.tokenPrice()  # in investToken
+    investtoken.approve(ftgsale, investTokenAmount0, {"from": accounts[0]})
+    ftgsale.buytoken(tokenAmount0, {"from": accounts[0]})
+    tokenAmount1 = 4_000_000  # (in token)
+    investTokenAmount1 = tokenAmount1 * ftgsale.tokenPrice()  # in investToken
+    investtoken.approve(ftgsale, investTokenAmount1, {"from": accounts[1]})
+    ftgsale.buytoken(tokenAmount1, {"from": accounts[1]})
+    tokenAmount2 = 400_000  # (in token)
+    investTokenAmount2 = tokenAmount2 * ftgsale.tokenPrice()  # in investToken
+    investtoken.approve(ftgsale, investTokenAmount2, {"from": accounts[2]})
+    ftgsale.buytoken(tokenAmount2, {"from": accounts[2]})
+    tokenAmount3 = 625_000  # (in token)
+    investTokenAmount3 = tokenAmount3 * ftgsale.tokenPrice()  # in investToken
+    investtoken.approve(ftgsale, investTokenAmount3, {"from": accounts[3]})
+    ftgsale.buytoken(tokenAmount3, {"from": accounts[3]})
+    tokenAmount4 = 1_000_000  # (in token)
+    investTokenAmount4 = tokenAmount4 * ftgsale.tokenPrice()  # in investToken
+    investtoken.approve(ftgsale, investTokenAmount4, {"from": accounts[4]})
+    ftgsale.buytoken(tokenAmount4, {"from": accounts[4]})
+    # time travel to end guaranteed pool phase
+    chain.sleep(ftgsale.guaranteedPoolPhaseDuration() + 60)
+    # admin launch guaranteed phase
+    ftgsale.launchNextPhase({"from": accounts[0]})
+
+
+@pytest.fixture
+def guaranteed_pool_phase(ftgsale, investtoken):
+    # guaranteed pool takes place
+    return guaranteed_pool(ftgsale, investtoken)
+
+
+# public pool tests
+def test_public_pool_phase(
+    setup_durations,
+    setup_tiersmin,
+    setup_factors,
+    participants_preparation,
+    registration_phase,
+    guaranteed_pool_phase,
+    ftgsale,
+    ftgstaking,
+    ntt,
+    accounts,
+    ftgtoken,
+    investtoken,
+):
+    print("********************Guaranteed Phase Tests********************")
+    # Tiers enum codes
+    NONE = 0
+    RUBY = 1
+    SAPPHIRE = 2
+    EMERALD = 3
+    DIAMOND = 4
+    # setup fixtures applied...
+    # registration fixtures applied...
+    # guaranteed pool fixtures applied:
+    # verif that we are in public pool phase of the sale
+    assert ftgsale.salePhase() == 3
+    # verifies remaining token
+    print("NbOfParticipants = ", ftgsale.NbOfParticipants())
+    assert ftgsale.NbOfParticipants() == 5
+    print("totalTokensToSell =", ftgsale.totalTokensToSell())
+    assert ftgsale.tokensSold() == 8_025_000
+    print("Public Pool tokens for sale at start =", ftgsale.publicPoolTokensAtPPStart())
+    assert (
+        ftgsale.publicPoolTokensAtPPStart()
+        == ftgsale.totalTokensToSell() - ftgsale.tokensSold()
+    )
+    print("maxNbTokensPerPartAtPPStart =", ftgsale.maxNbTokensPerPartAtPPStart())
+    assert (
+        ftgsale.maxNbTokensPerPartAtPPStart()
+        == ftgsale.publicPoolTokensAtPPStart() / ftgsale.NbOfParticipants()
+    )
+    # verifies max number of purchaseable token evolved as expected with time
+    # at public phase start
+    maxNbTokensPerPartAtPP = ftgsale.updateMaxNbTokensPerPartAtPP.call(
+        {"from": accounts[0]}
+    )
+    print("maxNbTokensPerPartAtPP at start = ", maxNbTokensPerPartAtPP)
+    assert maxNbTokensPerPartAtPP == ftgsale.maxNbTokensPerPartAtPPStart()
+    print("time at start = ", chain.time())
+    # time travel to about one third of public pool phase duration
+    chain.sleep(int(ftgsale.publicPoolPhaseDuration() * 0.33))
+    print("time at one third of public pool phase = ", chain.time())
+    print(
+        "(chain.time() - ftgsale.publicPoolPhaseStart())=",
+        (chain.time() - ftgsale.publicPoolPhaseStart()),
+    )
+    # verification of maxNbTokensPerPartAtPP calculation
+    publicPoolTokens = ftgsale.totalTokensToSell() - ftgsale.tokensSold()
+    pythonMaxNbTokensPerPartAtPP = ftgsale.maxNbTokensPerPartAtPPStart() + int(
+        (chain.time() - ftgsale.publicPoolPhaseStart())
+        * 4
+        * (publicPoolTokens - ftgsale.maxNbTokensPerPartAtPPStart())
+        / 3
+        / ftgsale.publicPoolPhaseDuration()
+    )
+    tx = ftgsale.updateMaxNbTokensPerPartAtPP()
+    print(tx.events)
+    print("maxNbTokensPerPartAtPP at one third of public phase = ", tx.return_value)
+    assert tx.return_value == pythonMaxNbTokensPerPartAtPP
+    # successive tokens purchase by accounts[2]
+    # first purchase above maxNbTokensPerPartAtPPStart (395000) but below maxNbTokensPerPartAtPP
+    # at one third of the public phase (1090200 tokens)
+    tokenAmount2 = 800_000  # (in token)
+    investTokenAmount2 = tokenAmount2 * ftgsale.tokenPrice()  # in investToken
+    investtoken.approve(ftgsale, investTokenAmount2, {"from": accounts[2]})
+    ftgsale.buytoken(tokenAmount2, {"from": accounts[2]})
+    # second purchase exceeding max purchase amount at one third of public pool phase
+    # So it should be reverted
+    tokenAmount2 = 300_000  # (in token)
+    investTokenAmount2 = tokenAmount2 * ftgsale.tokenPrice()  # in investToken
+    investtoken.approve(ftgsale, investTokenAmount2, {"from": accounts[2]})
+    with brownie.reverts("Maximum allowed number of tokens exceeded"):
+        ftgsale.buytoken(tokenAmount2, {"from": accounts[2]})
+    # time travel to about 83% of public pool phase duration
+    chain.sleep(int(ftgsale.publicPoolPhaseDuration() * 0.50))
+    # verif of max purchaseable tokens should be limited by
+    # the number of remaining tokens only i.e. publicPoolTokens
+    tx = ftgsale.updateMaxNbTokensPerPartAtPP()
+    publicPoolTokens = ftgsale.totalTokensToSell() - ftgsale.tokensSold()
+    assert publicPoolTokens == ftgsale.totalTokensToSell() - (8_025_000 + 800_000)
+    assert tx.return_value == publicPoolTokens
+    print("maxNbTokensPerPartAtPP at 83% of public phase = ", tx.return_value)
+    # new purchase by accounts[1]
+    tokenAmount1 = tx.return_value  # (in token)
+    investTokenAmount1 = tokenAmount1 * ftgsale.tokenPrice()  # in investToken
+    investtoken.approve(ftgsale, investTokenAmount1, {"from": accounts[1]})
+    ftgsale.buytoken(tokenAmount1, {"from": accounts[1]})
+    # verify balances
+    print(
+        "ftgsale.getParticipantInfo(accounts[1]) =",
+        ftgsale.getParticipantInfo(accounts[1]),
+    )
+    print(
+        "ftgsale.getParticipantInfo(accounts[2]) =",
+        ftgsale.getParticipantInfo(accounts[2]),
+    )
+    assert ftgsale.getParticipantInfo(accounts[1])[1] == tokenAmount1
+    assert ftgsale.getParticipantInfo(accounts[2])[1] == 800000
+    assert ntt.balanceOf(accounts[1]) == 4_000_000 + tokenAmount1
+    assert ntt.balanceOf(accounts[2]) == 400_000 + 800_000
 

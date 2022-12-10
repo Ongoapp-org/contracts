@@ -67,12 +67,12 @@ contract FTGSale is Ownable {
     uint256 public investmentRaised;
     // ruby tier max number of tokens per participant during Guaranteed Pool
     uint256 public maxNbTokensPerPartRuby;
-    // nb of participants
+    // number of participants
     uint256 public NbOfParticipants;
-    // max number of token purchaseable during Public Pool
+    // max number of token purchaseable at the start of Public Pool
     uint256 public maxNbTokensPerPartAtPPStart;
-    // tokens to sell during public sale, remaining
-    uint256 publicPoolTokens;
+    // tokens to sell at start of public sale, which were not sold in Guaranteed Pool
+    uint256 public publicPoolTokensAtPPStart;
 
     NTT public ntt;
 
@@ -298,19 +298,18 @@ contract FTGSale is Ownable {
             tiersNbOFParticipants[Tiers.SAPPHIRE] +
             tiersNbOFParticipants[Tiers.EMERALD] +
             tiersNbOFParticipants[Tiers.DIAMOND];
-        //remaining
-        publicPoolTokens = totalTokensToSell - tokensSold;
+        //remaining tokens after Guaranteed Pool
+        publicPoolTokensAtPPStart = totalTokensToSell - tokensSold;
         // max tokens a participant can buy regardless his/her tier at the start of Public Pool
         // this number will then increase exponentially till end of the sale
         maxNbTokensPerPartAtPPStart = PRBMath.mulDiv(
-            1, // multiplier for calculation precision
-            publicPoolTokens,
+            1,
+            publicPoolTokensAtPPStart,
             NbOfParticipants
         );
     }
 
     //function to buy tokens during Pool Phases
-    //TODO change to investToken
     function buytoken(uint256 buyTokenAmount) public {
         //verifies that participants has been KYCed
         require(participants[msg.sender].whitelisted, "not in whitelist");
@@ -330,7 +329,7 @@ contract FTGSale is Ownable {
             );
             //require participant is buying less than entitled to
             require(
-                participants[msg.sender].tokensBalanceGP + buyTokenAmount <
+                participants[msg.sender].tokensBalanceGP + buyTokenAmount <=
                     maxNbTokensPerPartRuby * tiersTokensAllocationFactor[tier],
                 "Maximum allowed number of tokens exceeded"
             );
@@ -359,12 +358,47 @@ contract FTGSale is Ownable {
                     publicPoolPhaseStart + publicPoolPhaseDuration,
                 "Public Pool Phase ended"
             );
-            //require participant is buying less than entitled to
-
-            //TODO double check
+            //require that participant is buying less than entitled to:
+            //the maximum of purchaseable number of tokens by a participant is a
+            //linear function of time. No limit for the purchaseable number of
+            //tokens after 3/4 of the public pool phase has passed
+            uint256 maxNbTokensPerPartAtPP = updateMaxNbTokensPerPartAtPP();
+            /* uint256 publicPoolTokens = totalTokensToSell - tokensSold;
+            emit Log("publicPoolTokens", publicPoolTokens);
+            uint256 maxNbTokensPerPartAtPP;
+            if (
+                4 * (block.timestamp - publicPoolPhaseStart) <
+                3 * publicPoolPhaseDuration
+            ) {
+                emit Log(
+                    "(block.timestamp - publicPoolPhaseStart)",
+                    (block.timestamp - publicPoolPhaseStart)
+                );
+                emit Log(
+                    "(publicPoolTokens - maxNbTokensPerPartAtPPStart)",
+                    (publicPoolTokens - maxNbTokensPerPartAtPPStart)
+                );
+                emit Log("publicPoolPhaseDuration", publicPoolPhaseDuration);
+                uint256 prbpart = PRBMath.mulDiv(
+                    (block.timestamp - publicPoolPhaseStart),
+                    4 * (publicPoolTokens - maxNbTokensPerPartAtPPStart),
+                    3 * publicPoolPhaseDuration
+                );
+                emit Log("prbpart", prbpart);
+                maxNbTokensPerPartAtPP =
+                    maxNbTokensPerPartAtPPStart +
+                    PRBMath.mulDiv(
+                        (block.timestamp - publicPoolPhaseStart),
+                        4 * (publicPoolTokens - maxNbTokensPerPartAtPPStart),
+                        3 * publicPoolPhaseDuration
+                    );
+                emit Log("maxNbTokensPerPartAtPP", maxNbTokensPerPartAtPP);
+            } else {
+                maxNbTokensPerPartAtPP = publicPoolTokens;
+            } */
             require(
-                participants[msg.sender].tokensBalancePP + buyTokenAmount <
-                    maxNbTokensPerPartAtPPStart,
+                participants[msg.sender].tokensBalancePP + buyTokenAmount <=
+                    maxNbTokensPerPartAtPP,
                 "Maximum allowed number of tokens exceeded"
             );
             uint256 investedAmount = (buyTokenAmount * tokenPrice) / 10**18;
@@ -375,6 +409,7 @@ contract FTGSale is Ownable {
                 investedAmount
             );
             // balances are updated
+            tokensSold += buyTokenAmount;
             investmentRaised += investedAmount;
             participants[msg.sender].tokensBalancePP += buyTokenAmount;
             ntt.issue(msg.sender, buyTokenAmount);
@@ -384,6 +419,38 @@ contract FTGSale is Ownable {
                 // Sale is completed and participants can claim their tokens
                 salePhase = Phases.SaleCompleted;
             }
+        }
+    }
+
+    function updateMaxNbTokensPerPartAtPP()
+        public
+        returns (uint256 maxNbTokensPerPartAtPP)
+    {
+        uint256 publicPoolTokens = totalTokensToSell - tokensSold;
+        //emit Log("publicPoolTokens", publicPoolTokens);
+        if (
+            4 * (block.timestamp - publicPoolPhaseStart) <
+            3 * publicPoolPhaseDuration
+        ) {
+            /* emit Log(
+                "(block.timestamp - publicPoolPhaseStart)",
+                (block.timestamp - publicPoolPhaseStart)
+            );
+            emit Log(
+                "(publicPoolTokens - maxNbTokensPerPartAtPPStart)",
+                (publicPoolTokens - maxNbTokensPerPartAtPPStart)
+            );
+            emit Log("publicPoolPhaseDuration", publicPoolPhaseDuration); */
+            maxNbTokensPerPartAtPP =
+                maxNbTokensPerPartAtPPStart +
+                PRBMath.mulDiv(
+                    (block.timestamp - publicPoolPhaseStart),
+                    4 * (publicPoolTokens - maxNbTokensPerPartAtPPStart),
+                    3 * publicPoolPhaseDuration
+                );
+            // emit Log("maxNbTokensPerPartAtPP", maxNbTokensPerPartAtPP);
+        } else {
+            maxNbTokensPerPartAtPP = publicPoolTokens;
         }
     }
 
