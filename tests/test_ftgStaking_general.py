@@ -36,7 +36,7 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
 
     # verifies totalFees correctly increased
     print("totalFees = ", ftgstaking.totalFees())
-    staking_fee = 0.02
+    staking_fee = ftgstaking.STAKING_FEE() / 100
     assert ftgstaking.totalFees() == staking_fee * 600000 * 10 ** 18
 
     # balance update
@@ -154,7 +154,7 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
         "accounts[0] 196000 staking should still be locked : checkParticipantLockedStaking amount =",
         totalActiveLocked03,
     )
-    assert totalActiveLocked03 == 196000 * 10 ** 18
+    assert totalActiveLocked03 == 200000 * 10 ** 18 - staking_fee * 200000 * 10 ** 18
 
     # verifies balances
     ftgstaking.updateBalances(accounts[0])
@@ -265,7 +265,7 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     totalFeesafter = ftgstaking.totalFees()
     print("totalFees after unstaking all with fees =", totalFeesafter)
     # verifies totalFees balance is correctly updated
-    unstaking_fee = 0.15
+    unstaking_fee = ftgstaking.UNSTAKING_FEE() / 100
     """ assert (
         totalFeesb4
         + unstaking_fee * (100000 * 10 ** 18 - 100000 * staking_fee * 10 ** 18)
@@ -335,9 +335,13 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     assert ftgstaking.rewardRatePer1TFTG() == 6000
     # to modify the rewardRate implied an update of the reward balance before
     rewardbal0aftermodif = ftgstaking.getAccountRewardInfo(accounts[0])[0]
-    print("accounts[0]'s reward balance = ", rewardbal0aftermodif)
+    print(
+        "After reward rate modif, accounts[0]'s reward balance = ", rewardbal0aftermodif
+    )
     rewardbal1aftermodif = ftgstaking.getAccountRewardInfo(accounts[1])[0]
-    print("accounts[1]'s reward balance = ", rewardbal1aftermodif)
+    print(
+        "After reward rate modif, accounts[1]'s reward balance = ", rewardbal1aftermodif
+    )
 
     # wait one week
     print("wait one week")
@@ -348,10 +352,10 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     print("test to evaluate total reward accumulated by stakeholders")
     print("stakeholdersAddresses[]=", ftgstaking.getStakeholdersAddresses())
     rewardbal0b4 = ftgstaking.getAccountRewardInfo(accounts[0])[0]
-    print("accounts[0]'s reward balance = ", rewardbal0b4)
+    print("Before eval0, accounts[0]'s reward balance = ", rewardbal0b4)
     assert rewardbal0b4 == rewardbal0aftermodif
     rewardbal1b4 = ftgstaking.getAccountRewardInfo(accounts[1])[0]
-    print("accounts[1]'s reward balance = ", rewardbal1b4)
+    print("Before eval0, accounts[1]'s reward balance = ", rewardbal1b4)
     assert rewardbal1b4 == rewardbal1aftermodif
     # when we dont update the reward Balance before
     eval0 = ftgstaking.evaluateTotalRedeemableReward.call(False, {"from": accounts[0]})
@@ -377,9 +381,9 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     # tx = ftgstaking.updateReward({"from": accounts[1]})
     # print(tx.events)
     rewardbal0after2 = ftgstaking.getAccountRewardInfo(accounts[0])[0]
-    print("accounts[0]'s reward balance = ", rewardbal0after2)
+    print("After eval1, accounts[0]'s reward balance = ", rewardbal0after2)
     rewardbal1after2 = ftgstaking.getAccountRewardInfo(accounts[1])[0]
-    print("accounts[1]'s reward balance = ", rewardbal1after2)
+    print("After eval1, accounts[1]'s reward balance = ", rewardbal1after2)
     rewardRate = ftgstaking.rewardRatePer1TFTG()
     print("rewardRate=", rewardRate)
     assert (
