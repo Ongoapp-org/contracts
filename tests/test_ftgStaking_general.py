@@ -371,7 +371,7 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     print("evaluation with updates of reward = ", eval1.return_value)
     print(eval1.events)
     print(eval1.info())
-    # update performed during evaluateTotalRedeemableReward (should do more tests to evaluate gas cost diff)
+    # update performed during evaluateTotalRedeemableReward
     print("accounts[0]'s stakings = ", ftgstaking.getStakings(accounts[0]))
     staking0 = ftgstaking.getStakings(accounts[0])[-1][0]
     print("accounts[0]'s totalStaked = ", staking0)

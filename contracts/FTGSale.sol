@@ -41,9 +41,9 @@ contract FTGSale is Ownable {
     }
 
     // Phases durations
-    uint256 registrationPhaseDuration;
-    uint256 guaranteedPoolPhaseDuration;
-    uint256 publicPoolPhaseDuration;
+    uint256 public registrationPhaseDuration;
+    uint256 public guaranteedPoolPhaseDuration;
+    uint256 public publicPoolPhaseDuration;
     // token being sold
     //address immutable saleToken;
     // invest token eg USDT

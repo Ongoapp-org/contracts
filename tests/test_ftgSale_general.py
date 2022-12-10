@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 import pytest
 import brownie
-from brownie import chain, network, FTGSale
+from brownie import chain, network, FTGSale, accounts
 from scripts.deploy_FTGStaking import deploy_FTGStaking
 
 
@@ -54,6 +54,7 @@ def test_setup_phase(ftgsale, nrt, accounts, ftgtoken, investtoken):
     # definition of Sale's Phases durations
     phaseDuration = 86400  # one day
     ftgsale.setPhasesDurations(phaseDuration, phaseDuration, phaseDuration)
+    assert ftgsale.registrationPhaseDuration() == phaseDuration
     # definition of Tiers minimum ftg locked staking
     RUBY_MIN = 100_000 * 10 ** 18
     SAPPHIRE_MIN = 250_000 * 10 ** 18
@@ -150,7 +151,7 @@ def test_registration_phase(
     staking3 = 60_000 * 10 ** 18
     ftgtoken.approve(ftgstaking, staking3, {"from": accounts[3]})
     ftgstaking.stake(staking3, 6000000, {"from": accounts[3]})
-    staking4 = 260_000 * 10 ** 18
+    staking4 = 265_000 * 10 ** 18
     ftgtoken.approve(ftgstaking, staking4, {"from": accounts[4]})
     ftgstaking.stake(staking4, 2592000, {"from": accounts[4]})
     # registration
@@ -182,6 +183,86 @@ def test_registration_phase(
     # any registration attempts should be reverted
     with brownie.reverts("Registration Phase ended"):
         ftgsale.registerForSale({"from": accounts[4]})
+
+
+def participants_stakings(ftgtoken, ftgstaking):
+    staking0 = 530_000 * 10 ** 18
+    ftgtoken.approve(ftgstaking, staking0, {"from": accounts[0]})
+    ftgstaking.stake(staking0, 5184000, {"from": accounts[0]})
+    staking1 = 1_100_000 * 10 ** 18
+    ftgtoken.approve(ftgstaking, staking1, {"from": accounts[1]})
+    ftgstaking.stake(staking1, 2592000, {"from": accounts[1]})
+    staking2 = 110_000 * 10 ** 18
+    ftgtoken.approve(ftgstaking, staking2, {"from": accounts[2]})
+    ftgstaking.stake(staking2, 3000000, {"from": accounts[2]})
+    staking3 = 160_000 * 10 ** 18
+    ftgtoken.approve(ftgstaking, staking3, {"from": accounts[3]})
+    ftgstaking.stake(staking3, 6000000, {"from": accounts[3]})
+    staking4 = 265_000 * 10 ** 18
+    ftgtoken.approve(ftgstaking, staking4, {"from": accounts[4]})
+    ftgstaking.stake(staking4, 2592000, {"from": accounts[4]})
+
+
+@pytest.fixture
+def participants_preparation(ftgtoken, ftgstaking):
+    # participants prepare for sale participation
+    return participants_stakings(ftgtoken, ftgstaking)
+
+
+""" @pytest.fixture
+def launch_registration(ftgsale):
+    return ftgsale.launchNextPhase({"from": accounts[0]}) """
+
+
+def registration(ftgsale):
+    # admin launch registration phase
+    ftgsale.launchNextPhase({"from": accounts[0]})
+    # participants register
+    for i in range(5):
+        ftgsale.registerForSale({"from": accounts[i]})
+
+
+@pytest.fixture
+def registration_phase(ftgsale):
+    # admin launch registration and participants register
+    return registration(ftgsale)
+
+
+def test_guaranteed_phase(
+    setup_durations,
+    setup_tiersmin,
+    setup_factors,
+    participants_preparation,
+    registration_phase,
+    ftgsale,
+    ftgstaking,
+    nrt,
+    accounts,
+    ftgtoken,
+    investtoken,
+):
+    print("********************Guaranteed Phase Tests********************")
+    # Tiers enum codes
+    NONE = 0
+    RUBY = 1
+    SAPPHIRE = 2
+    EMERALD = 3
+    DIAMOND = 4
+    # setup fixtures applied...
+    # registration fixtures applied...:
+    # verif accounts[0] staking for instance:
+    assert (
+        ftgstaking.getStakings(accounts[0])[-1][0]
+        == 530000 * 10 ** 18 - ftgstaking.STAKING_FEE() * 530000 * 10 ** 18 / 100
+    )
+    # verif accounts[4] registration for instance
+    assert ftgsale.participants(accounts[4]) == (0, 0, True, SAPPHIRE)
+    # time travel to end registration phase
+    chain.sleep(ftgsale.registrationPhaseDuration() + 60)
+    # admin launch guaranteed phase
+    ftgsale.launchNextPhase({"from": accounts[0]})
+    # verif that we are in guaranteed phase of the sale
+    assert ftgsale.salePhase() == 2
 
     """ 
 
