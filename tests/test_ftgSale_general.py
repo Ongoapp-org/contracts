@@ -263,6 +263,23 @@ def test_guaranteed_phase(
     ftgsale.launchNextPhase({"from": accounts[0]})
     # verif that we are in guaranteed phase of the sale
     assert ftgsale.salePhase() == 2
+    # check maxNbTokensPerPartRuby calculation
+    print("ftgsale.maxNbTokensPerPartRuby =", ftgsale.maxNbTokensPerPartRuby())
+    sumFNP = 0
+    expectedNbParticipants = [0, 2, 1, 1, 1]
+    for i in range(1, 5):
+        # check nb of participants per Tier
+        print(
+            "Tiers ", i, ": nb of  participants =", ftgsale.getTiersNbOFParticipants(i)
+        )
+        assert ftgsale.getTiersNbOFParticipants(i) == expectedNbParticipants[i]
+        # calculate sumFNP
+        sumFNP += ftgsale.getTiersTokensAllocationFactor(
+            i
+        ) * ftgsale.getTiersNbOFParticipants(i)
+    assert ftgsale.maxNbTokensPerPartRuby() == int(ftgsale.totalTokensToSell() / sumFNP)
+    # check total number of participants
+    ftgsale.NbOfParticipants() == 5
 
     """ 
 

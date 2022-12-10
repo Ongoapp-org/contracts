@@ -53,7 +53,7 @@ contract FTGSale is Ownable {
     // price of the token quoted in investToken
     uint256 immutable tokenPrice;
     // amount of tokens to sell
-    uint256 immutable totalTokensToSell;
+    uint256 public immutable totalTokensToSell;
     // amount to raise in total
     uint256 immutable totalToRaise;
     // sale starts with registration
@@ -65,16 +65,14 @@ contract FTGSale is Ownable {
     uint256 public tokensSold;
     // total Raised so far
     uint256 public investmentRaised;
-    // precision Factor
-    uint256 constant precisionFactor = 1_000_000_000;
-    // ruby tier max number of tokens per participant
-    uint256 public n;
+    // ruby tier max number of tokens per participant during Guaranteed Pool
+    uint256 public maxNbTokensPerPartRuby;
     // nb of participants
-    uint256 public np;
-    // max number purchaseable
-    uint256 public n2;
+    uint256 public NbOfParticipants;
+    // max number of token purchaseable during Public Pool
+    uint256 public maxNbTokensPerPartAtPPStart;
     // tokens to sell during public sale, remaining
-    uint256 publicSaleTokens;
+    uint256 publicPoolTokens;
 
     NRT public nrt;
 
@@ -277,12 +275,8 @@ contract FTGSale is Ownable {
             tiersTokensAllocationFactor[Tiers.DIAMOND] *
             tiersNbOFParticipants[Tiers.DIAMOND] +
             tiersNbOFParticipants[Tiers.RUBY];
-        //n = max number of tokens that ruby participant can buy
-        n = PRBMath.mulDiv(
-            precisionFactor, // multiplier for calculation precision
-            totalTokensToSell,
-            sumFNP
-        );
+        // max number of tokens that ruby participant can buy
+        maxNbTokensPerPartRuby = PRBMath.mulDiv(1, totalTokensToSell, sumFNP);
     }
 
     //calculation for public phase
@@ -294,19 +288,19 @@ contract FTGSale is Ownable {
                 guaranteedPoolPhaseStart + guaranteedPoolPhaseDuration,
             "guaranteedPool Sale not finished"
         );
-        //np = number of participants calculated
-        np =
+        NbOfParticipants =
             tiersNbOFParticipants[Tiers.RUBY] +
             tiersNbOFParticipants[Tiers.SAPPHIRE] +
             tiersNbOFParticipants[Tiers.EMERALD] +
             tiersNbOFParticipants[Tiers.DIAMOND];
         //remaining
-        publicSaleTokens = totalTokensToSell - tokensSold;
-        //n2 = max tokens someone can buy regardless the tier
-        n2 = PRBMath.mulDiv(
-            precisionFactor, // multiplier for calculation precision
-            publicSaleTokens,
-            np
+        publicPoolTokens = totalTokensToSell - tokensSold;
+        // max tokens a participant can buy regardless his/her tier at the start of Public Pool
+        // this number will then increase exponentially till end of the sale
+        maxNbTokensPerPartAtPPStart = PRBMath.mulDiv(
+            1, // multiplier for calculation precision
+            publicPoolTokens,
+            NbOfParticipants
         );
     }
 
@@ -331,7 +325,7 @@ contract FTGSale is Ownable {
             //require participant is buying less than entitled to
             require(
                 participants[msg.sender].tokensBalanceGP + buyTokenAmount <
-                    n * tiersTokensAllocationFactor[tier],
+                    maxNbTokensPerPartRuby * tiersTokensAllocationFactor[tier],
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
             //TODO double check precision
@@ -362,7 +356,8 @@ contract FTGSale is Ownable {
 
             //TODO double check
             require(
-                participants[msg.sender].tokensBalancePP + buyTokenAmount < n2,
+                participants[msg.sender].tokensBalancePP + buyTokenAmount <
+                    maxNbTokensPerPartAtPPStart,
                 "your tokensBalance would exceed the maximum allowed number of tokens"
             );
             uint256 investedAmount = (buyTokenAmount * tokenPrice) / 10**18;
@@ -383,6 +378,26 @@ contract FTGSale is Ownable {
             }
         }
     }
+
+    //********************* Helpers functions *********************/
+
+    function getTiersTokensAllocationFactor(Tiers _tier)
+        public
+        view
+        returns (uint256)
+    {
+        return tiersTokensAllocationFactor[_tier];
+    }
+
+    function getTiersNbOFParticipants(Tiers _tier)
+        public
+        view
+        returns (uint256)
+    {
+        return tiersNbOFParticipants[_tier];
+    }
+
+    //********************* Admin functions *********************/
 
     function withdrawRaisedAssets() public onlyOwner {
         uint256 bal = IERC20(investToken).balanceOf(address(this));
