@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/IERC20.sol";
 import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 import "./FTGStaking.sol";
-import "./NRT.sol";
+import "./NTT.sol";
 
 /**
  * @title FTGSale
@@ -50,12 +50,12 @@ contract FTGSale is Ownable {
     address immutable investToken;
     // staking contract
     address immutable stakingContractAddress;
-    // price of the token quoted in investToken
-    uint256 immutable tokenPrice;
+    // price of the token (price of 1 token = 10**18 "tokenWei") quoted in investToken
+    uint256 public immutable tokenPrice;
     // amount of tokens to sell
     uint256 public immutable totalTokensToSell;
     // amount to raise in total
-    uint256 immutable totalToRaise;
+    uint256 public immutable totalToRaise;
     // sale starts with registration
     uint256 public registrationPhaseStart;
     uint256 public guaranteedPoolPhaseStart;
@@ -74,7 +74,7 @@ contract FTGSale is Ownable {
     // tokens to sell during public sale, remaining
     uint256 publicPoolTokens;
 
-    NRT public nrt;
+    NTT public ntt;
 
     // list of participants to the sale
     mapping(address => Participant) public participants;
@@ -92,6 +92,11 @@ contract FTGSale is Ownable {
     //events
     event newParticipant(address _participantAddress, Tiers _participantTier);
     event newPhase(Phases _newPhase);
+    event newPurchase(
+        address _participantAddress,
+        uint256 _amount,
+        Phases _salePhase
+    );
 
     //event For debugging
     event Log(string message, uint256 data);
@@ -100,7 +105,7 @@ contract FTGSale is Ownable {
 
     //Owner deploy contract and launches sale at the same time
     constructor(
-        address _nrt,
+        address _ntt,
         address _investToken,
         address _stakingContractAddress,
         uint256 _tokenPrice, // fix price for entire sale ?
@@ -108,7 +113,7 @@ contract FTGSale is Ownable {
         uint256 _totalToRaise
     ) {
         investToken = _investToken;
-        nrt = NRT(_nrt);
+        ntt = NTT(_ntt);
         stakingContractAddress = _stakingContractAddress;
         tokenPrice = _tokenPrice;
         totalTokensToSell = _totalTokensToSell;
@@ -315,6 +320,7 @@ contract FTGSale is Ownable {
                 salePhase == Phases.PublicPool,
             "not open for buying"
         );
+        //Guaranteed Pool Phase
         if (salePhase == Phases.GuaranteedPool) {
             //Verifies that phase is not over
             require(
@@ -326,10 +332,9 @@ contract FTGSale is Ownable {
             require(
                 participants[msg.sender].tokensBalanceGP + buyTokenAmount <
                     maxNbTokensPerPartRuby * tiersTokensAllocationFactor[tier],
-                "your tokensBalance would exceed the maximum allowed number of tokens"
+                "Maximum allowed number of tokens exceeded"
             );
-            //TODO double check precision
-            uint256 investedAmount = (buyTokenAmount * tokenPrice) / 10**18;
+            uint256 investedAmount = (buyTokenAmount * tokenPrice); // / 10**18;
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
@@ -340,11 +345,13 @@ contract FTGSale is Ownable {
             tokensSold += buyTokenAmount;
             investmentRaised += investedAmount;
             participants[msg.sender].tokensBalanceGP += buyTokenAmount;
-            nrt.issue(msg.sender, buyTokenAmount);
+            ntt.issue(msg.sender, buyTokenAmount);
+            emit newPurchase(msg.sender, buyTokenAmount, Phases.GuaranteedPool);
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
                 salePhase = Phases.SaleCompleted;
             }
+            // Public Pool Phase
         } else if (salePhase == Phases.PublicPool) {
             //verifies that phase is not over
             require(
@@ -358,7 +365,7 @@ contract FTGSale is Ownable {
             require(
                 participants[msg.sender].tokensBalancePP + buyTokenAmount <
                     maxNbTokensPerPartAtPPStart,
-                "your tokensBalance would exceed the maximum allowed number of tokens"
+                "Maximum allowed number of tokens exceeded"
             );
             uint256 investedAmount = (buyTokenAmount * tokenPrice) / 10**18;
             //purchase takes place
@@ -370,7 +377,8 @@ contract FTGSale is Ownable {
             // balances are updated
             investmentRaised += investedAmount;
             participants[msg.sender].tokensBalancePP += buyTokenAmount;
-            nrt.issue(msg.sender, buyTokenAmount);
+            ntt.issue(msg.sender, buyTokenAmount);
+            emit newPurchase(msg.sender, buyTokenAmount, Phases.PublicPool);
 
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
@@ -395,6 +403,14 @@ contract FTGSale is Ownable {
         returns (uint256)
     {
         return tiersNbOFParticipants[_tier];
+    }
+
+    function getParticipantInfo(address _participant)
+        public
+        view
+        returns (Participant memory)
+    {
+        return participants[_participant];
     }
 
     //********************* Admin functions *********************/

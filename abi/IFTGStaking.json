@@ -1,1 +1,0 @@
-[{"inputs": [{"internalType": "address", "name": "_participantAddress", "type": "address"}, {"internalType": "uint256", "name": "lockDurationChecked", "type": "uint256"}], "name": "checkParticipantLockedStaking", "outputs": [{"internalType": "int256", "name": "lockedStakingTotal", "type": "int256"}], "stateMutability": "view", "type": "function"}]

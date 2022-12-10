@@ -3,10 +3,11 @@ pragma solidity 0.8.17;
 
 import "./OwnableMulti.sol";
 
-//NRT is like a private stock
+//NTT (Non Transferable Token) is like a private stock
 //can only be traded with the issuer who remains in control of the market
 //until he opens the redemption window
-contract NRT is OwnableMulti {
+
+contract NTT is OwnableMulti {
     uint256 private _issuedSupply;
     uint256 private _outstandingSupply;
     uint256 private _decimals;
@@ -24,7 +25,7 @@ contract NRT is OwnableMulti {
         _outstandingSupply = 0;
     }
 
-    // Creates amount NRT and assigns them to account
+    // Creates amount NTT and assigns them to account
     function issue(address account, uint256 amount) public onlyOwner {
         require(account != address(0), "zero address");
 

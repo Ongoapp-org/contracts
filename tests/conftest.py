@@ -2,7 +2,7 @@
 
 import pytest
 from brownie import MockFTGToken, accounts
-from brownie import FTGSale, NRT
+from brownie import FTGSale, NTT
 from scripts.deploy_FTGStaking import deploy_FTGStaking
 
 

@@ -2,22 +2,22 @@
 pragma solidity 0.8.17;
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/IERC20.sol";
 import "./OwnableBase.sol";
-import "./NRT.sol";
+import "./NTT.sol";
 
 contract Redeemer is OwnableBase {
-    NRT public nrt;
+    NTT public ntt;
     address public saleToken;
 
-    constructor(address _nrt, address _saleToken) {
-        nrt = NRT(_nrt);
+    constructor(address _ntt, address _saleToken) {
+        ntt = NTT(_ntt);
         saleToken = _saleToken;
     }
 
     //redeem all of the eligible launch token 1:1
     function claim() public {
         //require(salePhase == Phases.SaleCompleted, "sale not completed yet");
-        uint256 redeemableAmount = nrt.balanceOf(msg.sender);
-        nrt.redeem(msg.sender, redeemableAmount);
+        uint256 redeemableAmount = ntt.balanceOf(msg.sender);
+        ntt.redeem(msg.sender, redeemableAmount);
 
         IERC20(saleToken).transfer(msg.sender, redeemableAmount);
     }

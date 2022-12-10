@@ -13,23 +13,23 @@ def ftgstaking(accounts, ftgtoken):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def nrt(accounts, NRT):
-    # accounts[0] deploys NRT contract
-    nrt = NRT.deploy("NRT", 18, {"from": accounts[0]})
-    return nrt
+def ntt(accounts, NTT):
+    # accounts[0] deploys NTT contract
+    ntt = NTT.deploy("NTT", 18, {"from": accounts[0]})
+    return ntt
 
 
 @pytest.fixture(scope="module", autouse=True)
-def ftgsale(accounts, nrt, ftgstaking, ftgtoken, investtoken):
+def ftgsale(accounts, ntt, ftgstaking, ftgtoken, investtoken):
     # FTGSale deployment
     _totalTokensToSell = 10_000_000
     _totalToRaise = 100_000 * 10 ** 18
-    # token price = 0.01 investToken
+    # token price (price of 1 token = 10**18 "tokenWei" in investToken)
     _tokenPrice = int(_totalToRaise / _totalTokensToSell)
     print("_tokenPrice = ", _tokenPrice)
     # accounts[0] deploys FTGSale contract
     ftgsale = FTGSale.deploy(
-        nrt,
+        ntt,
         investtoken,
         ftgstaking,
         _tokenPrice,
@@ -37,10 +37,12 @@ def ftgsale(accounts, nrt, ftgstaking, ftgtoken, investtoken):
         _totalToRaise,
         {"from": accounts[0]},
     )
+    # add ownership of ntt to ftgsale
+    ntt.addOwner(ftgsale, {"from": accounts[0]})
     return ftgsale
 
 
-def test_setup_phase(ftgsale, nrt, accounts, ftgtoken, investtoken):
+def test_setup_phase(ftgsale, ntt, accounts, ftgtoken, investtoken):
     print("********************Setup Phase Tests********************")
     # verifies that we are in setup phase of the sale
     assert ftgsale.salePhase() == 0
@@ -115,7 +117,7 @@ def test_registration_phase(
     setup_factors,
     ftgsale,
     ftgstaking,
-    nrt,
+    ntt,
     accounts,
     ftgtoken,
     investtoken,
@@ -236,7 +238,7 @@ def test_guaranteed_phase(
     registration_phase,
     ftgsale,
     ftgstaking,
-    nrt,
+    ntt,
     accounts,
     ftgtoken,
     investtoken,
@@ -278,136 +280,59 @@ def test_guaranteed_phase(
             i
         ) * ftgsale.getTiersNbOFParticipants(i)
     assert ftgsale.maxNbTokensPerPartRuby() == int(ftgsale.totalTokensToSell() / sumFNP)
+    for i in range(1, 5):
+        maxNb = (
+            ftgsale.getTiersTokensAllocationFactor(i) * ftgsale.maxNbTokensPerPartRuby()
+        )
+        print(
+            "Tier", i, "max purchaseable tokens per participant in GP:", maxNb,
+        )
+        assert maxNb == ftgsale.maxNbTokensPerPartRuby() * 2 ** (i - 1)
     # check total number of participants
     ftgsale.NbOfParticipants() == 5
+    # participants buy tokens
+    print("tokenPrice =", ftgsale.tokenPrice())
+    tokenAmount0 = 100_000  # (in token)
+    investTokenAmount0 = tokenAmount0 * ftgsale.tokenPrice()  # in investToken
+    print("investTokenAmount0 =", investTokenAmount0, "investTokenWei")
+    investtoken.approve(ftgsale, investTokenAmount0, {"from": accounts[0]})
+    tx = ftgsale.buytoken(tokenAmount0, {"from": accounts[0]})
+    print(tx.events)
+    tokenAmount2 = 400_000  # (in token)
+    investTokenAmount2 = tokenAmount2 * ftgsale.tokenPrice()  # in investToken
+    print("investTokenAmount2 =", investTokenAmount2, "investTokenWei")
+    investtoken.approve(ftgsale, investTokenAmount2, {"from": accounts[2]})
+    ftgsale.buytoken(tokenAmount2, {"from": accounts[2]})
+    # verify balances
+    assert ftgsale.tokensSold() == tokenAmount0 + tokenAmount2
+    assert ftgsale.investmentRaised() == investTokenAmount0 + investTokenAmount2
+    print(
+        "ftgsale.getParticipantInfo(accounts[0]) =",
+        ftgsale.getParticipantInfo(accounts[0]),
+    )
+    print(
+        "ftgsale.getParticipantInfo(accounts[2]) =",
+        ftgsale.getParticipantInfo(accounts[2]),
+    )
+    assert ftgsale.getParticipantInfo(accounts[0])[0] == tokenAmount0
+    assert ftgsale.getParticipantInfo(accounts[2])[0] == tokenAmount2
+    assert ntt.balanceOf(accounts[0]) == tokenAmount0
+    assert ntt.balanceOf(accounts[2]) == tokenAmount2
+    # verify cannot buy more than entitled
+    # accounts[4] is SAPPHIRE TIER, he cannot purchase more than 1_250_000 tokens
+    tokenAmount4 = 1_300_000  # (in token)
+    investTokenAmount4 = tokenAmount4 * ftgsale.tokenPrice()  # in investToken
+    print("investTokenAmount4 =", investTokenAmount4, "investTokenWei")
+    investtoken.approve(ftgsale, investTokenAmount4, {"from": accounts[4]})
+    with brownie.reverts("Maximum allowed number of tokens exceeded"):
+        ftgsale.buytoken(tokenAmount4, {"from": accounts[4]})
+    # verify cannot buy when pool ended
+    # time travel to end guaranteed pool phase
+    chain.sleep(ftgsale.guaranteedPoolPhaseDuration() + 60)
+    tokenAmount4 = 1_000_000  # (in token)
+    investTokenAmount4 = tokenAmount4 * ftgsale.tokenPrice()  # in investToken
+    print("second trial investTokenAmount4 =", investTokenAmount4, "investTokenWei")
+    investtoken.approve(ftgsale, investTokenAmount4, {"from": accounts[4]})
+    with brownie.reverts("Guaranteed Pool Phase ended"):
+        ftgsale.buytoken(tokenAmount4, {"from": accounts[4]})
 
-    """ 
-
-    # guaranteed phase
-    assert ftgsale.salePhase() == 2
-
-    bamount = 100 * 10 ** 18
-
-    assert investtoken.balanceOf(accounts[1]) == 10_000_000 * 10 ** 18
-
-    investtoken.approve(ftgsale, bamount, {"from": accounts[1]})
-    ftgsale.buytoken(bamount, {"from": accounts[1]})
-
-    assert nrt.balanceOf(accounts[1]) == bamount
-
-    # how much can buy?
-    assert ftgsale.n() == 1111111111111111111111111111111111
-
-    # TODO test cant buy more than diamond
-
-    # ruby cant buy?
-    bamount = 100 * 10 ** 18
-
-    investtoken.approve(ftgsale, bamount, {"from": accounts[2]})
-    ftgsale.buytoken(bamount, {"from": accounts[2]}) """
-
-    # investAmount = 10_000
-    # buyTokenamount = investAmount/ (_tokenPriceInUSD/10**18)
-
-    # investtoken.approve(ftgsale, investAmount*10, {"from": accounts[2]})
-    # assert investtoken.allowance(accounts[2], ftgsale) == investAmount*10
-    # #TODO should fail
-    # with brownie.reverts():
-    #     ftgsale.buytoken(buyTokenamount, {"from": accounts[2]})
-
-    ##### public phase
-
-    """ timeTravel = day1 + 60 * 60
-    chain.sleep(timeTravel)
-
-    ftgsale.launchNextPhase({"from": accounts[0]})
-    assert ftgsale.salePhase() == 3
-
-    investAmount = 1_000
-    buyTokenamount = investAmount / (_tokenPriceInUSD / 10 ** 18)
-
-    assert buyTokenamount == 100_000
-
-    investtoken.approve(ftgsale, investAmount, {"from": accounts[2]})
-    assert investtoken.allowance(accounts[2], ftgsale) == investAmount
-    ftgsale.buytoken(buyTokenamount, {"from": accounts[2]})
-
-    ##### completed phase
-
-    ftgsale.launchNextPhase({"from": accounts[0]})
-    assert ftgsale.salePhase() == 4
-
-    investtoken.approve(ftgsale, investAmount, {"from": accounts[2]})
-    with brownie.reverts():
-        ftgsale.buytoken(buyTokenamount, {"from": accounts[2]}) """
-    # assert investtoken.allowance(accounts[2], ftgsale) == investAmount
-
-    # ftgsale.launchNextPhase({"from": accounts[0]})
-
-    # investtoken.approve(ftgsale, bamount, {"from": accounts[1]})
-    # alectr.buytoken(bamount, {"from": accounts[1]})
-
-    # investtoken.approve(ftgsale, bamount, {"from": accounts[2]})
-    # ftgsale.buytoken(bamount, {"from": accounts[1]})
-
-    # saletoken = MockFTGToken.deploy(30_000_000 * 10**18, {"from": accounts[0]})
-    # saletoken.transfer(accounts[1], 10_000_000 * 10**18, {"from": accounts[0]})
-    # saletoken.transfer(accounts[2], 1_000_000 * 10**18, {"from": accounts[0]})
-    # assert saletoken.balanceOf(accounts[0]) == 19_000_000 * 10**18
-    # assert saletoken.balanceOf(accounts[1]) == 10_000_000 * 10**18
-    # assert saletoken.balanceOf(accounts[2]) == 1_000_000 * 10**18
-
-    ############ old
-
-    # ftgsale.registerForSale({"from": accounts[2]})
-
-    # print("accounts[0] = ", accounts[0])
-
-    # saectr.setMins(1000000, 500000, 250000, 100000)
-    # ftgsale.setAllocs(40, 30, 20, 10)
-    # ftgsale.setParticipants(1000, 500, 100, 50)
-
-    # # assert ftgsale.tiersMin(0) == 1000000
-    # print(ftgsale.tiersMin(0))
-    # print(type(ftgsale.tiersMin(0)))
-
-    # ftgsale.addWhitelist(accounts[1], {"from": owner})
-    # assert ftgsale.participants(accounts[1]) == (0, 0, True)
-
-    # # TODO
-    # # uint256 amountLocked = uint(IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(account, 30 days));
-    # # calculate init staking fee
-    # amountlocked = ftgstaking.checkParticipantLockedStaking(accounts[1], days30)
-    # assert amountlocked == stakeAmount * (1 - 0.05)
-
-    # # allocTotal[Tiers.RUBY] / tiersParticipants[Tiers.RUBY]
-
-    # assert stakeAmount > ftgsale.tiersMin(3)
-    # assert amountlocked > ftgsale.tiersMin(3)
-
-    # assert ftgsale.tiersTotal(1) / ftgsale.tiersParticipants(1) == 40 / 1000
-    # # TODO
-    # ae = ftgsale.amountEligible(accounts[1], {"from": accounts[1]})
-    # assert ae == 1000 * 0.4 * _totalTokensToSell
-    # assert ftgsale.totalTokensToSell() == _totalTokensToSell
-    # assert ftgsale.tokensSold() == 0
-
-    # saletoken.transfer(ftgsale, _totalTokensToSell, {"from": accounts[0]})
-    # assert investtoken.balanceOf(accounts[1]) >= _totalTokensToSell
-    # investtoken.approve(ftgsale, 100, {"from": accounts[1]})
-    # ftgsale.participate(100, {"from": accounts[1]})
-
-    # # assert ae == totalTokensSold * 40/1000 /10000
-    # assert ftgsale.tokensSold() == 100
-    # assert ftgsale.investRaised() == 1
-
-    # # assert ftgsale.participants(accounts[1]).tokensBought == 100
-    # # assert ftgsale.participants(accounts[1]).amountInvested == 1
-
-    # assert ftgsale.participants(accounts[1]) == (1, 100)
-
-    # assert ftgsale.amountGuaranteedPool() == 1000000
-    # assert ftgsale.amountPublicPool() == 1000000
-
-    # print("balance accounts[0] in test_FTGToken = ", accounts[0].balance())
-    # print("chain in test_FTGToken = ", network.chain)
