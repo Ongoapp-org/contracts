@@ -138,8 +138,6 @@ contract FTGSale is Ownable {
     //function to go to next phase
     function launchNextPhase() public onlyOwner {
         if (salePhase == Phases.Setup) {
-            //requirement setTiersMinFTGStakings is valid , should it really be setup here?
-            //requirement setTokenAllocation is valid ?
             registrationPhaseStart = block.timestamp;
             salePhase = Phases.Registration;
             emit newPhase(Phases.Registration);
