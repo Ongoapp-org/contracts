@@ -151,9 +151,16 @@ contract FTGSale is Ownable {
             emit newPhase(Phases.GuaranteedPool);
         } else if (salePhase == Phases.GuaranteedPool) {
             _publicSalePreliminaryCalculation();
-            publicPoolPhaseStart = block.timestamp;
-            salePhase = Phases.PublicPool;
-            emit newPhase(Phases.PublicPool);
+            if (totalTokensToSell == tokensSold) {
+                //all tokens sold in guaranteed phase
+                //we move on to sale completed directly
+                salePhase = Phases.SaleCompleted;
+                emit newPhase(Phases.SaleCompleted);
+            } else {
+                publicPoolPhaseStart = block.timestamp;
+                salePhase = Phases.PublicPool;
+                emit newPhase(Phases.PublicPool);
+            }
         } else if (salePhase == Phases.PublicPool) {
             //owner launch this phase to open tokens claim by participants
             salePhase = Phases.SaleCompleted;
