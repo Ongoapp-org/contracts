@@ -94,12 +94,8 @@ contract FTGSale is Ownable {
     mapping(Tiers => uint256) public tiersTokensAllocationFactor;
     // number of participants per tier
     mapping(Tiers => uint256) public tiersNbOFParticipants;
-    // ticket allocated for each tier, initialized at maximum and dynamically updated
-    mapping(Tiers => uint256) public tiersMaxTokensForSalePerParticipant;
     // ftg staking threshold  for tiers
     mapping(Tiers => uint256) public tiersMinFTGStaking;
-    // is tier active to participate ??? Probably not needed
-    mapping(Tiers => bool) public tiersActiveSale;
 
     //events
     event newParticipant(address _participantAddress, Tiers _participantTier);
