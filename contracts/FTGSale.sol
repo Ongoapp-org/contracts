@@ -7,7 +7,18 @@ import "./NTT.sol";
 
 /**
  * @title FTGSale
- * @notice This contract is deployed for every sale and specific to a given sale
+ * @notice This contract is deployed for every sale and specific to a given sale. The sale takes place
+ * in 5 phases. The setup phase is reserved to the admin setting up the sale (duration, tiers eligibility,
+ * tiers priviledges). Then the registration phase is launched by adin for a certain duration. Participants need to be
+ * kyced first, then they will be able to register before the end of the registration phase. Once registration
+ * phase has ended, admin can launch the guaranteed pool phase, during which participants can acquire tokens
+ * within the limit of the number of purchasable tokens per participant. This limit is depending on the tiers
+ * and calculated to guarantee that higher Tiers have the possibility to purchase larger number of tokens than lower
+ * Tiers. Once this guaranted pool sale period has ended. If there are remaining tokens, they are to be sold in
+ * public pool sale which starts with an equal number of purchasable tokens per participant regardless their tier.
+ * This max number of purchasabletokens per participant is time-dependent and increases linearly till 75% of
+ * the public pool sale duration, at which time the number of tokens purchasable by participant is only lmited by
+ * the remaining number of tokens for sale. When the sale ends , participants are free to claim their tokens.
  */
 
 //Guaranteed Pool
@@ -349,6 +360,7 @@ contract FTGSale is Ownable {
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
                 salePhase = Phases.SaleCompleted;
+                emit newPhase(Phases.SaleCompleted);
             }
             // Public Pool Phase
         } else if (salePhase == Phases.PublicPool) {
@@ -362,15 +374,15 @@ contract FTGSale is Ownable {
             //the maximum of purchaseable number of tokens by a participant is a
             //linear function of time. No limit for the purchaseable number of
             //tokens after 3/4 of the public pool phase has passed
-            uint256 maxNbTokensPerPartAtPP = updateMaxNbTokensPerPartAtPP();
-            /* uint256 publicPoolTokens = totalTokensToSell - tokensSold;
-            emit Log("publicPoolTokens", publicPoolTokens);
+            //uint256 maxNbTokensPerPartAtPP = updateMaxNbTokensPerPartAtPP();
+            uint256 publicPoolTokens = totalTokensToSell - tokensSold;
+            //emit Log("publicPoolTokens", publicPoolTokens);
             uint256 maxNbTokensPerPartAtPP;
             if (
                 4 * (block.timestamp - publicPoolPhaseStart) <
                 3 * publicPoolPhaseDuration
             ) {
-                emit Log(
+                /* emit Log(
                     "(block.timestamp - publicPoolPhaseStart)",
                     (block.timestamp - publicPoolPhaseStart)
                 );
@@ -378,13 +390,7 @@ contract FTGSale is Ownable {
                     "(publicPoolTokens - maxNbTokensPerPartAtPPStart)",
                     (publicPoolTokens - maxNbTokensPerPartAtPPStart)
                 );
-                emit Log("publicPoolPhaseDuration", publicPoolPhaseDuration);
-                uint256 prbpart = PRBMath.mulDiv(
-                    (block.timestamp - publicPoolPhaseStart),
-                    4 * (publicPoolTokens - maxNbTokensPerPartAtPPStart),
-                    3 * publicPoolPhaseDuration
-                );
-                emit Log("prbpart", prbpart);
+                emit Log("publicPoolPhaseDuration", publicPoolPhaseDuration); */
                 maxNbTokensPerPartAtPP =
                     maxNbTokensPerPartAtPPStart +
                     PRBMath.mulDiv(
@@ -392,16 +398,16 @@ contract FTGSale is Ownable {
                         4 * (publicPoolTokens - maxNbTokensPerPartAtPPStart),
                         3 * publicPoolPhaseDuration
                     );
-                emit Log("maxNbTokensPerPartAtPP", maxNbTokensPerPartAtPP);
+                //emit Log("maxNbTokensPerPartAtPP", maxNbTokensPerPartAtPP);
             } else {
                 maxNbTokensPerPartAtPP = publicPoolTokens;
-            } */
+            }
             require(
                 participants[msg.sender].tokensBalancePP + buyTokenAmount <=
                     maxNbTokensPerPartAtPP,
                 "Maximum allowed number of tokens exceeded"
             );
-            uint256 investedAmount = (buyTokenAmount * tokenPrice) / 10**18;
+            uint256 investedAmount = (buyTokenAmount * tokenPrice);
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
@@ -418,6 +424,7 @@ contract FTGSale is Ownable {
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
                 salePhase = Phases.SaleCompleted;
+                emit newPhase(Phases.SaleCompleted);
             }
         }
     }

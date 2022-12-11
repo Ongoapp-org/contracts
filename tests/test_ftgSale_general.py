@@ -408,6 +408,8 @@ def test_public_pool_phase(
     assert ftgsale.NbOfParticipants() == 5
     print("totalTokensToSell =", ftgsale.totalTokensToSell())
     assert ftgsale.tokensSold() == 8_025_000
+    print("investmentRaised =", ftgsale.investmentRaised())
+
     print("Public Pool tokens for sale at start =", ftgsale.publicPoolTokensAtPPStart())
     assert (
         ftgsale.publicPoolTokensAtPPStart()
@@ -418,7 +420,7 @@ def test_public_pool_phase(
         ftgsale.maxNbTokensPerPartAtPPStart()
         == ftgsale.publicPoolTokensAtPPStart() / ftgsale.NbOfParticipants()
     )
-    # verifies max number of purchaseable token evolved as expected with time
+    # verifies max number of purchaseable token evolves as expected with time
     # at public phase start
     maxNbTokensPerPartAtPP = ftgsale.updateMaxNbTokensPerPartAtPP.call(
         {"from": accounts[0]}
@@ -451,6 +453,7 @@ def test_public_pool_phase(
     # at one third of the public phase (1090200 tokens)
     tokenAmount2 = 800_000  # (in token)
     investTokenAmount2 = tokenAmount2 * ftgsale.tokenPrice()  # in investToken
+    print("investTokenAmount2 =", investTokenAmount2)
     investtoken.approve(ftgsale, investTokenAmount2, {"from": accounts[2]})
     ftgsale.buytoken(tokenAmount2, {"from": accounts[2]})
     # second purchase exceeding max purchase amount at one third of public pool phase
@@ -469,7 +472,7 @@ def test_public_pool_phase(
     assert publicPoolTokens == ftgsale.totalTokensToSell() - (8_025_000 + 800_000)
     assert tx.return_value == publicPoolTokens
     print("maxNbTokensPerPartAtPP at 83% of public phase = ", tx.return_value)
-    # new purchase by accounts[1]
+    # new purchase by accounts[1] purchasing al remaining tokens
     tokenAmount1 = tx.return_value  # (in token)
     investTokenAmount1 = tokenAmount1 * ftgsale.tokenPrice()  # in investToken
     investtoken.approve(ftgsale, investTokenAmount1, {"from": accounts[1]})
@@ -487,4 +490,69 @@ def test_public_pool_phase(
     assert ftgsale.getParticipantInfo(accounts[2])[1] == 800000
     assert ntt.balanceOf(accounts[1]) == 4_000_000 + tokenAmount1
     assert ntt.balanceOf(accounts[2]) == 400_000 + 800_000
+    print("totalToRaise =", ftgsale.totalToRaise())
+    print("investmentRaised =", ftgsale.investmentRaised())
+    print("tokensSold =", ftgsale.tokensSold())
+    # last purchase should trigger the end of the sale since totalToRaise has been reached
+    assert ftgsale.salePhase() == 4
 
+
+# saleCompleted fixtures
+
+
+def public_pool(ftgsale, investtoken):
+    # time travel to about one third of public pool phase duration
+    chain.sleep(int(ftgsale.publicPoolPhaseDuration() * 0.33))
+    # at one third of the public phase (1090200 purchasable tokens per part)
+    tokenAmount2 = 500_000  # (in token)
+    investTokenAmount2 = tokenAmount2 * ftgsale.tokenPrice()  # in investToken
+    investtoken.approve(ftgsale, investTokenAmount2, {"from": accounts[2]})
+    ftgsale.buytoken(tokenAmount2, {"from": accounts[2]})
+    tokenAmount4 = 700_000  # (in token)
+    investTokenAmount4 = tokenAmount4 * ftgsale.tokenPrice()  # in investToken
+    investtoken.approve(ftgsale, investTokenAmount4, {"from": accounts[4]})
+    ftgsale.buytoken(tokenAmount4, {"from": accounts[4]})
+    # time travel to about 83% of public pool phase duration
+    # after 75% of public pool phase passed, no limitation of number
+    # of purchasable tokens by participant
+    chain.sleep(int(ftgsale.publicPoolPhaseDuration() * 0.50))
+    # accounts[1] purchase all remaining tokens
+    publicPoolTokens = ftgsale.totalTokensToSell() - ftgsale.tokensSold()
+    tokenAmount1 = publicPoolTokens  # (in token)
+    investTokenAmount1 = tokenAmount1 * ftgsale.tokenPrice()  # in investToken
+    investtoken.approve(ftgsale, investTokenAmount1, {"from": accounts[1]})
+    ftgsale.buytoken(tokenAmount1, {"from": accounts[1]})
+
+
+@pytest.fixture
+def public_pool_phase(ftgsale, investtoken):
+    # guaranteed pool takes place
+    return public_pool(ftgsale, investtoken)
+
+
+# salecompleted tests
+
+
+def test_sale_completed(
+    setup_durations,
+    setup_tiersmin,
+    setup_factors,
+    participants_preparation,
+    registration_phase,
+    guaranteed_pool_phase,
+    public_pool_phase,
+    ftgsale,
+    ftgstaking,
+    ntt,
+    accounts,
+    ftgtoken,
+    investtoken,
+):
+    print("********************Sale completed Phase Tests********************")
+
+    # setup fixtures applied...
+    # registration fixtures applied...
+    # guaranteed pool fixtures applied...
+    # public pool fixtures aplied:
+    # last purchase should trigger the end of the sale since totalToRaise has been reached
+    assert ftgsale.salePhase() == 4
