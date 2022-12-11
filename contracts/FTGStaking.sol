@@ -58,7 +58,7 @@ contract FTGStaking is Ownable {
     mapping(address => Stakeholder) public stakeholders; // list of stakeholders
     address[] public stakeholdersAddresses; // list of stakeholders addresses
 
-    //prorocol's events
+    //protocol's events
     event NewStake(
         address indexed user,
         uint256 amount,
@@ -67,11 +67,6 @@ contract FTGStaking is Ownable {
     );
     event NewUnstake(address indexed user, uint256 amount, uint256 timestamp);
     event NewFee(uint256 indexed amount, uint256 timestamp);
-
-    //event For debugging
-    event Log(string message, uint256 data);
-    event Logint(string message, int256 data);
-    event Logbool(string message, bool data);
 
     //constructor
     constructor(address _stakingToken) {
@@ -97,15 +92,11 @@ contract FTGStaking is Ownable {
         }
         uint256 timeSinceLastUpdate = block.timestamp - lastRewardUpdate;
         uint256 staking = stakeholders[_stakeholderAddress].totalStaked;
-        /* emit Log("staking = ", staking);
-        emit Log("timeSinceLastUpdate", timeSinceLastUpdate);
-        emit Log("rewardRatePer1TFTG", rewardRatePer1TFTG); */
         uint256 newReward = PRBMath.mulDiv(
             timeSinceLastUpdate,
             rewardRatePer1TFTG * staking,
             10**12
         );
-        emit Log("newReward", newReward);
         stakeholders[_stakeholderAddress].totalReward += newReward;
         stakeholders[_stakeholderAddress].lastRewardUpdate = block.timestamp;
     }
@@ -133,10 +124,6 @@ contract FTGStaking is Ownable {
 
     // stake ftg token
     function stake(uint256 _amount, uint256 _lockDuration) public {
-        /* require(
-            _lockDuration <= 365 days,
-            "can not stake longer than 365 days"
-        ); */
         require(
             _lockDuration == 0 || _lockDuration >= 30 days,
             "LockDuration is 0 or at least one month"
@@ -169,7 +156,6 @@ contract FTGStaking is Ownable {
         // Add stake's amount to stakeholder's totalStaked
         stakeholders[msg.sender].totalStaked += amountStaked;
         totalFTGStaked += amountStaked;
-        emit Log("totalFTGStaked", totalFTGStaked);
 
         if (_lockDuration == 0) {
             // Add the new Stake to the stakeholder's stakes List
@@ -269,7 +255,6 @@ contract FTGStaking is Ownable {
         // calculate not locked stacking balance
         uint256 totalNotLocked = stakeholders[msg.sender].totalStaked -
             stakeholders[msg.sender].totalLockedBalance;
-        emit Log("totalNotLocked=", totalNotLocked);
         // verifies that staking can be unstaked
         require(totalNotLocked > 0, "nothing to unstake");
         require(_amount <= totalNotLocked, "withdrawable amount exceeded");
@@ -456,45 +441,6 @@ contract FTGStaking is Ownable {
         Staking[] memory participantStakings = stakeholders[_participantAddress]
             .stakings;
         for (uint256 i = 0; i < participantStakings.length; i++) {
-            /* emit Logint("lockedStakingtotal=", lockedStakingTotal);
-            emit Log("block.timestamp=", block.timestamp);
-            emit Log(
-                "participantStakings[i].timestamp=",
-                participantStakings[i].timestamp
-            );
-            emit Log(
-                "participantStakings[i].lockDuration=",
-                participantStakings[i].lockDuration
-            );
-            bool data0 = participantStakings[i].lockDuration >=
-                lockDurationChecked;
-            bool data1 = block.timestamp <
-                (participantStakings[i].timestamp +
-                    participantStakings[i].lockDuration);
-            bool data2 = (participantStakings[i].lockDuration >=
-                lockDurationChecked) &&
-                (block.timestamp <
-                    (participantStakings[i].timestamp +
-                        participantStakings[i].lockDuration));
-            emit Logbool(
-                "participantStakings[i].lockDuration >= lockDurationChecked : ",
-                data0
-            );
-            emit Logbool(
-                "block.timestamp <(participantStakings[i].timestamp +participantStakings[i].lockDuration):",
-                data1
-            );
-            emit Logbool("data0&&data1", data2); */
-            /* if (
-                // check if staking is still active and was locked for more than lockDurationChecked
-                (participantStakings[i].lockDuration >= lockDurationChecked) &&
-                (block.timestamp <
-                    participantStakings[i].timestamp +
-                        participantStakings[i].lockDuration)
-            ) {
-                // add this staking to checkedStakingTotal
-                lockedStakingTotal += participantStakings[i].amount;
-            } */
             if (
                 // check if staking was locked for more than lockDurationChecked
                 (participantStakings[i].lockDuration >= lockDurationChecked)
