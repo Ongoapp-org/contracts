@@ -21,8 +21,6 @@ import "./NTT.sol";
  * the remaining number of tokens for sale. When the sale ends, participants are free to claim their tokens.
  */
 
-//Guaranteed Pool
-//Public Pool
 contract FTGSale is Ownable {
     //tiers Memberships
     enum Tiers {
@@ -126,8 +124,6 @@ contract FTGSale is Ownable {
         tokenPrice = _tokenPrice;
         totalTokensToSell = _totalTokensToSell;
         totalToRaise = _totalToRaise;
-        tokensSold = 0;
-        investmentRaised = 0;
         salePhase = Phases.Setup;
     }
 
