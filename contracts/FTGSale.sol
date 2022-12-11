@@ -169,7 +169,6 @@ contract FTGSale is Ownable {
     }
 
     // function allows owner to set tiers min ftg staking threshold
-    // should it really be setup here? does it vary between sales?
     function setTiersMinFTGStakings(
         uint256 _rubyMin,
         uint256 _sapphireMin,

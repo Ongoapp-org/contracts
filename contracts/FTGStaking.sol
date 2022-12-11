@@ -31,10 +31,9 @@ contract FTGStaking is Ownable {
     uint256 public constant UNSTAKING_FEE = 15; // %
 
     //reward rate per trillion FTG
-    uint256 public rewardRatePer1TFTG =
-        PRBMath.mulDiv(10, 10**12, 31536000 * 100); // 10% Interest on staking over a year
+    uint256 public rewardRatePer1TFTG = 3170; // PRBMath.mulDiv(10, 10**12, 31536000 * 100); // 10% APY
 
-    //StakeHolder are registered in stakeholders when they stake for the first time
+    //StakeHolders are registered in stakeholders when they stake for the first time
     struct Stakeholder {
         uint256 totalStaked; // current total ftg staking of the stakeholder
         uint256 totalLockedBalance; // current total ftg locked (for 30 days or more)
@@ -98,9 +97,9 @@ contract FTGStaking is Ownable {
         }
         uint256 timeSinceLastUpdate = block.timestamp - lastRewardUpdate;
         uint256 staking = stakeholders[_stakeholderAddress].totalStaked;
-        emit Log("staking = ", staking);
+        /* emit Log("staking = ", staking);
         emit Log("timeSinceLastUpdate", timeSinceLastUpdate);
-        emit Log("rewardRatePer1TFTG", rewardRatePer1TFTG);
+        emit Log("rewardRatePer1TFTG", rewardRatePer1TFTG); */
         uint256 newReward = PRBMath.mulDiv(
             timeSinceLastUpdate,
             rewardRatePer1TFTG * staking,
