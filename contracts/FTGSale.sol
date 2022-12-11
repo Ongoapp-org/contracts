@@ -9,16 +9,16 @@ import "./NTT.sol";
  * @title FTGSale
  * @notice This contract is deployed for every sale and specific to a given sale. The sale takes place
  * in 5 phases. The setup phase is reserved to the admin setting up the sale (duration, tiers eligibility,
- * tiers priviledges). Then the registration phase is launched by adin for a certain duration. Participants need to be
- * kyced first, then they will be able to register before the end of the registration phase. Once registration
+ * tiers priviledges). Then the registration phase is launched by admin for a certain duration. Participants need
+ * to be kyced first, then they will be able to register before the end of the registration phase. Once registration
  * phase has ended, admin can launch the guaranteed pool phase, during which participants can acquire tokens
  * within the limit of the number of purchasable tokens per participant. This limit is depending on the tiers
  * and calculated to guarantee that higher Tiers have the possibility to purchase larger number of tokens than lower
  * Tiers. Once this guaranted pool sale period has ended. If there are remaining tokens, they are to be sold in
- * public pool sale which starts with an equal number of purchasable tokens per participant regardless their tier.
- * This max number of purchasabletokens per participant is time-dependent and increases linearly till 75% of
- * the public pool sale duration, at which time the number of tokens purchasable by participant is only lmited by
- * the remaining number of tokens for sale. When the sale ends , participants are free to claim their tokens.
+ * public pool sale which starts with a max equal number of purchasable tokens per participant regardless their tier.
+ * This max number of purchasable tokens per participant is time-dependent and increases linearly till 75% of the
+ * public pool sale has elapsed, at which time the number of tokens purchasable by participant is only lmited by
+ * the remaining number of tokens for sale. When the sale ends, participants are free to claim their tokens.
  */
 
 //Guaranteed Pool
@@ -67,6 +67,7 @@ contract FTGSale is Ownable {
     uint256 public immutable totalTokensToSell;
     // amount to raise in total
     uint256 public immutable totalToRaise;
+
     // sale starts with registration
     uint256 public registrationPhaseStart;
     uint256 public guaranteedPoolPhaseStart;
@@ -109,7 +110,7 @@ contract FTGSale is Ownable {
         Phases _salePhase
     );
 
-    //event For debugging
+    //events For debugging
     event Log(string message, uint256 data);
     event Logint(string message, int256 data);
     event Logbool(string message, bool data);
@@ -186,6 +187,12 @@ contract FTGSale is Ownable {
         uint256 _diamondMin
     ) public onlyOwner {
         require(salePhase == Phases.Setup, "not setup phase");
+        require(
+            _rubyMin < _sapphireMin &&
+                _sapphireMin < _emeraldMin &&
+                _emeraldMin < _diamondMin,
+            "tiersMinFTGStaking must be increasing from lower to higher tiers"
+        );
         tiersMinFTGStaking[Tiers.RUBY] = _rubyMin;
         tiersMinFTGStaking[Tiers.SAPPHIRE] = _sapphireMin;
         tiersMinFTGStaking[Tiers.EMERALD] = _emeraldMin;
