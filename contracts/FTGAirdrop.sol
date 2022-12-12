@@ -36,6 +36,8 @@ contract FTGAirdrop is Ownable {
     uint256 public eligibleLockDuration;
     address public airdropToken;
 
+    event newPhase(Phases _newPhase);
+
     // factors determining Tiers relative tokens allocation
     mapping(Tiers => uint256) public tiersTokensAllocationFactor;
     // ftg staking threshold for Tiers
@@ -99,5 +101,55 @@ contract FTGAirdrop is Ownable {
         tiersTokensAllocationFactor[Tiers.SAPPHIRE] = _sapphireAllocationFactor;
         tiersTokensAllocationFactor[Tiers.EMERALD] = _emeraldAllocationFactor;
         tiersTokensAllocationFactor[Tiers.DIAMOND] = _diamondAllocationFactor;
+    }
+
+    //********************* Distribution Phase functions *********************/
+
+    function launchAirdrop() public onlyOwner {
+        airdropPhase = Phases.Distribution;
+        emit newPhase(Phases.Distribution);
+        address[] memory participantsAddresses = IFTGStaking(
+            stakingContractAddress
+        ).getStakeholdersAddresses();
+        for (uint256 i = 0; i < participantsAddresses.length; i++) {
+            Tiers tier = _checkTierEligibility(participantsAddresses[i]);
+        }
+    }
+
+    function _checkTierEligibility(address account) private returns (Tiers) {
+        // check active locked staking for account
+        uint256 activeStakingLocked = uint256(
+            IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(
+                account,
+                eligibleLockDuration
+            )
+        );
+        // check eligible tier earned
+        if (activeStakingLocked < tiersMinFTGStaking[Tiers.RUBY]) {
+            //if (activeStakingLocked < tiersMinFTGStaking[0]) {
+            //no privileges membership
+            return Tiers.NONE;
+        } else if (
+            activeStakingLocked >= tiersMinFTGStaking[Tiers.RUBY] &&
+            activeStakingLocked < tiersMinFTGStaking[Tiers.SAPPHIRE]
+        ) {
+            //ruby membership
+            return Tiers.RUBY;
+        } else if (
+            activeStakingLocked >= tiersMinFTGStaking[Tiers.SAPPHIRE] &&
+            activeStakingLocked < tiersMinFTGStaking[Tiers.EMERALD]
+        ) {
+            //sapphire membership
+            return Tiers.SAPPHIRE;
+        } else if (
+            activeStakingLocked >= tiersMinFTGStaking[Tiers.EMERALD] &&
+            activeStakingLocked < tiersMinFTGStaking[Tiers.DIAMOND]
+        ) {
+            //emerald membership
+            return Tiers.EMERALD;
+        } else {
+            //diamond membership
+            return Tiers.DIAMOND;
+        }
     }
 }

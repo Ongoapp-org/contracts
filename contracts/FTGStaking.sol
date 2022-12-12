@@ -21,6 +21,11 @@ interface IFTGStaking {
         address _participantAddress,
         uint256 lockDurationChecked
     ) external view returns (int256 lockedStakingTotal);
+
+    function getStakeholdersAddresses()
+        external
+        view
+        returns (address[] memory);
 }
 
 contract FTGStaking is Ownable {
@@ -409,7 +414,11 @@ contract FTGStaking is Ownable {
     }
 
     //function to get stakeholders addresses
-    function getStakeholdersAddresses() public view returns (address[] memory) {
+    function getStakeholdersAddresses()
+        external
+        view
+        returns (address[] memory)
+    {
         return stakeholdersAddresses;
     }
 
