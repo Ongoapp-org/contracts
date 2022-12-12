@@ -530,6 +530,17 @@ def public_pool_phase(ftgsale, investtoken):
     return public_pool(ftgsale, investtoken)
 
 
+@pytest.fixture
+def saletoken(MockFTGToken, accounts):
+    print("saletoken deployment by accounts[0]=", accounts[0])
+    return MockFTGToken.deploy(1_000_000 * 10 ** 18, {"from": accounts[0]})
+
+
+@pytest.fixture
+def redeemer(Redeemer, saletoken):
+    return Redeemer.deploy(ntt, saletoken)
+
+
 # salecompleted tests
 
 

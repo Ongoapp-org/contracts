@@ -19,8 +19,6 @@ contract FTGAirdrop is Ownable {
     address public airdropToken;
 
     event airdrop(address _airdropToken, uint256 _totalTokensToAirdrop);
-    event Log(string message, uint256 data);
-    event LogAddress(string message, address data);
 
     constructor(
         address _airdropToken,

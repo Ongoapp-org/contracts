@@ -378,15 +378,6 @@ contract FTGSale is Ownable {
                 4 * (block.timestamp - publicPoolPhaseStart) <
                 3 * publicPoolPhaseDuration
             ) {
-                /* emit Log(
-                    "(block.timestamp - publicPoolPhaseStart)",
-                    (block.timestamp - publicPoolPhaseStart)
-                );
-                emit Log(
-                    "(publicPoolTokens - maxNbTokensPerPartAtPPStart)",
-                    (publicPoolTokens - maxNbTokensPerPartAtPPStart)
-                );
-                emit Log("publicPoolPhaseDuration", publicPoolPhaseDuration); */
                 maxNbTokensPerPartAtPP =
                     maxNbTokensPerPartAtPPStart +
                     PRBMath.mulDiv(
@@ -394,7 +385,6 @@ contract FTGSale is Ownable {
                         4 * (publicPoolTokens - maxNbTokensPerPartAtPPStart),
                         3 * publicPoolPhaseDuration
                     );
-                //emit Log("maxNbTokensPerPartAtPP", maxNbTokensPerPartAtPP);
             } else {
                 maxNbTokensPerPartAtPP = publicPoolTokens;
             }
@@ -425,6 +415,7 @@ contract FTGSale is Ownable {
         }
     }
 
+    //function for testing purpose
     function updateMaxNbTokensPerPartAtPP()
         public
         returns (uint256 maxNbTokensPerPartAtPP)
