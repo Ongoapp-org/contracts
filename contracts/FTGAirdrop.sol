@@ -85,18 +85,4 @@ contract FTGAirdrop is Ownable {
         // Transfer of airdrop token to the airdrop Contract (contract need to be approved first)
         IERC20(airdropToken).transferFrom(msg.sender, address(this), _amount);
     }
-
-    /* function _checkActiveStakingLocked(address account)
-        private
-        returns (uint256)
-    {
-        // check active locked staking for account
-        uint256 activeStakingLocked = uint256(
-            IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(
-                account,
-                eligibleLockDuration
-            )
-        );
-        return activeStakingLocked;
-    } */
 }

@@ -20,7 +20,7 @@ def airdroptoken(MockFTGToken, accounts):
 
 @pytest.fixture(scope="module", autouse=True)
 def ftgairdrop(accounts, airdroptoken, ftgstaking):
-    totalTokensToAirdrop = 1_000_000
+    totalTokensToAirdrop = 1_000_000 * 10 ** 18
     ftgairdrop = FTGAirdrop.deploy(
         airdroptoken, ftgstaking, totalTokensToAirdrop, {"from": accounts[0]}
     )
@@ -56,7 +56,7 @@ def test_airdrop_1(
 ):
     print("********************Airdrop Test 1********************")
     # airdrop eligible locked staking duration
-    eligibleLockDuration = 3600 * 24 * 30  # one month
+    eligibleLockDuration = 3600 * 24 * 45  # one month and half
     ftgairdrop.setEligibleLockDuration(eligibleLockDuration)
     assert ftgairdrop.eligibleLockDuration() == eligibleLockDuration
     # send airdropTokens to airdrop contract
@@ -64,3 +64,15 @@ def test_airdrop_1(
     # airdrop for initial stakers
     tx = ftgairdrop.launchAirdrop()
     print(tx.events)
+    # verification of expected airdrops made
+    assert ftgairdrop.totalTokensToAirdrop() == 1_000_000 * 10 ** 18
+    # for accounts[3]:
+    eligibleActiveStakingLocked3 = 160_000 * 10 ** 18
+    ftgairdrop.totalTokensToAirdrop() == 1_000_000 * 10 ** 18
+    totalEligibleActiveStakingLocked = 530_000 * 10 ** 18 + 160_000 * 10 ** 18
+    assert "{:.15e}".format(airdroptoken.balanceOf(accounts[3])) == "{:.15e}".format(
+        eligibleActiveStakingLocked3
+        * ftgairdrop.totalTokensToAirdrop()
+        / totalEligibleActiveStakingLocked
+    )
+    # more tests with time travel and more stakings coming...
