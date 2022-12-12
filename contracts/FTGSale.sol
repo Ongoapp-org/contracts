@@ -61,7 +61,7 @@ contract FTGSale is Ownable {
     address immutable stakingContractAddress;
     // price of the token (price of 1 token = 10**18 "tokenWei") quoted in investToken
     uint256 public immutable tokenPrice;
-    // amount of tokens to sell
+    // amount of tokens to sell (in tokenWei)
     uint256 public immutable totalTokensToSell;
     // amount to raise in total
     uint256 public immutable totalToRaise;
@@ -71,7 +71,7 @@ contract FTGSale is Ownable {
     uint256 public guaranteedPoolPhaseStart;
     uint256 public publicPoolPhaseStart;
 
-    // tokens sold so far
+    // tokens sold so far (in tokenWei)
     uint256 public tokensSold;
     // total Raised so far
     uint256 public investmentRaised;
@@ -316,7 +316,7 @@ contract FTGSale is Ownable {
         );
     }
 
-    //function to buy tokens during Pool Phases
+    //function to buy tokens during Pool Phases, buyTokenAmount in tokenWei
     function buytoken(uint256 buyTokenAmount) public {
         //verifies that participants has been KYCed
         require(participants[msg.sender].whitelisted, "not in whitelist");
@@ -340,7 +340,11 @@ contract FTGSale is Ownable {
                     maxNbTokensPerPartRuby * tiersTokensAllocationFactor[tier],
                 "Maximum allowed number of tokens exceeded"
             );
-            uint256 investedAmount = (buyTokenAmount * tokenPrice); // / 10**18;
+            uint256 investedAmount = PRBMath.mulDiv(
+                buyTokenAmount,
+                tokenPrice,
+                10**18
+            );
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
@@ -351,7 +355,7 @@ contract FTGSale is Ownable {
             tokensSold += buyTokenAmount;
             investmentRaised += investedAmount;
             participants[msg.sender].tokensBalanceGP += buyTokenAmount;
-            ntt.issue(msg.sender, buyTokenAmount * 10**18);
+            ntt.issue(msg.sender, buyTokenAmount);
             emit newPurchase(msg.sender, buyTokenAmount, Phases.GuaranteedPool);
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
@@ -393,7 +397,11 @@ contract FTGSale is Ownable {
                     maxNbTokensPerPartAtPP,
                 "Maximum allowed number of tokens exceeded"
             );
-            uint256 investedAmount = (buyTokenAmount * tokenPrice);
+            uint256 investedAmount = PRBMath.mulDiv(
+                buyTokenAmount,
+                tokenPrice,
+                10**18
+            );
             //purchase takes place
             IERC20(investToken).transferFrom(
                 msg.sender,
@@ -404,7 +412,7 @@ contract FTGSale is Ownable {
             tokensSold += buyTokenAmount;
             investmentRaised += investedAmount;
             participants[msg.sender].tokensBalancePP += buyTokenAmount;
-            ntt.issue(msg.sender, buyTokenAmount * 10**18);
+            ntt.issue(msg.sender, buyTokenAmount);
             emit newPurchase(msg.sender, buyTokenAmount, Phases.PublicPool);
 
             if (investmentRaised >= totalToRaise) {
