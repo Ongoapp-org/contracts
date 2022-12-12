@@ -18,6 +18,10 @@ contract FTGAirdrop is Ownable {
     uint256 public eligibleLockDuration;
     address public airdropToken;
 
+    event airdrop(address _airdropToken, uint256 _totalTokensToAirdrop);
+    event Log(string message, uint256 data);
+    event LogAddress(string message, address data);
+
     constructor(
         address _airdropToken,
         address _stakingContractAddress,
@@ -44,7 +48,9 @@ contract FTGAirdrop is Ownable {
         address[] memory participantsAddresses = IFTGStaking(
             stakingContractAddress
         ).getStakeholdersAddresses();
-        uint256[] memory eligibleActiveStakingLocked;
+        uint256[] memory eligibleActiveStakingLocked = new uint256[](
+            participantsAddresses.length
+        );
         uint256 totalEligibleActiveStakingLocked;
         uint256 activeStakingLocked;
         for (uint256 i = 0; i < participantsAddresses.length; i++) {
@@ -71,6 +77,7 @@ contract FTGAirdrop is Ownable {
                 airdropAmount
             );
         }
+        emit airdrop(airdropToken, totalTokensToAirdrop);
     }
 
     // function to deposit airdrop tokens on airdrop contract
