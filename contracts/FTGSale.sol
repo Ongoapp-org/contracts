@@ -351,7 +351,7 @@ contract FTGSale is Ownable {
             tokensSold += buyTokenAmount;
             investmentRaised += investedAmount;
             participants[msg.sender].tokensBalanceGP += buyTokenAmount;
-            ntt.issue(msg.sender, buyTokenAmount);
+            ntt.issue(msg.sender, buyTokenAmount * 10**18);
             emit newPurchase(msg.sender, buyTokenAmount, Phases.GuaranteedPool);
             if (investmentRaised >= totalToRaise) {
                 // Sale is completed and participants can claim their tokens
@@ -404,7 +404,7 @@ contract FTGSale is Ownable {
             tokensSold += buyTokenAmount;
             investmentRaised += investedAmount;
             participants[msg.sender].tokensBalancePP += buyTokenAmount;
-            ntt.issue(msg.sender, buyTokenAmount);
+            ntt.issue(msg.sender, buyTokenAmount * 10**18);
             emit newPurchase(msg.sender, buyTokenAmount, Phases.PublicPool);
 
             if (investmentRaised >= totalToRaise) {

@@ -315,8 +315,8 @@ def test_guaranteed_pool_phase(
     )
     assert ftgsale.getParticipantInfo(accounts[0])[0] == tokenAmount0
     assert ftgsale.getParticipantInfo(accounts[2])[0] == tokenAmount2
-    assert ntt.balanceOf(accounts[0]) == tokenAmount0
-    assert ntt.balanceOf(accounts[2]) == tokenAmount2
+    assert ntt.balanceOf(accounts[0]) == tokenAmount0 * 10 ** 18
+    assert ntt.balanceOf(accounts[2]) == tokenAmount2 * 10 ** 18
     # verify cannot buy more than entitled
     # accounts[4] is SAPPHIRE TIER, he cannot purchase more than 1_250_000 tokens
     tokenAmount4 = 1_300_000  # (in token)
@@ -488,8 +488,8 @@ def test_public_pool_phase(
     )
     assert ftgsale.getParticipantInfo(accounts[1])[1] == tokenAmount1
     assert ftgsale.getParticipantInfo(accounts[2])[1] == 800000
-    assert ntt.balanceOf(accounts[1]) == 4_000_000 + tokenAmount1
-    assert ntt.balanceOf(accounts[2]) == 400_000 + 800_000
+    assert ntt.balanceOf(accounts[1]) == (4_000_000 + tokenAmount1) * 10 ** 18
+    assert ntt.balanceOf(accounts[2]) == (400_000 + 800_000) * 10 ** 18
     print("totalToRaise =", ftgsale.totalToRaise())
     print("investmentRaised =", ftgsale.investmentRaised())
     print("tokensSold =", ftgsale.tokensSold())
@@ -533,12 +533,12 @@ def public_pool_phase(ftgsale, investtoken):
 @pytest.fixture
 def saletoken(MockFTGToken, accounts):
     print("saletoken deployment by accounts[0]=", accounts[0])
-    return MockFTGToken.deploy(1_000_000 * 10 ** 18, {"from": accounts[0]})
+    return MockFTGToken.deploy(20_000_000 * 10 ** 18, {"from": accounts[0]})
 
 
 @pytest.fixture
-def redeemer(Redeemer, saletoken):
-    return Redeemer.deploy(ntt, saletoken)
+def redeemer(Redeemer, ntt, saletoken):
+    return Redeemer.deploy(ntt, saletoken, {"from": accounts[0]})
 
 
 # salecompleted tests
@@ -552,6 +552,8 @@ def test_sale_completed(
     registration_phase,
     guaranteed_pool_phase,
     public_pool_phase,
+    saletoken,
+    redeemer,
     ftgsale,
     ftgstaking,
     ntt,
@@ -567,3 +569,20 @@ def test_sale_completed(
     # public pool fixtures aplied:
     # last purchase should trigger the end of the sale since totalToRaise has been reached
     assert ftgsale.salePhase() == 4
+    # owner of saletoken to send the saletoken to redeemer
+    # ftgtoken.transfer(redeemer, 100 * 10**18, {"from": accounts[0]})
+    saletoken.approve(
+        redeemer, ftgsale.totalTokensToSell() * 10 ** 18, {"from": accounts[0]}
+    )
+    redeemer.depositSaleTokens(
+        ftgsale.totalTokensToSell() * 10 ** 18, {"from": accounts[0]}
+    )
+    # Redeemer must be made owner of ntt
+    ntt.addOwner(redeemer, {"from": accounts[0]})
+    # At this point, the Redeemer contract has the saleTokens, participants can
+    # redeem their ntt for real tokens
+    redeemer.claim({"from": accounts[3]})
+    assert saletoken.balanceOf(accounts[3]) == 625_000 * 10 ** 18
+    redeemer.claim({"from": accounts[2]})
+    assert saletoken.balanceOf(accounts[2]) == 900_000 * 10 ** 18
+
