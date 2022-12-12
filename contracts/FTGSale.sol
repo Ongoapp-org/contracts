@@ -59,7 +59,7 @@ contract FTGSale is Ownable {
     address immutable investToken;
     // staking contract
     address immutable stakingContractAddress;
-    // price of the token (price of 1 token = 10**18 "tokenWei") quoted in investToken
+    // price of the token (= price of 10**18 "tokenWei") quoted in investToken
     uint256 public immutable tokenPrice;
     // amount of tokens to sell (in tokenWei)
     uint256 public immutable totalTokensToSell;
