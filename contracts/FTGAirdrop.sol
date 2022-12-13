@@ -84,9 +84,9 @@ contract FTGAirdrop is Ownable {
         IERC20(airdropToken).transferFrom(msg.sender, address(this), _amount);
     }
 
-    // withdraw 
+    // withdraw
     function withdrawEmergency() public onlyOwner {
         uint256 bal = IERC20(airdropToken).balanceOf(address(this));
-        IERC20(saleToken).transfer(msg.sender, bal);
+        IERC20(airdropToken).transfer(msg.sender, bal);
     }
 }
