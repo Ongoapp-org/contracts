@@ -104,11 +104,6 @@ contract FTGSale is Ownable {
         Phases _salePhase
     );
 
-    //events For debugging
-    event Log(string message, uint256 data);
-    event Logint(string message, int256 data);
-    event Logbool(string message, bool data);
-
     //Owner deploy contract and launches sale at the same time
     constructor(
         address _ntt,
@@ -376,7 +371,6 @@ contract FTGSale is Ownable {
             //tokens after 3/4 of the public pool phase has passed
             //uint256 maxNbTokensPerPartAtPP = updateMaxNbTokensPerPartAtPP();
             uint256 publicPoolTokens = totalTokensToSell - tokensSold;
-            //emit Log("publicPoolTokens", publicPoolTokens);
             uint256 maxNbTokensPerPartAtPP;
             if (
                 4 * (block.timestamp - publicPoolPhaseStart) <
@@ -429,20 +423,10 @@ contract FTGSale is Ownable {
         returns (uint256 maxNbTokensPerPartAtPP)
     {
         uint256 publicPoolTokens = totalTokensToSell - tokensSold;
-        //emit Log("publicPoolTokens", publicPoolTokens);
         if (
             4 * (block.timestamp - publicPoolPhaseStart) <
             3 * publicPoolPhaseDuration
-        ) {
-            /* emit Log(
-                "(block.timestamp - publicPoolPhaseStart)",
-                (block.timestamp - publicPoolPhaseStart)
-            );
-            emit Log(
-                "(publicPoolTokens - maxNbTokensPerPartAtPPStart)",
-                (publicPoolTokens - maxNbTokensPerPartAtPPStart)
-            );
-            emit Log("publicPoolPhaseDuration", publicPoolPhaseDuration); */
+        ) {            
             maxNbTokensPerPartAtPP =
                 maxNbTokensPerPartAtPPStart +
                 PRBMath.mulDiv(
@@ -450,7 +434,6 @@ contract FTGSale is Ownable {
                     4 * (publicPoolTokens - maxNbTokensPerPartAtPPStart),
                     3 * publicPoolPhaseDuration
                 );
-            // emit Log("maxNbTokensPerPartAtPP", maxNbTokensPerPartAtPP);
         } else {
             maxNbTokensPerPartAtPP = publicPoolTokens;
         }
