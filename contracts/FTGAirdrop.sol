@@ -23,22 +23,24 @@ contract FTGAirdrop is Ownable {
     constructor(
         address _airdropToken,
         address _stakingContractAddress,
-        uint256 _totalTokensToAirdrop
+        uint256 _totalTokensToAirdrop,
+        uint256 _eligibleLockDuration
     ) {
         airdropToken = _airdropToken;
         stakingContractAddress = _stakingContractAddress;
         totalTokensToAirdrop = _totalTokensToAirdrop;
+        eligibleLockDuration = _eligibleLockDuration;
     }
 
     //********************* Setup Phase functions *********************/
 
     // set staking eligible lockDuration for owner
-    function setEligibleLockDuration(uint256 _eligibleLockDuration)
+    /* function setEligibleLockDuration(uint256 _eligibleLockDuration)
         public
         onlyOwner
     {
         eligibleLockDuration = _eligibleLockDuration;
-    }
+    } */
 
     //********************* Distribution Phase functions *********************/
 
