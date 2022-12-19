@@ -17,6 +17,7 @@ contract FTGAirdrop is Ownable {
     address public stakingContractAddress;
     uint256 public eligibleLockDuration;
     address public airdropToken;
+    mapping(address => uint256) balances;
 
     event airdrop(address _airdropToken, uint256 _totalTokensToAirdrop);
 
@@ -72,12 +73,26 @@ contract FTGAirdrop is Ownable {
                 totalTokensToAirdrop,
                 totalEligibleActiveStakingLocked
             );
-            IERC20(airdropToken).transfer(
+            balances[participantsAddresses[i]] = airdropAmount;
+            /* IERC20(airdropToken).transfer(
                 participantsAddresses[i],
                 airdropAmount
-            );
+            ); */
         }
         emit airdrop(airdropToken, totalTokensToAirdrop);
+    }
+
+    //function for stakeholders to claim their airdropTokens
+    function claim() public {
+        require(balances[msg.sender] > 0, "no tokens to claim");
+        uint256 balance = balances[msg.sender];
+        balances[msg.sender] = 0;
+        IERC20(airdropToken).transfer(msg.sender, balance);
+    }
+
+    //function to get Balance
+    function getBalance() public view returns (uint256) {
+        return balances[msg.sender];
     }
 
     // function to deposit airdrop tokens on airdrop contract
