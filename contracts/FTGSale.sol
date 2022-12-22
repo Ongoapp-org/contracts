@@ -210,7 +210,8 @@ contract FTGSale is Ownable {
     ) public onlyOwner {
         require(salePhase == Phases.Setup, "not setup phase");
         require(
-            _sapphireAllocationFactor < _emeraldAllocationFactor &&
+            _sapphireAllocationFactor > 1 &&
+                _sapphireAllocationFactor < _emeraldAllocationFactor &&
                 _emeraldAllocationFactor < _diamondAllocationFactor,
             "factors must be increasing from lower to higher tiers"
         );
