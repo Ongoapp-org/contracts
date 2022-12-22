@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 //pragma abicoder v2;
 
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/IERC20.sol";
+import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/utils/SafeERC20.sol";
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/access/Ownable.sol";
 import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 
@@ -29,6 +30,7 @@ interface IFTGStaking {
 }
 
 contract FTGStaking is Ownable {
+    using SafeERC20 for IERC20;
     IERC20 public immutable ftgToken;
 
     //fees constants
@@ -142,7 +144,7 @@ contract FTGStaking is Ownable {
         );
 
         // Transfer of ftg token to the staking Contract (contract need to be approved first)
-        ftgToken.transferFrom(msg.sender, address(this), _amount);
+        ftgToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         //We update stakeholder's Reward Balance before
         //necessary before any change in stakeholder's totalStaked

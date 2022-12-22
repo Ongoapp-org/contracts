@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/IERC20.sol";
+import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/utils/SafeERC20.sol";
 import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 import "./FTGStaking.sol";
 import "./NTT.sol";
@@ -22,6 +23,7 @@ import "./NTT.sol";
  */
 
 contract FTGSale is Ownable {
+    using SafeERC20 for IERC20;
     //tiers Memberships
     enum Tiers {
         NONE,
@@ -361,7 +363,7 @@ contract FTGSale is Ownable {
                 10**18
             );
             //purchase takes place
-            IERC20(investToken).transferFrom(
+            IERC20(investToken).safeTransferFrom(
                 msg.sender,
                 address(this),
                 investedAmount
@@ -417,7 +419,7 @@ contract FTGSale is Ownable {
                 10**18
             );
             //purchase takes place
-            IERC20(investToken).transferFrom(
+            IERC20(investToken).safeTransferFrom(
                 msg.sender,
                 address(this),
                 investedAmount
