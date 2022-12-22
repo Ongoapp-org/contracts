@@ -438,7 +438,7 @@ contract FTGSale is Ownable {
     }
 
     //function for testing purpose
-    function updateMaxNbTokensPerPartAtPP()
+    /* function updateMaxNbTokensPerPartAtPP()
         public
         returns (uint256 maxNbTokensPerPartAtPP)
     {
@@ -457,7 +457,7 @@ contract FTGSale is Ownable {
         } else {
             maxNbTokensPerPartAtPP = publicPoolTokens;
         }
-    }
+    } */
 
     //********************* Helpers functions *********************/
 
