@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/IERC20.sol";
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/utils/SafeERC20.sol";
+import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/utils/math/SafeCast.sol";
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/access/Ownable.sol";
 import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 
@@ -169,7 +170,7 @@ contract FTGStaking is Ownable {
             Staking(
                 stakeholders[msg.sender].totalStaked,
                 block.timestamp,
-                int256(amountStaked),
+                SafeCast.toInt256(amountStaked),
                 _lockDuration
             )
         );
@@ -205,7 +206,7 @@ contract FTGStaking is Ownable {
                 // in case we deal with flex staking
                 if (amount < 0) {
                     //we deal with an unstaking event
-                    uint256 amountpos = uint256(-amount);
+                    uint256 amountpos = SafeCast.toUint256(-amount);
                     if (amountpos <= freeToUnstakeBalTemp) {
                         freeToUnstakeBalTemp -= amountpos;
                     } else {
@@ -214,7 +215,7 @@ contract FTGStaking is Ownable {
                 } else {
                     //we deal with a staking event
                     if (block.timestamp - _staking.timestamp > 30 days) {
-                        freeToUnstakeBalTemp += uint256(amount);
+                        freeToUnstakeBalTemp += SafeCast.toUint256(amount);
                     }
                 }
             } else {
@@ -223,10 +224,10 @@ contract FTGStaking is Ownable {
                     block.timestamp - _staking.timestamp > _staking.lockDuration
                 ) {
                     //lockTime finished
-                    freeToUnstakeBalTemp += uint256(amount);
+                    freeToUnstakeBalTemp += SafeCast.toUint256(amount);
                 } else {
                     //staking still locked
-                    totalLockedBalTemp += uint256(amount);
+                    totalLockedBalTemp += SafeCast.toUint256(amount);
                 }
             }
         }
@@ -261,7 +262,7 @@ contract FTGStaking is Ownable {
                 Staking(
                     stakeholders[msg.sender].totalStaked,
                     block.timestamp,
-                    -int256(_amount),
+                    -SafeCast.toInt256(_amount),
                     0
                 )
             );
@@ -277,7 +278,7 @@ contract FTGStaking is Ownable {
                 Staking(
                     stakeholders[msg.sender].totalStaked,
                     block.timestamp,
-                    -int256(_amount),
+                    -SafeCast.toInt256(_amount),
                     0
                 )
             );
@@ -349,7 +350,7 @@ contract FTGStaking is Ownable {
             Staking(
                 stakeholders[msg.sender].totalStaked,
                 block.timestamp,
-                int256(_amount),
+                SafeCast.toInt256(_amount),
                 _lockDuration
             )
         );

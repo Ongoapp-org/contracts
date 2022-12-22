@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/IERC20.sol";
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/utils/SafeERC20.sol";
+import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/utils/math/SafeCast.sol";
 import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 import "./FTGStaking.sol";
 import "./NTT.sol";
@@ -249,7 +250,7 @@ contract FTGSale is Ownable {
 
     function checkTierEligibility(address account) public view returns (Tiers) {
         // check active locked staking for account
-        uint256 activeStakingLocked = uint256(
+        uint256 activeStakingLocked = SafeCast.toUint256(
             IFTGStaking(stakingContractAddress).checkParticipantLockedStaking(
                 account,
                 30 days
