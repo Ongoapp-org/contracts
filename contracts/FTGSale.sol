@@ -125,6 +125,25 @@ contract FTGSale is Ownable {
     //function to go to next phase
     function launchNextPhase() public onlyOwner {
         if (salePhase == Phases.Setup) {
+            //verif that setup was done
+            require(
+                registrationPhaseDuration != 0 &&
+                    guaranteedPoolPhaseDuration != 0 &&
+                    publicPoolPhaseDuration != 0,
+                "Please setup Phases Durations"
+            );
+            require(
+                tiersMinFTGStaking[Tiers.SAPPHIRE] != 0 &&
+                    tiersMinFTGStaking[Tiers.EMERALD] != 0 &&
+                    tiersMinFTGStaking[Tiers.DIAMOND] != 0,
+                "Please setup tiersMinFTGStaking"
+            );
+            require(
+                tiersTokensAllocationFactor[Tiers.SAPPHIRE] > 1 &&
+                    tiersTokensAllocationFactor[Tiers.EMERALD] > 1 &&
+                    tiersTokensAllocationFactor[Tiers.DIAMOND] > 1,
+                "Please setup  tiersTokensAllocationFactor"
+            );
             registrationPhaseStart = block.timestamp;
             salePhase = Phases.Registration;
             emit newPhase(Phases.Registration);
@@ -426,7 +445,7 @@ contract FTGSale is Ownable {
         if (
             4 * (block.timestamp - publicPoolPhaseStart) <
             3 * publicPoolPhaseDuration
-        ) {            
+        ) {
             maxNbTokensPerPartAtPP =
                 maxNbTokensPerPartAtPPStart +
                 PRBMath.mulDiv(
