@@ -162,38 +162,23 @@ contract FTGStaking is Ownable {
         stakeholders[msg.sender].totalStaked += amountStaked;
         totalFTGStaked += amountStaked;
 
-        if (_lockDuration == 0) {
-            // Add the new Stake to the stakeholder's stakes List
-            stakeholders[msg.sender].stakings.push(
-                Staking(
-                    stakeholders[msg.sender].totalStaked,
-                    block.timestamp,
-                    int256(amountStaked),
-                    0
-                )
-            );
-            // Emit a NewStake event
-            emit NewStake(msg.sender, amountStaked, 0, block.timestamp);
-        } else if (_lockDuration >= 30 days) {
-            // Add the new Stake to the stakeholder's stakes List
-            stakeholders[msg.sender].stakings.push(
-                Staking(
-                    stakeholders[msg.sender].totalStaked,
-                    block.timestamp,
-                    int256(amountStaked),
-                    _lockDuration
-                )
-            );
+        // Add the new Stake to the stakeholder's stakes List
+        stakeholders[msg.sender].stakings.push(
+            Staking(
+                stakeholders[msg.sender].totalStaked,
+                block.timestamp,
+                int256(amountStaked),
+                _lockDuration
+            )
+        );
+
+        if (_lockDuration >= 30 days) {
             //increase totalLockedBalance
             stakeholders[msg.sender].totalLockedBalance += amountStaked;
-            // Emit a NewStake event
-            emit NewStake(
-                msg.sender,
-                amountStaked,
-                _lockDuration,
-                block.timestamp
-            );
         }
+
+        // Emit a NewStake event
+        emit NewStake(msg.sender, amountStaked, _lockDuration, block.timestamp);
     }
 
     // function to update the freeToUnstakeBalance and totalLockedBalance
