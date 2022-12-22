@@ -334,12 +334,12 @@ contract FTGStaking is Ownable {
 
     // function for the stakeholder to stake his/her accumulated rewards
     function stakeReward(uint256 _amount, uint256 _lockDuration) public {
+        // firstly update reward balance
+        _updateStakeholderReward(msg.sender);
         require(
             _amount <= stakeholders[msg.sender].totalReward,
             "reward Balance exceeded"
         );
-        // firstly update reward balance
-        _updateStakeholderReward(msg.sender);
         // transfer reward balance to the staking balance
         stakeholders[msg.sender].totalReward -= _amount;
         stakeholders[msg.sender].totalStaked += _amount;
