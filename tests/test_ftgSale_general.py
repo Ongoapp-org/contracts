@@ -270,21 +270,19 @@ def test_guaranteed_pool_phase(
     expectedNbParticipants = [0, 2, 1, 1, 1]
     for i in range(1, 5):
         # check nb of participants per Tier
-        print(
-            "Tiers ", i, ": nb of  participants =", ftgsale.getTiersNbOFParticipants(i)
-        )
-        assert ftgsale.getTiersNbOFParticipants(i) == expectedNbParticipants[i]
+        print("Tiers ", i, ": nb of  participants =", ftgsale.tiersNbOFParticipants(i))
+        assert ftgsale.tiersNbOFParticipants(i) == expectedNbParticipants[i]
         # calculate sumFNP
-        sumFNP += ftgsale.getTiersTokensAllocationFactor(
+        sumFNP += ftgsale.tiersTokensAllocationFactor(
             i
-        ) * ftgsale.getTiersNbOFParticipants(i)
+        ) * ftgsale.tiersNbOFParticipants(i)
     # cheating a bit this test since python precision diff de pbr/math precision
     assert round(ftgsale.maxNbTokensPerPartRuby() / 10 ** 9, 0) == round(
         int(ftgsale.totalTokensToSell() / sumFNP) / 10 ** 9, 0
     )
     for i in range(1, 5):
         maxNb = (
-            ftgsale.getTiersTokensAllocationFactor(i) * ftgsale.maxNbTokensPerPartRuby()
+            ftgsale.tiersTokensAllocationFactor(i) * ftgsale.maxNbTokensPerPartRuby()
         )
         print(
             "Tier", i, "max purchaseable tokens per participant in GP:", maxNb,
@@ -313,15 +311,13 @@ def test_guaranteed_pool_phase(
     assert ftgsale.tokensSold() == tokenAmount0 + tokenAmount2
     assert ftgsale.investmentRaised() == investTokenAmount0 + investTokenAmount2
     print(
-        "ftgsale.getParticipantInfo(accounts[0]) =",
-        ftgsale.getParticipantInfo(accounts[0]),
+        "ftgsale.participants(accounts[0]) =", ftgsale.participants(accounts[0]),
     )
     print(
-        "ftgsale.getParticipantInfo(accounts[2]) =",
-        ftgsale.getParticipantInfo(accounts[2]),
+        "ftgsale.participants(accounts[2]) =", ftgsale.participants(accounts[2]),
     )
-    assert ftgsale.getParticipantInfo(accounts[0])[0] == tokenAmount0
-    assert ftgsale.getParticipantInfo(accounts[2])[0] == tokenAmount2
+    assert ftgsale.participants(accounts[0])[0] == tokenAmount0
+    assert ftgsale.participants(accounts[2])[0] == tokenAmount2
     assert ntt.balanceOf(accounts[0]) == tokenAmount0
     assert ntt.balanceOf(accounts[2]) == tokenAmount2
     # verify cannot buy more than entitled
@@ -534,15 +530,15 @@ def test_public_pool_phase(
     ftgsale.buytoken(tokenAmount1, {"from": accounts[1]})
     # verify balances
     print(
-        "ftgsale.getParticipantInfo(accounts[1]) =",
-        ftgsale.getParticipantInfo(accounts[1]),
+        "ftgsale.participants(accounts[1]) =",
+        ftgsale.participants(accounts[1]),
     )
     print(
-        "ftgsale.getParticipantInfo(accounts[2]) =",
-        ftgsale.getParticipantInfo(accounts[2]),
+        "ftgsale.participants(accounts[2]) =",
+        ftgsale.participants(accounts[2]),
     )
-    assert ftgsale.getParticipantInfo(accounts[1])[1] == tokenAmount1
-    assert ftgsale.getParticipantInfo(accounts[2])[1] == 800000 * 10 ** 18
+    assert ftgsale.participants(accounts[1])[1] == tokenAmount1
+    assert ftgsale.participants(accounts[2])[1] == 800000 * 10 ** 18
     assert ntt.balanceOf(accounts[1]) == (4_000_000 * 10 ** 18 + tokenAmount1)
     assert ntt.balanceOf(accounts[2]) == (400_000 * 10 ** 18 + 800_000 * 10 ** 18)
     print("totalToRaise =", ftgsale.totalToRaise())

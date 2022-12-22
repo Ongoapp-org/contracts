@@ -437,54 +437,6 @@ contract FTGSale is Ownable {
         }
     }
 
-    //function for testing purpose
-    /* function updateMaxNbTokensPerPartAtPP()
-        public
-        returns (uint256 maxNbTokensPerPartAtPP)
-    {
-        uint256 publicPoolTokens = totalTokensToSell - tokensSold;
-        if (
-            4 * (block.timestamp - publicPoolPhaseStart) <
-            3 * publicPoolPhaseDuration
-        ) {
-            maxNbTokensPerPartAtPP =
-                maxNbTokensPerPartAtPPStart +
-                PRBMath.mulDiv(
-                    (block.timestamp - publicPoolPhaseStart),
-                    4 * (publicPoolTokens - maxNbTokensPerPartAtPPStart),
-                    3 * publicPoolPhaseDuration
-                );
-        } else {
-            maxNbTokensPerPartAtPP = publicPoolTokens;
-        }
-    } */
-
-    //********************* Helpers functions *********************/
-
-    function getTiersTokensAllocationFactor(Tiers _tier)
-        public
-        view
-        returns (uint256)
-    {
-        return tiersTokensAllocationFactor[_tier];
-    }
-
-    function getTiersNbOFParticipants(Tiers _tier)
-        public
-        view
-        returns (uint256)
-    {
-        return tiersNbOFParticipants[_tier];
-    }
-
-    function getParticipantInfo(address _participant)
-        public
-        view
-        returns (Participant memory)
-    {
-        return participants[_participant];
-    }
-
     //********************* Admin functions *********************/
 
     function withdrawRaisedAssets() public onlyOwner {
