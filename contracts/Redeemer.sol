@@ -6,7 +6,7 @@ import "./NTT.sol";
 
 contract Redeemer is OwnableBase {
     NTT public ntt;
-    address public saleToken;
+    address public immutable saleToken;
 
     constructor(address _ntt, address _saleToken) {
         ntt = NTT(_ntt);

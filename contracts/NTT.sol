@@ -10,7 +10,7 @@ import "./OwnableMulti.sol";
 contract NTT is OwnableMulti {
     uint256 private _issuedSupply;
     uint256 private _outstandingSupply;
-    uint256 private _decimals;
+    uint256 private immutable _decimals;
     string private _symbol;
 
     mapping(address => uint256) private _balances;
