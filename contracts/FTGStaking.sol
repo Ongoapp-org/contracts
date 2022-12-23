@@ -60,6 +60,12 @@ contract FTGStaking is Ownable {
         uint256 lockDuration; // duration of locked time in secs (flex = 0, locked > 30 days)
     }
 
+    struct RewardRateModif {
+        uint256 value;
+        uint256 timestamp;
+    }
+    RewardRateModif[] public rewardRateModifs; //list of reward update
+
     uint256 public totalFTGStaked; // contract's total amount of FTG staked
     uint256 public totalFees; //protocol's fees (initial staking, before 30 days unstaking)
 
@@ -75,10 +81,36 @@ contract FTGStaking is Ownable {
     );
     event NewUnstake(address indexed user, uint256 amount, uint256 timestamp);
     event NewFee(uint256 indexed amount, uint256 timestamp);
+    event NewRewardRate(uint256 indexed value, uint256 timestamp);
 
     //constructor
     constructor(address _stakingToken) {
         ftgToken = IERC20(_stakingToken);
+        //push the first rewardRate to rewardRateModifs array
+        rewardRateModifs.push(
+            RewardRateModif(rewardRatePer1TFTG, block.timestamp)
+        );
+        emit NewRewardRate(rewardRatePer1TFTG, block.timestamp);
+    }
+
+    //function to determine the earliest rewardRate to use in reward update calculation
+    function _getEarliestRewardRateIndexToUse(uint256 _time)
+        private
+        returns (uint256 index)
+    {
+        index = rewardRateModifs.length - 1;
+        while (rewardRateModifs[index].timestamp > _time) {
+            unchecked {
+                index--;
+            }
+        }
+        /* for (uint256 i = rewardRateModifs.length; i > 0; i--) {
+            if (rewardRateModifs[i - 1].timestamp <= lastRewardUpdate) {
+                index = i - 1;
+                break;
+            }
+        } */
+        return index;
     }
 
     // to update the reward balance of a stakeholder
@@ -92,20 +124,39 @@ contract FTGStaking is Ownable {
         //Looking for rewards since the last reward update
         uint256 lastRewardUpdate = stakeholders[_stakeholderAddress]
             .lastRewardUpdate;
-        //case reward has never been updated
-        if (lastRewardUpdate == 0) {
-            lastRewardUpdate = stakeholders[_stakeholderAddress]
-                .stakings[0]
-                .timestamp;
-        }
-        uint256 timeSinceLastUpdate = block.timestamp - lastRewardUpdate;
+        // retrieve earliest rewardRateModifs to use for reward update calculations
+        uint256 firstRewardRateModifsIndexToUse = _getEarliestRewardRateIndexToUse(
+                lastRewardUpdate
+            );
+        // Since last reward update, staking has not changed since reward is updated at each staking changes
         uint256 staking = stakeholders[_stakeholderAddress].totalStaked;
-        uint256 newReward = PRBMath.mulDiv(
-            timeSinceLastUpdate,
-            rewardRatePer1TFTG * staking,
-            10**12
-        );
-        stakeholders[_stakeholderAddress].totalReward += newReward;
+        //we just need to account for rewardRate changes since the last reward update
+        uint256 startTimeRewardCalc = lastRewardUpdate;
+        uint256 rewardSum;
+        uint256 timeElapsedAtThisRate;
+        for (
+            uint256 i = firstRewardRateModifsIndexToUse;
+            i < rewardRateModifs.length;
+            i++
+        ) {
+            if (i != rewardRateModifs.length - 1) {
+                timeElapsedAtThisRate =
+                    rewardRateModifs[i + 1].timestamp -
+                    startTimeRewardCalc;
+                //reset startTimeRewardCalc for next iteration
+                startTimeRewardCalc = rewardRateModifs[i + 1].timestamp;
+            } else {
+                timeElapsedAtThisRate = block.timestamp - startTimeRewardCalc;
+            }
+
+            rewardSum += PRBMath.mulDiv(
+                timeElapsedAtThisRate,
+                rewardRateModifs[i].value * staking,
+                10**12
+            );
+        }
+
+        stakeholders[_stakeholderAddress].totalReward += rewardSum;
         stakeholders[_stakeholderAddress].lastRewardUpdate = block.timestamp;
     }
 
@@ -114,11 +165,11 @@ contract FTGStaking is Ownable {
         public
         onlyOwner
     {
-        //need to update Rewards balances before modifying rewardRate
-        for (uint256 i = 0; i < stakeholdersAddresses.length; i++) {
-            _updateStakeholderReward(stakeholdersAddresses[i]);
-        }
         rewardRatePer1TFTG = _rewardRatePer1TFTG;
+        rewardRateModifs.push(
+            RewardRateModif(rewardRatePer1TFTG, block.timestamp)
+        );
+        emit NewRewardRate(rewardRatePer1TFTG, block.timestamp);
     }
 
     // public function to update Rewards
@@ -152,10 +203,6 @@ contract FTGStaking is Ownable {
         if (stakeholders[msg.sender].stakings.length != 0) {
             _updateStakeholderReward(msg.sender);
         }
-        // first staking?
-        if (stakeholders[msg.sender].stakings.length == 0) {
-            stakeholdersAddresses.push(msg.sender);
-        }
         // calculate staking fee
         uint256 fee;
         fee = PRBMath.mulDiv(STAKING_FEE, _amount, 100);
@@ -174,6 +221,11 @@ contract FTGStaking is Ownable {
                 _lockDuration
             )
         );
+        // first staking?
+        if (stakeholders[msg.sender].stakings.length == 1) {
+            stakeholdersAddresses.push(msg.sender);
+            stakeholders[msg.sender].lastRewardUpdate = block.timestamp;
+        }
 
         if (_lockDuration >= 30 days) {
             //increase totalLockedBalance

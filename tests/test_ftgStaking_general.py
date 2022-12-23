@@ -18,7 +18,13 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     for i in range(1, 50):
         assert ftgtoken.balanceOf(accounts[i]) == 5000000 * 10 ** 18
     # deploy the contract
+    deploymentTime = chain.time()
     ftgstaking = deploy_FTGStaking(ftgtoken.address, accounts[0])
+    # verif that rewardRateModifs[0] has been set
+    assert ftgstaking.rewardRateModifs(0) == (
+        ftgstaking.rewardRatePer1TFTG(),
+        deploymentTime,
+    )
     # approvals
     ftgtoken.approve(ftgstaking, 150000000 * 10 ** 18, {"from": accounts[0]})
     for i in range(1, 50):
@@ -30,6 +36,7 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     tx = ftgstaking.stake(
         600000 * 10 ** 18, 2592000, {"from": accounts[0]}
     )  # 30 days locked = 2592000 secs
+    firstStaking0Time = chain.time()
     print("2) accounts[0] ftg balance = \n", ftgtoken.balanceOf(accounts[0]))
     print(tx.events)
     print(tx.info())
@@ -55,7 +62,7 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
         "before calling updateReward(),rewardInfo = ",
         ftgstaking.getAccountRewardInfo(accounts[0]),
     )
-    assert ftgstaking.getAccountRewardInfo(accounts[0]) == (0, 0)
+    assert ftgstaking.getAccountRewardInfo(accounts[0]) == (0, firstStaking0Time)
 
     # updateReward
     print("update reward!")
@@ -329,11 +336,14 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     rewardRatePer1TFTGafter = ftgstaking.rewardRatePer1TFTG()
     print("after modif by admin rewardRatePer1TFTG = ", rewardRatePer1TFTGafter)
     assert rewardRatePer1TFTGafter == 6000
+    rewardRateModifsArray = ftgstaking.rewardRateModifs
+    print("rewardRateModifs(1)=", rewardRateModifsArray(1))
+    assert ftgstaking.rewardRateModifs(1) == (6000, chain.time())
     # verification another account cannot change the rewardRate
     with brownie.reverts("Ownable: caller is not the owner"):
         ftgstaking.adjustRewardRatePer1TFTG(100000, {"from": accounts[1]})
     assert ftgstaking.rewardRatePer1TFTG() == 6000
-    # to modify the rewardRate implied an update of the reward balance before
+    # reward balances of stakeholders after rewardRate modif
     rewardbal0aftermodif = ftgstaking.getAccountRewardInfo(accounts[0])[0]
     print(
         "After reward rate modif, accounts[0]'s reward balance = ", rewardbal0aftermodif
