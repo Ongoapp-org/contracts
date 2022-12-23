@@ -343,7 +343,7 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     with brownie.reverts("Ownable: caller is not the owner"):
         ftgstaking.adjustRewardRatePer1TFTG(100000, {"from": accounts[1]})
     assert ftgstaking.rewardRatePer1TFTG() == 6000
-    # reward balances of stakeholders after rewardRate modif
+    # reward balances of stakeholders after rewardRate modif (reward not updated anymore in latest implementation)
     rewardbal0aftermodif = ftgstaking.getAccountRewardInfo(accounts[0])[0]
     print(
         "After reward rate modif, accounts[0]'s reward balance = ", rewardbal0aftermodif
@@ -396,12 +396,12 @@ def test_ftgStaking_new_general(accounts, ftgtoken):
     print("After eval1, accounts[1]'s reward balance = ", rewardbal1after2)
     rewardRate = ftgstaking.rewardRatePer1TFTG()
     print("rewardRate=", rewardRate)
-    assert (
-        rewardbal0after2
-        == rewardbal0aftermodif + 3600 * 24 * 7 * staking0 * rewardRate / 10 ** 12
-    )
-    assert (
-        rewardbal1after2
-        == rewardbal1aftermodif + 3600 * 24 * 7 * staking1 * rewardRate / 10 ** 12
+    # for accounts[0], only one week passed since the last reward update and reward withdraw:
+    assert rewardbal0after2 == 3600 * 24 * 7 * staking0 * rewardRate / 10 ** 12
+    # for accounts[1], the reward balance was never updated till now
+    # rewardRatePerTFTG was at 3170 for 2 months and 2 hours and at 6000 for one week
+    assert "{:e}".format(rewardbal1after2) == "{:e}".format(
+        (3600 * 24 * 60 + 3600 * 2) * staking1 * 3170 / 10 ** 12
+        + 3600 * 24 * 7 * staking1 * 6000 / 10 ** 12
     )
     assert eval1.return_value == rewardbal0after2 + rewardbal1after2
