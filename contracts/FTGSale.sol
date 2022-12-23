@@ -136,7 +136,8 @@ contract FTGSale is Ownable {
                 "Please setup Phases Durations"
             );
             require(
-                tiersMinFTGStaking[Tiers.SAPPHIRE] != 0 &&
+                tiersMinFTGStaking[Tiers.RUBY] != 0 &&
+                    tiersMinFTGStaking[Tiers.SAPPHIRE] != 0 &&
                     tiersMinFTGStaking[Tiers.EMERALD] != 0 &&
                     tiersMinFTGStaking[Tiers.DIAMOND] != 0,
                 "Please setup tiersMinFTGStaking"
