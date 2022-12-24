@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/IERC20.sol";
+import "OpenZeppelin/openzeppelin-contracts@4.1.0/contracts/token/ERC20/utils/SafeERC20.sol";
 import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 import "./FTGStaking.sol";
 import "./NTT.sol";
@@ -13,6 +14,7 @@ import "./NTT.sol";
  */
 
 contract FTGAirdrop is Ownable {
+    using SafeERC20 for IERC20;
     uint256 public totalTokensToAirdrop;
     address public stakingContractAddress;
     uint256 public eligibleLockDuration;
@@ -73,7 +75,7 @@ contract FTGAirdrop is Ownable {
         require(balances[msg.sender] > 0, "no tokens to claim");
         uint256 balance = balances[msg.sender];
         balances[msg.sender] = 0;
-        IERC20(airdropToken).transfer(msg.sender, balance);
+        IERC20(airdropToken).safeTransfer(msg.sender, balance);
     }
 
     //function to get Balance
@@ -84,12 +86,16 @@ contract FTGAirdrop is Ownable {
     // function to deposit airdrop tokens on airdrop contract
     function depositAirdropTokens(uint256 _amount) external onlyOwner {
         // Transfer of airdrop token to the airdrop Contract (contract need to be approved first)
-        IERC20(airdropToken).transferFrom(msg.sender, address(this), _amount);
+        IERC20(airdropToken).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _amount
+        );
     }
 
     // withdraw
     function withdrawEmergency() public onlyOwner {
         uint256 bal = IERC20(airdropToken).balanceOf(address(this));
-        IERC20(airdropToken).transfer(msg.sender, bal);
+        IERC20(airdropToken).safeTransfer(msg.sender, bal);
     }
 }
