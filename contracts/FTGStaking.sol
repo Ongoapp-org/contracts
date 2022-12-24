@@ -10,8 +10,7 @@ import "paulrberg/prb-math@2.5.0/contracts/PRBMath.sol";
 
 /**
  * @title FTGStaking
- * @notice Rewards for Stakeholders come from fees (staking fee, before 30 days unstaking fee)
- * or rewards deposited by admin. Rewards are gained depending on the amount staked by stakeholder.
+ * @notice Rewards are earned depending on the time and amount staked by stakeholder.
  * Reward is not compounded, it is accumulated in a separate balance, but can be moved to staking using stakeReward().
  * Stakeholders incur a fee of 15% for unstaking before 30 days. Staking can be locked for more than 30 days
  * and stakeholder receive special privileges during IDO for this. Rewards and Balances are updated

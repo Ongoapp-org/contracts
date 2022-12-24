@@ -8,8 +8,8 @@ import "./NTT.sol";
 /**
  * @title FTGAirdrop
  * @notice This contract is meant to reward eligible FTG Stakers with specific airdropsTokens. The eligibility of
- * a staker will depend on his active locked staking for an eligible lockDuration, set by the airdrop admin before
- * the airdrop, and the reward will be proportional to the staking amount of the staker.
+ * a staker will depend on his active locked staking for an eligible lockDuration, and the reward will be proportional
+ * to the staking amount of the staker.
  */
 
 contract FTGAirdrop is Ownable {
@@ -32,16 +32,6 @@ contract FTGAirdrop is Ownable {
         totalTokensToAirdrop = _totalTokensToAirdrop;
         eligibleLockDuration = _eligibleLockDuration;
     }
-
-    //********************* Setup Phase functions *********************/
-
-    // set staking eligible lockDuration for owner
-    /* function setEligibleLockDuration(uint256 _eligibleLockDuration)
-        public
-        onlyOwner
-    {
-        eligibleLockDuration = _eligibleLockDuration;
-    } */
 
     //********************* Distribution Phase functions *********************/
 
@@ -74,10 +64,6 @@ contract FTGAirdrop is Ownable {
                 totalEligibleActiveStakingLocked
             );
             balances[participantsAddresses[i]] = airdropAmount;
-            /* IERC20(airdropToken).transfer(
-                participantsAddresses[i],
-                airdropAmount
-            ); */
         }
         emit airdrop(airdropToken, totalTokensToAirdrop);
     }
